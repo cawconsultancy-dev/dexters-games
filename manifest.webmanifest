@@ -1,0 +1,19 @@
+{
+  "name": "Dexter's Games",
+  "short_name": "Dexter's Games",
+  "description": "Free learning games for ages 4 to 7 from Dexter's Learning Tube.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#12234a",
+  "theme_color": "#12234a",
+  "lang": "en-GB",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    {"src": "img/logo-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "img/logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "img/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

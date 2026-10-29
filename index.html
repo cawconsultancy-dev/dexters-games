@@ -3,83 +3,333 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Dexter's Games">
-<link rel="apple-touch-icon" href="img/logo-180.png">
+<title>Dexter's Games</title>
+<meta name="description" content="25 free learning games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
+<meta name="theme-color" content="#12234a">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="img/logo-192.png">
-<title>Dexter's Learning Tube Games</title>
+<link rel="apple-touch-icon" href="img/logo-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dexter's Games">
+<meta property="og:title" content="Dexter's Games">
+<meta property="og:description" content="25 free learning games for ages 4 to 7. No adverts, no sign-up.">
+<meta property="og:image" content="https://cawconsultancy-dev.github.io/dexters-games/img/share.png">
+<meta property="og:url" content="https://cawconsultancy-dev.github.io/dexters-games/">
+<meta name="twitter:card" content="summary_large_image">
 <style>
+@font-face{font-family:Fredoka;src:url(fonts/fredoka.woff2) format("woff2");font-weight:300 700;font-display:swap}
+:root{
+ --space:#0e1838;--navy:#12234a;--deep:#1b2f63;--gold:#f2b33d;--gold-2:#ffd27a;--coral:#f07a4a;--cream:#fff6e5;--mist:#b9c3e6;
+ --r-big:36px;--r-mid:24px;--safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;min-height:100vh;background:linear-gradient(180deg,#0b0a2a,#24195a 60%,#2a1b5e);color:#fff;font-family:Arial,Helvetica,sans-serif}
-.wrap{max-width:900px;margin:0 auto;padding:20px 16px 48px}
-header{text-align:center}
-header img{width:min(220px,55vw);height:auto;filter:drop-shadow(0 6px 18px #0008)}
-h1{margin:10px 0 2px;color:#ffd400;font-size:clamp(28px,6vw,44px)}
-header p{margin:0;opacity:.85;font-size:18px}
-h2{margin:30px 0 12px;font-size:24px;display:flex;align-items:center;gap:10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-a.card{display:flex;align-items:center;gap:14px;text-decoration:none;color:#1a1a2e;background:#fff;border-radius:20px;padding:16px;box-shadow:0 5px 0 #0004;font-weight:700;font-size:19px;min-height:84px}
-a.card:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
-a.card .em{font-size:38px;line-height:1}
-a.card small{display:block;font-weight:400;font-size:14px;color:#555;margin-top:3px}
+[hidden]{display:none!important}
+html{background:var(--space)}
+body{margin:0;min-height:100vh;color:var(--cream);font-family:Fredoka,"Arial Rounded MT Bold",Arial,sans-serif;font-weight:500;
+ background:radial-gradient(1200px 700px at 80% -10%,#33296f 0,transparent 60%),radial-gradient(900px 600px at -10% 40%,#1d3a7a 0,transparent 60%),linear-gradient(180deg,var(--space),#161a45 55%,#221651);background-attachment:fixed;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.7;
+ background-image:radial-gradient(1.5px 1.5px at 20px 30px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 130px 80px,#fff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 240px 160px,#ffe9b8 50%,transparent 51%),radial-gradient(1px 1px at 70px 210px,#fff 50%,transparent 51%),radial-gradient(1px 1px at 300px 20px,#cfd8ff 50%,transparent 51%);background-size:340px 260px}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+:focus-visible{outline:4px solid var(--gold-2);outline-offset:3px;border-radius:14px}
+.wrap{position:relative;max-width:1080px;margin:0 auto;padding:calc(12px + var(--safe-t)) 16px calc(40px + var(--safe-b))}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:12px;padding:6px 0 4px}
+.top img{width:52px;height:52px;border-radius:50%;box-shadow:0 0 0 3px var(--gold),0 6px 18px #0008}
+.brand{line-height:1.05}
+.brand b{display:block;font-size:24px;font-weight:700;letter-spacing:-.01em}
+.brand span{font-size:14px;color:var(--mist)}
+.adult{margin-left:auto;display:flex;align-items:center;gap:8px;background:#ffffff14;border:2px solid #ffffff2e;color:var(--cream);border-radius:999px;padding:9px 16px;font-size:16px;font-weight:600}
+.adult svg{width:20px;height:20px}
+
+/* hero porthole */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:center;gap:28px;margin:22px 0 10px}
+.port{position:relative;aspect-ratio:1;width:min(100%,430px);justify-self:center}
+.port .lens{position:absolute;inset:7%;border-radius:50%;overflow:hidden;
+ background:radial-gradient(circle at 35% 30%,#3d5bd0 0,#1c2a6b 45%,#0b1233 100%);box-shadow:inset 0 0 0 10px var(--navy),inset 0 0 0 16px var(--gold),inset 0 -30px 60px #0009,0 30px 60px #0009}
+.port .lens::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 22%,#ffffff40 0,transparent 30%)}
+.port .orbit{position:absolute;inset:0;border-radius:50%;border:3px dashed #f2b33d70;animation:spin 2.4s cubic-bezier(.2,.8,.2,1) both}
+.port .moon{position:absolute;top:4%;left:50%;width:30px;height:30px;margin-left:-15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe2a6,#f07a4a);box-shadow:0 0 18px #f07a4a99}
+.port .pick{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(110px,22vw,190px);line-height:1;filter:drop-shadow(0 16px 24px #000a);animation:bob 4s ease-in-out infinite}
+@keyframes spin{from{transform:rotate(-140deg);opacity:0}to{transform:rotate(0);opacity:1}}
+@keyframes bob{50%{transform:translateY(-10px)}}
+.mission h1{margin:0 0 8px;font-size:clamp(40px,7vw,68px);line-height:.95;font-weight:700;letter-spacing:-.02em;color:var(--cream);text-wrap:balance}
+.mission .tag{display:inline-flex;align-items:center;gap:8px;font-size:18px;color:var(--gold-2);margin-bottom:12px;font-weight:600}
+.mission .tag::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.mission p{margin:0 0 22px;font-size:21px;color:var(--mist);max-width:30ch;line-height:1.35}
+.play{display:inline-flex;align-items:center;gap:12px;border:none;background:var(--gold);color:#2a1a00;font-size:26px;font-weight:700;border-radius:999px;padding:16px 34px 16px 22px;box-shadow:0 7px 0 #b7801d,0 18px 30px #0007;transition:transform .08s}
+.play svg{width:34px;height:34px}
+.play:active{transform:translateY(5px);box-shadow:0 2px 0 #b7801d}
+
+/* sections */
+h2{margin:40px 0 14px;font-size:28px;font-weight:700;letter-spacing:-.01em}
+h2 small{display:block;font-size:16px;font-weight:500;color:var(--mist);letter-spacing:0;margin-top:2px}
+
+/* recently played */
+.recent{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none}
+.recent::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:10px;border:none;color:var(--cream);background:#ffffff12;border-radius:999px;padding:8px 18px 8px 8px;font-size:17px;font-weight:600}
+.chip i{font-style:normal;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;font-size:26px;background:var(--c)}
+
+/* channel planets */
+.planets{display:flex;gap:14px;overflow-x:auto;padding:14px 4px 14px;margin:0 -16px;padding-left:16px;padding-right:16px;scroll-snap-type:x proximity;scrollbar-width:none}
+.planets::-webkit-scrollbar{display:none}
+.planet{flex:none;scroll-snap-align:start;display:flex;flex-direction:column;align-items:center;gap:8px;width:92px;background:none;border:none;color:var(--cream);font-size:15px;font-weight:600;line-height:1.15;text-align:center;padding:0}
+.planet i{font-style:normal;position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;font-size:36px;
+ background:radial-gradient(circle at 32% 28%,#ffffff55 0,transparent 38%),var(--c);box-shadow:inset -8px -10px 0 #00000030,0 8px 18px #0006;transition:transform .15s}
+.planet i::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:3px solid transparent;transition:border-color .15s}
+.planet[aria-pressed=true] i{transform:scale(1.08)}
+.planet[aria-pressed=true] i::after{border-color:var(--gold)}
+.planet[aria-pressed=true]{color:var(--gold-2)}
+
+/* game tiles */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:18px}
+.tile{position:relative;display:flex;flex-direction:column;text-align:left;border:none;padding:0;border-radius:var(--r-mid);background:var(--deep);color:var(--cream);overflow:hidden;box-shadow:0 6px 0 var(--d),0 16px 26px #0006;transition:transform .08s}
+.tile:active{transform:translateY(4px);box-shadow:0 2px 0 var(--d)}
+.tile .art{position:relative;aspect-ratio:4/3;display:grid;place-items:center;overflow:hidden;
+ background:radial-gradient(circle at 75% 20%,#ffffff40 0,transparent 35%),linear-gradient(160deg,var(--c),var(--d))}
+.tile .art::before{content:"";position:absolute;width:150%;height:46%;left:-25%;bottom:-18%;border-radius:50%;border:3px solid #ffffff33;transform:rotate(-10deg)}
+.tile .art span{font-size:72px;line-height:1;filter:drop-shadow(0 10px 10px #0006);transform:rotate(-4deg)}
+.tile .txt{padding:12px 14px 16px}
+.tile b{display:block;font-size:19px;font-weight:700;line-height:1.1}
+.tile small{display:block;margin-top:5px;font-size:15px;color:var(--mist);line-height:1.25}
+.tile .new{position:absolute;top:10px;left:10px;background:var(--cream);color:var(--navy);border-radius:999px;padding:3px 10px;font-size:13px;font-weight:700}
+
+/* watch panel */
+.watch{position:relative;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:22px;margin-top:44px;padding:24px 26px;border-radius:var(--r-big);
+ background:linear-gradient(120deg,#e8454e,#f07a4a 60%,#f2b33d);color:#fff;box-shadow:0 8px 0 #a3322f,0 22px 40px #0007;overflow:hidden}
+.watch svg.tv{width:132px;height:auto;filter:drop-shadow(0 10px 12px #0005)}
+.watch h3{margin:0 0 6px;font-size:clamp(26px,4.4vw,38px);font-weight:700;line-height:1}
+.watch p{margin:0 0 16px;font-size:18px;max-width:40ch;line-height:1.35}
+.btn{display:inline-flex;align-items:center;gap:10px;border:none;text-decoration:none;border-radius:999px;padding:13px 24px;font-size:19px;font-weight:700}
+.btn svg{width:24px;height:24px}
+.btn.white{background:#fff;color:#c4262f;box-shadow:0 5px 0 #0003}
+.btn.gold{background:var(--gold);color:#2a1a00;box-shadow:0 5px 0 #b7801d}
+.btn.ghost{background:#ffffff14;color:var(--cream);border:2px solid #ffffff33}
+
+/* grown-ups */
+.grown{margin-top:56px;padding:28px 26px 30px;border-radius:var(--r-big);background:#f6f1ff;color:#1d1b3a}
+.grown h2{margin:0 0 4px;color:#1d1b3a}
+.grown>p{margin:0 0 22px;font-size:18px;color:#4a4870;max-width:60ch;line-height:1.4}
+.gcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.gbox{background:#fff;border-radius:20px;padding:20px;box-shadow:0 2px 0 #e2dcf5}
+.gbox h3{margin:0 0 6px;font-size:20px;font-weight:700}
+.gbox p{margin:0 0 14px;font-size:16px;line-height:1.45;color:#4a4870}
+.gbox .btn{font-size:17px;padding:11px 20px}
+.btn.red{background:#e62a2f;color:#fff;box-shadow:0 4px 0 #a51c20}
+.btn.navy{background:var(--navy);color:#fff;box-shadow:0 4px 0 #06102b}
+.steps{margin:0;padding-left:20px;font-size:16px;line-height:1.5;color:#4a4870}
+.steps b{color:#1d1b3a}
+.toast{position:fixed;left:50%;bottom:calc(24px + var(--safe-b));transform:translate(-50%,120px);opacity:0;visibility:hidden;background:var(--cream);color:var(--navy);padding:12px 22px;border-radius:999px;font-weight:700;box-shadow:0 10px 30px #0008;transition:transform .25s;z-index:60}
+.toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
+footer{margin-top:34px;text-align:center;color:var(--mist);font-size:15px}
+footer a{color:var(--gold-2)}
+
+/* game player */
+.player{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;background:#000}
+.player.on{display:flex}
+.pbar{flex:none;display:flex;align-items:center;gap:12px;padding:calc(6px + var(--safe-t)) 12px 6px;background:var(--navy);box-shadow:0 2px 0 #0006}
+.back{display:flex;align-items:center;gap:6px;border:none;background:var(--gold);color:#2a1a00;border-radius:999px;padding:7px 16px 7px 10px;font-size:17px;font-weight:700}
+.back svg{width:22px;height:22px}
+.pbar b{font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbar img{margin-left:auto;width:34px;height:34px;border-radius:50%}
+.player iframe{flex:1;width:100%;border:0;background:#111}
+
+@media (max-width:720px){
+ .hero{grid-template-columns:1fr;gap:6px;text-align:center;margin-top:10px}
+ .port{width:min(78vw,340px)}
+ .mission p{margin-left:auto;margin-right:auto}
+ .watch{grid-template-columns:1fr;text-align:center;justify-items:center}
+ .brand span{display:none}
+ .adult span{display:none}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+ .tile .art span{font-size:58px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header><img src="img/logo-512.png" alt="Dexter's Learning Tube logo"><h1>Dexter's Games</h1><p>Explore · Learn · Discover</p></header>
-<div class="grid" style="margin-top:22px"><a class="card" href="https://www.youtube.com/@DextersLearningTube" target="_blank" rel="noopener"><span class="em">📺</span><span>Watch Dexter's Learning Tube<small>Dexter's YouTube channel</small></span></a></div>
-<h2>🚀 Rockets and robots</h2>
-<div class="grid">
-<a class="card" href="games/rocket-race.html"><span class="em">🛸</span><span>Rocket Race<small>Spin the wheel and beat the alien to the finish</small></span></a>
-<a class="card" href="games/robo-snack.html"><span class="em">🤖</span><span>Robo Snack<small>Steer the robot to the cookie</small></span></a>
-<a class="card" href="games/star-catcher.html"><span class="em">🌟</span><span>Star Catcher<small>Catch what the sign says, dodge the black holes</small></span></a>
+ <header class="top">
+  <img src="img/logo-192.png" alt="">
+  <div class="brand"><b>Dexter's Games</b><span>from Dexter's Learning Tube</span></div>
+  <button class="adult" id="toGrown" aria-label="Grown-ups">
+   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.4 4.2-6.5 8-6.5s7 2.1 8 6.5"/></svg><span>Grown-ups</span></button>
+ </header>
+
+ <section class="hero" aria-label="Today's mission">
+  <div class="port" aria-hidden="true"><div class="lens"></div><div class="orbit"><div class="moon"></div></div><div class="pick" id="pickEm"></div></div>
+  <div class="mission">
+   <div class="tag">Today's mission</div>
+   <h1 id="pickName"></h1>
+   <p id="pickDesc"></p>
+   <button class="play" id="pickPlay"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#2a1a00"/><path d="M10 7.5v9l7-4.5z" fill="#f2b33d"/></svg>Play</button>
+  </div>
+ </section>
+
+ <section id="recentWrap" hidden>
+  <h2>Play again</h2>
+  <div class="recent" id="recent"></div>
+ </section>
+
+ <section>
+  <h2>Pick a world</h2>
+  <div class="planets" id="planets" role="toolbar" aria-label="Game worlds"></div>
+  <div class="grid" id="grid"></div>
+ </section>
+
+ <section class="watch">
+  <svg class="tv" viewBox="0 0 140 130" aria-hidden="true">
+   <path d="M48 26 30 4M92 26l18-22" stroke="#fff6e5" stroke-width="6" stroke-linecap="round"/>
+   <circle cx="30" cy="4" r="6" fill="#fff6e5"/><circle cx="110" cy="4" r="6" fill="#fff6e5"/>
+   <rect x="6" y="24" width="128" height="94" rx="28" fill="#12234a"/>
+   <rect x="18" y="36" width="104" height="70" rx="18" fill="#3d5bd0"/>
+   <circle cx="50" cy="66" r="9" fill="#fff6e5"/><circle cx="90" cy="66" r="9" fill="#fff6e5"/>
+   <circle cx="52" cy="68" r="4" fill="#12234a"/><circle cx="92" cy="68" r="4" fill="#12234a"/>
+   <path d="M56 84q14 12 28 0" stroke="#fff6e5" stroke-width="6" fill="none" stroke-linecap="round"/>
+   <circle cx="38" cy="82" r="6" fill="#f07a4a" opacity=".7"/><circle cx="102" cy="82" r="6" fill="#f07a4a" opacity=".7"/>
+   <rect x="40" y="118" width="14" height="10" rx="4" fill="#12234a"/><rect x="86" y="118" width="14" height="10" rx="4" fill="#12234a"/>
+  </svg>
+  <div>
+   <h3>Watch Dexter's videos</h3>
+   <p>Songs and videos about planets, the body, animals and countries, made by Dexter.</p>
+   <a class="btn white" id="watchBtn" href="https://www.youtube.com/@DextersLearningTube" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="5" fill="#e62a2f"/><path d="M10 8.5v7l6-3.5z" fill="#fff"/></svg>Watch on YouTube</a>
+  </div>
+ </section>
+
+ <section class="grown" id="grown" aria-labelledby="gh">
+  <h2 id="gh">For grown-ups</h2>
+  <p>Every game here is free, with no adverts and no sign-up. Scores are saved on this device only. The games are built around early years and Key Stage 1 learning: phonics, number sense, patterns, time, shapes and the world.</p>
+  <div class="gcols">
+   <div class="gbox">
+    <h3>Subscribe to Dexter's Learning Tube</h3>
+    <p>New science songs and videos for ages 3 to 7, made by Dexter. Subscribing from a grown-up's account means you'll see new ones first.</p>
+    <a class="btn red" href="https://www.youtube.com/@DextersLearningTube?sub_confirmation=1" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="5" fill="#fff"/><path d="M10 8.5v7l6-3.5z" fill="#e62a2f"/></svg>Subscribe</a>
+   </div>
+   <div class="gbox">
+    <h3>Share with another family</h3>
+    <p>Know a child who'd enjoy these? Send them the link. It works on any tablet, phone or computer.</p>
+    <button class="btn navy" id="shareBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="5" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.6 6.6-4.1M8.7 13.4l6.6 4.1"/></svg>Share the games</button>
+   </div>
+   <div class="gbox">
+    <h3>Put it on the home screen</h3>
+    <div id="installBox">
+     <ol class="steps" id="iosSteps"><li>Open this page in <b>Safari</b></li><li>Tap the <b>Share</b> button (the square with an arrow)</li><li>Tap <b>Add to Home Screen</b>, then <b>Add</b></li></ol>
+     <p id="androidSteps" hidden>In Chrome, tap the <b>⋮ menu</b>, then <b>Add to home screen</b> or <b>Install app</b>.</p>
+     <button class="btn navy" id="installBtn" hidden>Install the app</button>
+     <p id="installed" hidden>You're using the installed app. It works offline too.</p>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <footer>Made with love for <a href="https://www.youtube.com/@DextersLearningTube" target="_blank" rel="noopener">Dexter's Learning Tube</a></footer>
 </div>
-<h2>👾 Monsters and stories</h2>
-<div class="grid">
-<a class="card" href="games/word-monster.html"><span class="em">👾</span><span>Feed the Word Monster<small>Build words for a hungry monster</small></span></a>
-<a class="card" href="games/letter-trails.html"><span class="em">🪄</span><span>Magic Letter Trails<small>Follow the sparkly trails</small></span></a>
-<a class="card" href="games/story-shuffle.html"><span class="em">📚</span><span>Story Shuffle<small>Fix the mixed-up picture stories</small></span></a>
+
+<div class="player" id="player" role="dialog" aria-modal="true" aria-labelledby="pTitle">
+ <div class="pbar">
+  <button class="back" id="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5 8 12l7 7"/></svg>Games</button>
+  <b id="pTitle"></b>
+  <img src="img/logo-192.png" alt="">
+ </div>
+ <iframe id="frame" title="Game" allow="autoplay; fullscreen"></iframe>
 </div>
-<h2>🧩 Puzzles, fish and trains</h2>
-<div class="grid">
-<a class="card" href="games/shape-puzzles.html"><span class="em">🧩</span><span>Shape Shifter Puzzles<small>Turn and fit shapes to make a rocket, fish and more</small></span></a>
-<a class="card" href="games/pattern-train.html"><span class="em">🚂</span><span>Pattern Train<small>What comes next on the train?</small></span></a>
-<a class="card" href="games/fish-tank.html"><span class="em">🐠</span><span>Fish Tank Dash<small>Quick! Which tank has more fish?</small></span></a>
-</div>
-<h2>🥁 Drums</h2>
-<div class="grid">
-<a class="card" href="games/drum-copycat.html"><span class="em">🥁</span><span>Drum Copycat<small>Copy the beats and dance with the alien</small></span></a>
-</div>
-<h2>🚀 Space</h2>
-<div class="grid">
-<a class="card" href="games/cosmic-quiz.html"><span class="em">🪐</span><span>Cosmic Quiz<small>Planets, stars, moons and black holes</small></span></a>
-<a class="card" href="games/galaxy-treasure-hunt.html"><span class="em">🗺️</span><span>Galaxy Treasure Hunt<small>Fly planet to planet on missions</small></span></a>
-<a class="card" href="games/planet-number-run.html"><span class="em">🌍</span><span>Planet Number Run<small>Double up from asteroids to the universe</small></span></a>
-<a class="card" href="games/planet-drop.html"><span class="em">🫧</span><span>Planet Drop<small>Drop and merge space objects</small></span></a>
-<a class="card" href="games/crazy-snake.html"><span class="em">🐍</span><span>Dexter's Crazy Snake Game<small>Eat planets, grow, run from big snakes</small></span></a>
-</div>
-<h2>🔢 Maths</h2>
-<div class="grid">
-<a class="card" href="games/number-ball-run.html"><span class="em">🟦</span><span>Number Ball Run<small>Roll into the same number to double it</small></span></a>
-<a class="card" href="games/number-bond-blast.html"><span class="em">💥</span><span>Number Bond Blast<small>Make 10, 20 and 100</small></span></a>
-<a class="card" href="games/clock-rocket.html"><span class="em">🕒</span><span>Clock Rocket<small>Tell the time to fuel your rocket</small></span></a>
-<a class="card" href="games/shapes-game.html"><span class="em">🔺</span><span>Shapes Game<small>Names, sides and corners</small></span></a>
-</div>
-<h2>🌎 Countries and the world</h2>
-<div class="grid">
-<a class="card" href="games/countries-game.html"><span class="em">🏳️</span><span>Countries Game<small>Flags, capitals and continents</small></span></a>
-<a class="card" href="games/country-number-run.html"><span class="em">🙂</span><span>Country Number Run<small>Smiley flags from Vatican City to Russia</small></span></a>
-</div>
-<h2>🐾 Animals</h2>
-<div class="grid">
-<a class="card" href="games/animal-game.html"><span class="em">🦁</span><span>Animal Game<small>Names, legs and animal groups</small></span></a>
-<a class="card" href="games/animal-number-run.html"><span class="em">🦒</span><span>Animal Number Run<small>Double up from an ant to a blue whale</small></span></a>
-</div>
-<h2>🚗 Vehicles</h2>
-<div class="grid">
-<a class="card" href="games/vehicle-game.html"><span class="em">🚒</span><span>Vehicle Game<small>Names, wheels and types</small></span></a>
-<a class="card" href="games/vehicle-drop.html"><span class="em">🚢</span><span>Vehicle Drop<small>Drop and merge from roller skate to cruise ship</small></span></a>
-</div>
-</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const WORLDS=[
+ {id:'all',name:'All games',em:'✨',c:'#6b4fbf',d:'#3d2a80'},
+ {id:'rockets',name:'Rockets and robots',em:'🚀',c:'#7a5ae0',d:'#4a2fa3'},
+ {id:'monsters',name:'Monsters and stories',em:'👾',c:'#e0567a',d:'#a02e52'},
+ {id:'puzzles',name:'Puzzles, fish and trains',em:'🧩',c:'#2ba6b8',d:'#17707e'},
+ {id:'drums',name:'Drums and beats',em:'🥁',c:'#f07a4a',d:'#b04a22'},
+ {id:'space',name:'Space',em:'🪐',c:'#3a5bd9',d:'#1f3496'},
+ {id:'numbers',name:'Numbers and clocks',em:'🔢',c:'#e9a52c',d:'#a86f0e'},
+ {id:'world',name:'Countries',em:'🌍',c:'#3baa6e',d:'#1d7246'},
+ {id:'animals',name:'Animals',em:'🐾',c:'#c98b3a',d:'#8a5a1c'},
+ {id:'vehicles',name:'Vehicles',em:'🚒',c:'#d9443a',d:'#932219'}];
+const GAMES=[
+ ['rocket-race','Rocket Race','🛸','rockets','Spin the wheel and beat the alien to the finish',1],
+ ['robo-snack','Robo Snack','🤖','rockets','Steer the robot to the cookie',1],
+ ['star-catcher','Star Catcher','🌟','rockets','Catch what the sign says, dodge the black holes',1],
+ ['word-monster','Feed the Word Monster','👾','monsters','Build words for a hungry monster',1],
+ ['letter-trails','Magic Letter Trails','🪄','monsters','Follow the sparkly trails',1],
+ ['story-shuffle','Story Shuffle','📚','monsters','Fix the mixed-up picture stories',1],
+ ['shape-puzzles','Shape Shifter Puzzles','🧩','puzzles','Turn and fit shapes to make a rocket, fish and more',1],
+ ['pattern-train','Pattern Train','🚂','puzzles','What comes next on the train?',1],
+ ['fish-tank','Fish Tank Dash','🐠','puzzles','Quick! Which tank has more fish?',1],
+ ['drum-copycat','Drum Copycat','🥁','drums','Copy the beats and dance with the alien',1],
+ ['cosmic-quiz','Cosmic Quiz','🪐','space','Planets, stars, moons and black holes'],
+ ['galaxy-treasure-hunt','Galaxy Treasure Hunt','🗺️','space','Fly planet to planet on missions'],
+ ['planet-number-run','Planet Number Run','🌍','space','Double up from asteroids to the universe'],
+ ['planet-drop','Planet Drop','🫧','space','Drop and merge space objects'],
+ ['crazy-snake','Dexter\'s Crazy Snake Game','🐍','space','Eat planets, grow, run from big snakes'],
+ ['number-ball-run','Number Ball Run','🟦','numbers','Roll into the same number to double it'],
+ ['number-bond-blast','Number Bond Blast','💥','numbers','Make 10, 20 and 100'],
+ ['clock-rocket','Clock Rocket','🕒','numbers','Tell the time to fuel your rocket'],
+ ['shapes-game','Shapes Game','🔺','numbers','Names, sides and corners'],
+ ['countries-game','Countries Game','🏳️','world','Flags, capitals and continents'],
+ ['country-number-run','Country Number Run','🙂','world','Smiley flags from Vatican City to Russia'],
+ ['animal-game','Animal Game','🦁','animals','Names, legs and animal groups'],
+ ['animal-number-run','Animal Number Run','🦒','animals','Double up from an ant to a blue whale'],
+ ['vehicle-game','Vehicle Game','🚒','vehicles','Names, wheels and types'],
+ ['vehicle-drop','Vehicle Drop','🚢','vehicles','Drop and merge from roller skate to cruise ship']
+].map(([id,name,em,w,desc,isNew])=>({id,name,em,w,desc,isNew:!!isNew}));
+const W=Object.fromEntries(WORLDS.map(w=>[w.id,w])),G=Object.fromEntries(GAMES.map(g=>[g.id,g]));
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{const v=localStorage.getItem('dg_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('dg_'+k,JSON.stringify(v))}catch(e){}}};
+function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+/* today's mission: same pick all day, changes each day */
+const day=Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5);
+const pick=GAMES[(day*7)%GAMES.length];
+$('pickEm').textContent=pick.em;$('pickName').textContent=pick.name;$('pickDesc').textContent=pick.desc;$('pickPlay').onclick=()=>openGame(pick.id);
+
+/* worlds */
+let world=store.get('world','all');if(!W[world])world='all';
+$('planets').innerHTML=WORLDS.map(w=>`<button class="planet" data-w="${w.id}" aria-pressed="${w.id===world}" style="--c:${w.c}"><i>${w.em}</i>${esc(w.name)}</button>`).join('');
+$('planets').onclick=e=>{const b=e.target.closest('.planet');if(!b)return;world=b.dataset.w;store.set('world',world);
+ document.querySelectorAll('.planet').forEach(p=>p.setAttribute('aria-pressed',p.dataset.w===world));renderGrid();};
+function renderGrid(){const list=world==='all'?GAMES:GAMES.filter(g=>g.w===world);
+ $('grid').innerHTML=list.map(g=>{const w=W[g.w];return `<button class="tile" data-g="${g.id}" style="--c:${w.c};--d:${w.d}"><div class="art"><span>${g.em}</span>${g.isNew?'<em class="new">New</em>':''}</div><div class="txt"><b>${esc(g.name)}</b><small>${esc(g.desc)}</small></div></button>`}).join('');}
+$('grid').onclick=e=>{const t=e.target.closest('.tile');if(t)openGame(t.dataset.g);};
+renderGrid();
+
+/* recently played */
+function renderRecent(){const r=store.get('recent',[]).filter(id=>G[id]).slice(0,6);$('recentWrap').hidden=!r.length;
+ $('recent').innerHTML=r.map(id=>{const g=G[id];return `<button class="chip" data-g="${id}" style="--c:${W[g.w].c}"><i>${g.em}</i>${esc(g.name)}</button>`}).join('');}
+$('recent').onclick=e=>{const t=e.target.closest('.chip');if(t)openGame(t.dataset.g);};
+renderRecent();
+
+/* player */
+let open=null;
+function openGame(id,fromHash){const g=G[id];if(!g)return;open=id;$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';
+ const r=[id,...store.get('recent',[]).filter(x=>x!==id)].slice(0,6);store.set('recent',r);
+ if(!fromHash)history.pushState({g:id},'','#play='+id);setTimeout(()=>$('back').focus(),50);}
+function closeGame(){if(!open)return;open=null;$('player').classList.remove('on');$('frame').src='about:blank';document.body.style.overflow='';renderRecent();}
+$('back').onclick=()=>{if(history.state&&history.state.g)history.back();else{closeGame();history.replaceState(null,'',location.pathname);}};
+addEventListener('popstate',()=>{const m=location.hash.match(/^#play=(.+)$/);if(m)openGame(m[1],true);else closeGame();});
+addEventListener('keydown',e=>{if(e.key==='Escape'&&open)$('back').click();});
+{const m=location.hash.match(/^#play=(.+)$/);if(m&&G[m[1]]){history.replaceState(null,'',location.pathname);openGame(m[1]);}}
+
+/* grown-ups */
+$('toGrown').onclick=()=>$('grown').scrollIntoView({behavior:'smooth'});
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
+const URL_APP='https://cawconsultancy-dev.github.io/dexters-games/';
+$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"25 free learning games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
+ try{if(navigator.share){await navigator.share(data);return;}await navigator.clipboard.writeText(URL_APP);toast('Link copied');}catch(e){if(e&&e.name!=='AbortError')toast(URL_APP);}};
+const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+const isAndroid=/android/i.test(navigator.userAgent);
+if(standalone){$('iosSteps').hidden=true;$('installed').hidden=false;}
+else if(isAndroid){$('iosSteps').hidden=true;$('androidSteps').hidden=false;}
+let deferred=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('installBtn').hidden=false;$('iosSteps').hidden=true;$('androidSteps').hidden=true;});
+$('installBtn').onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null;$('installBtn').hidden=true;};
+
+/* offline */
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
+</script>
 </body>
 </html>

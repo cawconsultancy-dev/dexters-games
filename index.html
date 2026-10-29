@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Dexter's Games</title>
+<script src="voice.js"></script>
 <meta name="description" content="41 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
 <meta name="theme-color" content="#12234a">
 <link rel="manifest" href="manifest.webmanifest">
@@ -154,6 +155,13 @@ footer a{color:var(--gold-2)}
  .tile .art span{font-size:58px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.voicebox{grid-column:1/-1}
+.vlist{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 12px}
+.vbtn{display:flex;align-items:center;gap:8px;border:2px solid #1d1b3a1f;background:#fff;border-radius:999px;padding:9px 14px;font:600 16px Fredoka,sans-serif;color:#1d1b3a;cursor:pointer}
+.vbtn small{font-weight:500;color:#6b6990;font-size:13px}
+.vbtn.on{background:#1d1b3a;color:#fff;border-color:#1d1b3a}.vbtn.on small{color:#cfc8ff}
+.vrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.vnote{font-size:14px!important;margin-top:10px!important}
 </style>
 </head>
 <body>
@@ -228,6 +236,13 @@ footer a{color:var(--gold-2)}
      <button class="btn navy" id="installBtn" hidden>Install the app</button>
      <p id="installed" hidden>You're using the installed app. It works offline too.</p>
     </div>
+   </div>
+   <div class="gbox voicebox">
+    <h3>Choose the voice</h3>
+    <p>Tap a voice to hear it. Your choice is used in every game on this device.</p>
+    <div class="vlist" id="vlist"><span>Loading voices…</span></div>
+    <div class="vrow"><b style="font-size:16px">Speed:</b><button class="vbtn" data-rate="0.8">🐢 Slower</button><button class="vbtn" data-rate="0.95">🙂 Normal</button><button class="vbtn" data-rate="1.1">🐇 Quicker</button><button class="vbtn" id="vauto">✨ Pick the best for me</button></div>
+    <p class="vnote">For the most natural voices on an iPad or iPhone, go to <b>Settings</b>, then <b>Accessibility</b>, <b>Spoken Content</b>, <b>Voices</b>, <b>English</b>, then download a <b>UK</b> voice marked Enhanced or Premium. Close and reopen the app and it will show up here.</p>
    </div>
   </div>
  </section>
@@ -382,6 +397,18 @@ const Music=(()=>{let ac=null,out=null,lvl=1,on=true,timer=null,next=0,step=0;tr
 document.getElementById('musicBtn').onclick=e=>{e.stopPropagation();Music.toggle();};
 Music.ui();
 {let begun=false;const once=e=>{if(begun)return;begun=true;removeEventListener('pointerdown',once,true);removeEventListener('keydown',once,true);if(e.target&&e.target.closest&&e.target.closest('#musicBtn'))return;Music.first();};addEventListener('pointerdown',once,true);addEventListener('keydown',once,true);}
+
+/* voice chooser */
+function niceVoice(v){let n=v.name.replace(/\s*\((enhanced|premium|natural)\)/i,'').replace(/^(Microsoft|Google)\s+/,'').replace(/\s+Online.*$/,'').replace(/ - English.*$/,'');const acc=/GB/i.test(v.lang)?'UK':/US/i.test(v.lang)?'US':/AU/i.test(v.lang)?'Australia':/IE/i.test(v.lang)?'Ireland':/IN/i.test(v.lang)?'India':/ZA/i.test(v.lang)?'South Africa':v.lang;const q=window.DGVoice?DGVoice.quality(v):0;return{n,acc,star:q>=30};}
+function renderVoices(){if(!window.DGVoice||!$('vlist'))return;const vs=DGVoice.list().filter(v=>DGVoice.quality(v)>-20).slice(0,14);const cur=DGVoice.current();const p=DGVoice.pref();
+ if(!vs.length){$('vlist').innerHTML='<span>No voices found on this device yet.</span>';return;}
+ $('vlist').innerHTML=vs.map(v=>{const d=niceVoice(v);return '<button class="vbtn'+(cur&&cur.name===v.name?' on':'')+'" data-v="'+esc(v.name)+'">'+(d.star?'⭐ ':'')+esc(d.n)+' <small>'+d.acc+'</small></button>';}).join('');
+ document.querySelectorAll('[data-rate]').forEach(b=>b.classList.toggle('on',+b.dataset.rate===((p&&p.rate)||0.95)));}
+document.addEventListener('click',e=>{if(!window.DGVoice)return;const b=e.target.closest('[data-v]');const p=DGVoice.pref()||{};
+ if(b){DGVoice.set(b.dataset.v,p.rate,1);renderVoices();DGVoice.test("Hello Dexter! I'm your new voice. Let's play!");return;}
+ const r=e.target.closest('[data-rate]');if(r){const c=DGVoice.current();DGVoice.set(c?c.name:null,+r.dataset.rate,1);renderVoices();DGVoice.test('This is how fast I talk.');return;}
+ if(e.target.closest('#vauto')){try{localStorage.removeItem('dg_voice');}catch(_){}renderVoices();DGVoice.test("Hello Dexter! Let's play!");}});
+if(window.speechSynthesis){speechSynthesis.addEventListener&&speechSynthesis.addEventListener('voiceschanged',renderVoices);setTimeout(renderVoices,300);setTimeout(renderVoices,1500);}
 
 /* offline */
 if('serviceWorker' in navigator&&location.protocol==='https:'){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});let done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!done&&!open){done=true;location.reload();}});}

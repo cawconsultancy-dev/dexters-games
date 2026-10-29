@@ -377,7 +377,7 @@ Music.ui();
 {let begun=false;const once=e=>{if(begun)return;begun=true;removeEventListener('pointerdown',once,true);removeEventListener('keydown',once,true);if(e.target&&e.target.closest&&e.target.closest('#musicBtn'))return;Music.first();};addEventListener('pointerdown',once,true);addEventListener('keydown',once,true);}
 
 /* offline */
-if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');
+if('serviceWorker' in navigator&&location.protocol==='https:'){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});let done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!done&&!open){done=true;location.reload();}});}
 </script>
 </body>
 </html>

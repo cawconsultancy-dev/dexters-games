@@ -208,7 +208,7 @@ footer a{color:var(--gold-2)}
 
  <section class="grown" id="grown" aria-labelledby="gh">
   <h2 id="gh">For grown-ups</h2>
-  <p>Every game here is free, with no adverts and no sign-up. Scores are saved on this device only. Most of the games are built around early years and Key Stage 1 learning: phonics, number sense, patterns, time, shapes and the world. The Arcade games are just for fun.</p>
+  <p>Every game here is free, with no adverts and no sign-up. Scores are saved on this device only. Most of the games are built around early years and Key Stage 1 learning: phonics, number sense, patterns, time, shapes and the world. The games in Just for fun are purely for play.</p>
   <div class="gcols">
    <div class="gbox">
     <h3>Subscribe to Dexter's Learning Tube</h3>
@@ -248,37 +248,30 @@ footer a{color:var(--gold-2)}
 <script>
 const WORLDS=[
  {id:'all',name:'All games',em:'✨',c:'#6b4fbf',d:'#3d2a80'},
- {id:'arcade',name:'Arcade',em:'🕹️',c:'#ff5d8f',d:'#b02a5e'},
  {id:'rockets',name:'Rockets and robots',em:'🚀',c:'#7a5ae0',d:'#4a2fa3'},
  {id:'monsters',name:'Monsters and stories',em:'👾',c:'#e0567a',d:'#a02e52'},
  {id:'puzzles',name:'Puzzles, fish and trains',em:'🧩',c:'#2ba6b8',d:'#17707e'},
- {id:'drums',name:'Drums and beats',em:'🥁',c:'#f07a4a',d:'#b04a22'},
+ {id:'drums',name:'Music and drums',em:'🎹',c:'#f07a4a',d:'#b04a22'},
  {id:'space',name:'Space',em:'🪐',c:'#3a5bd9',d:'#1f3496'},
  {id:'numbers',name:'Numbers and clocks',em:'🔢',c:'#e9a52c',d:'#a86f0e'},
  {id:'world',name:'Countries',em:'🌍',c:'#3baa6e',d:'#1d7246'},
  {id:'animals',name:'Animals',em:'🐾',c:'#c98b3a',d:'#8a5a1c'},
- {id:'vehicles',name:'Vehicles',em:'🚒',c:'#d9443a',d:'#932219'}];
+ {id:'vehicles',name:'Vehicles',em:'🚒',c:'#d9443a',d:'#932219'},
+ {id:'fun',name:'Just for fun',em:'🎉',c:'#ff5d8f',d:'#b02a5e'}];
 const GAMES=[
- ['bubble-pop','Bubble Pop Party','🫧','arcade','Pop bubbles, grab rainbows and freeze time',1],
- ['star-notes','Star Notes','🎹','arcade','Tap the falling stars to play real songs',1],
- ['dino-dash','Dino Dash','🦖','arcade','Jump the rocks and grab the shiny eggs',1],
- ['comet-flyer','Comet Flyer','🚀','arcade','Fly your rocket through the space gates',1],
- ['fruit-swipe','Fruit Swipe','🍉','arcade','Slice the fruit, dodge the cactus',1],
- ['sky-hopper','Sky Hopper','🌤️','arcade','Bounce Bobo up through the clouds to space',1],
- ['turbo-lanes','Turbo Lanes','🏎️','arcade','Dodge the traffic and collect the coins',1],
- ['tower-stack','Sky Tower','🏙️','arcade','Stack the floors as high as you can',1],
- ['monster-match','Monster Match','👾','arcade','Flip the cards and find the monster pairs',1],
- ['magic-paint','Magic Paint','🎨','arcade','Paint with rainbows, glitter and stamps',1],
  ['rocket-race','Rocket Race','🛸','rockets','Spin the wheel and beat the alien to the finish'],
  ['robo-snack','Robo Snack','🤖','rockets','Steer the robot to the cookie'],
  ['star-catcher','Star Catcher','🌟','rockets','Catch what the sign says, dodge the black holes'],
+ ['comet-flyer','Comet Flyer','🚀','rockets','Fly your rocket through the space gates',1],
  ['word-monster','Feed the Word Monster','👾','monsters','Build words for a hungry monster'],
  ['letter-trails','Magic Letter Trails','🪄','monsters','Follow the sparkly trails'],
  ['story-shuffle','Story Shuffle','📚','monsters','Fix the mixed-up picture stories'],
+ ['monster-match','Monster Match','👾','monsters','Flip the cards and find the monster pairs',1],
  ['shape-puzzles','Shape Shifter Puzzles','🧩','puzzles','Turn and fit shapes to make a rocket, fish and more'],
  ['pattern-train','Pattern Train','🚂','puzzles','What comes next on the train?'],
  ['fish-tank','Fish Tank Dash','🐠','puzzles','Quick! Which tank has more fish?'],
  ['drum-copycat','Drum Copycat','🥁','drums','Copy the beats and dance with the alien'],
+ ['star-notes','Star Notes','🎹','drums','Tap the falling stars to play real songs',1],
  ['cosmic-quiz','Cosmic Quiz','🪐','space','Planets, stars, moons and black holes'],
  ['galaxy-treasure-hunt','Galaxy Treasure Hunt','🗺️','space','Fly planet to planet on missions'],
  ['planet-number-run','Planet Number Run','🌍','space','Double up from asteroids to the universe'],
@@ -292,8 +285,15 @@ const GAMES=[
  ['country-number-run','Country Number Run','🙂','world','Smiley flags from Vatican City to Russia'],
  ['animal-game','Animal Game','🦁','animals','Names, legs and animal groups'],
  ['animal-number-run','Animal Number Run','🦒','animals','Double up from an ant to a blue whale'],
+ ['dino-dash','Dino Dash','🦖','animals','Jump the rocks and grab the shiny eggs',1],
  ['vehicle-game','Vehicle Game','🚒','vehicles','Names, wheels and types'],
- ['vehicle-drop','Vehicle Drop','🚢','vehicles','Drop and merge from roller skate to cruise ship']
+ ['vehicle-drop','Vehicle Drop','🚢','vehicles','Drop and merge from roller skate to cruise ship'],
+ ['turbo-lanes','Turbo Lanes','🏎️','vehicles','Dodge the traffic and collect the coins',1],
+ ['bubble-pop','Bubble Pop Party','🫧','fun','Pop bubbles, grab rainbows and freeze time',1],
+ ['fruit-swipe','Fruit Swipe','🍉','fun','Slice the fruit, dodge the cactus',1],
+ ['sky-hopper','Sky Hopper','🌤️','fun','Bounce Bobo up through the clouds to space',1],
+ ['tower-stack','Sky Tower','🏙️','fun','Stack the floors as high as you can',1],
+ ['magic-paint','Magic Paint','🎨','fun','Paint with rainbows, glitter and stamps',1]
 ].map(([id,name,em,w,desc,isNew])=>({id,name,em,w,desc,isNew:!!isNew}));
 const W=Object.fromEntries(WORLDS.map(w=>[w.id,w])),G=Object.fromEntries(GAMES.map(g=>[g.id,g]));
 const $=id=>document.getElementById(id);
@@ -302,7 +302,7 @@ function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 
 /* today's mission: same pick all day, changes each day */
 const day=Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5);
-const pick=GAMES[(day*7)%GAMES.length];
+const LEARN=GAMES.filter(g=>g.w!=='fun');const pick=LEARN[(day*7)%LEARN.length];
 $('pickEm').textContent=pick.em;$('pickName').textContent=pick.name;$('pickDesc').textContent=pick.desc;$('pickPlay').onclick=()=>openGame(pick.id);
 
 /* worlds */

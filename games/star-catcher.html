@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Star Catcher</title>
+<style>
+:root{--bg:linear-gradient(180deg,#050314,#1d0b3a)}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg,linear-gradient(180deg,#0b0a2a,#2a1b5e));background-attachment:fixed;color:#fff;font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none}
+#app{position:relative;max-width:760px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:100vh}
+h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);color:#ffd400;text-align:center;line-height:1.05;text-shadow:0 3px 0 #0005}
+.sub{margin:0;text-align:center;font-size:clamp(16px,3.8vw,21px);opacity:.95}
+.hero{font-size:clamp(60px,15vw,96px);line-height:1;margin-top:6px}
+.btn{font:inherit;font-weight:700;font-size:clamp(18px,4.4vw,24px);color:#fff;background:#3a86ff;border:none;border-radius:22px;padding:15px 18px;width:100%;cursor:pointer;box-shadow:0 5px 0 #0004;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
+.btn small{display:block;font-weight:400;font-size:.68em;opacity:.95;margin-top:2px}
+.modes{display:grid;gap:12px;width:100%}
+.mode{display:flex;align-items:center;gap:14px;text-align:left}
+.mode .em{font-size:36px;line-height:1}
+.top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:#ffffff26;border-radius:999px;padding:8px 14px;font-weight:700;font-size:18px;white-space:nowrap}
+.home{background:#ff8c42;width:auto;padding:10px 16px;font-size:18px}
+.msg{min-height:30px;font-size:clamp(18px,4.4vw,22px);font-weight:700;text-align:center}
+.result{background:#ffffff1c;border-radius:24px;padding:20px;width:100%;text-align:center}
+.big{font-size:clamp(44px,11vw,64px);font-weight:800;color:#ffd400}
+.burst{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.burst span{position:absolute;top:-40px;font-size:30px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8px}75%{translate:8px}}
+.pop{animation:pop .35s}
+.shake{animation:shake .35s}
+
+
+#sky{width:100%;max-width:640px;aspect-ratio:3/4;max-height:68vh;border-radius:22px;background:radial-gradient(circle at 50% 120%,#3b1d6e,#0b0620 70%);touch-action:none;display:block}
+.rule{display:flex;align-items:center;gap:12px;background:#ffd400;color:#1a1a2e;border-radius:18px;padding:8px 16px;font-weight:800;font-size:clamp(18px,4.6vw,26px)}
+.rule.flash{animation:pop .5s}
+.rule canvas{width:46px;height:46px}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const GAME_KEY='starcatcher';
+
+const app=document.getElementById('app');
+let voiceOn=true,AC=null;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(f,d,type,vol,delay,slideTo){if(!AC)return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+d);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+0.05);}
+function noise(d,vol,hp,delay){if(!AC)return;const t=AC.currentTime+(delay||0),n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1000;const g=AC.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sGood(){[523,659,784].forEach((f,i)=>tone(f,0.2,'triangle',0.14,i*0.07));}
+function sBad(){tone(220,0.25,'sawtooth',0.07);}
+function sTap(){tone(660,0.07,'sine',0.08);}
+function sWin(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.28,'triangle',0.14,i*0.12));}
+function say(t){if(!voiceOn)return;try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=0.92;u.pitch=1.1;const v=s.getVoices().find(x=>/en[-_]GB/i.test(x.lang));if(v)u.voice=v;s.speak(u);}catch(e){}}
+const store={get(k,d){try{const v=localStorage.getItem(GAME_KEY+'_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(GAME_KEY+'_'+k,JSON.stringify(v));}catch(e){}}};
+let GEN=0;/* each new screen gets a new number, so old timers from a finished game are ignored */
+function after(f,ms){const g=GEN;return setTimeout(()=>{if(g===GEN)f();},ms);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function rint(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function $(id){return document.getElementById(id);}
+function confetti(set){const b=document.createElement('div');b.className='burst';const em=set||['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<34;i++){const s=document.createElement('span');s.textContent=rand(em);s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*0.8+'s';b.appendChild(s);}document.body.appendChild(b);setTimeout(()=>b.remove(),3600);}
+function praise(){return rand(['Brilliant!','Well done!','Amazing!','Super!','Fantastic!','You did it!','Great job!']);}
+let onHome=null;
+function topBar(mid,right){return '<div class="top"><button class="btn home" id="home">⌂ Menu</button>'+(mid?'<span class="pill" id="mid">'+mid+'</span>':'')+(right!==undefined?'<span class="pill" id="right">'+right+'</span>':'')+'</div>';}
+function wireHome(){const h=$('home');if(h)h.onclick=()=>{try{speechSynthesis.cancel();}catch(e){}if(onHome)onHome();showMenu();};}
+function menuScreen(cfg){GEN++;app.innerHTML='<div class="hero">'+cfg.hero+'</div><h1>'+cfg.title+'</h1><p class="sub">'+cfg.sub+'</p><div class="modes" id="modes"></div><button class="btn" id="voice" style="background:#6a4c93">Voice: '+(voiceOn?'on':'off')+'</button>';
+ const m=$('modes');cfg.modes.forEach(md=>{const b=document.createElement('button');b.className='btn mode';b.style.background=md.col||'#3a86ff';b.innerHTML='<span class="em">'+md.em+'</span><span>'+md.name+'<small>'+md.desc+(cfg.best?cfg.best(md):'')+'</small></span>';b.onclick=()=>{audioInit();cfg.start(md);};m.appendChild(b);});
+ $('voice').onclick=()=>{voiceOn=!voiceOn;store.set('voice',voiceOn);menuScreen(cfg);};}
+function resultScreen(o){GEN++;sWin();if(o.good)confetti(o.confetti);app.innerHTML='<h1>'+o.title+'</h1><div class="result"><div style="font-size:72px">'+o.emoji+'</div><div class="big">'+o.big+'</div><p class="sub">'+o.line+'</p>'+(o.extra?'<p class="sub">'+o.extra+'</p>':'')+'</div><button class="btn" id="again" style="background:#2bb24c">Play again</button><button class="btn" id="tomenu" style="background:#6a4c93">Back to the menu</button>';
+ say(o.say||o.line);$('again').onclick=o.again;$('tomenu').onclick=showMenu;}
+voiceOn=store.get('voice',true);
+
+
+const MODES=[
+ {id:'1',em:'⭐',name:'Catch the stars',desc:'Tap the stars, never the black holes!',col:'#2bb24c',secs:45},
+ {id:'2',em:'🎨',name:'Colour switch',desc:'Catch the colour on the sign. It changes!',col:'#3a86ff',secs:60},
+ {id:'3',em:'🔀',name:'Super switch',desc:'Colours AND shapes swap around',col:'#9b5de5',secs:75}];
+const COL={red:'#ff4d6d',blue:'#4dabf7',yellow:'#ffd43b'};
+const SH=['star','planet','moon'];
+let G=null,raf=null;
+function showMenu(){stop();G=null;menuScreen({hero:'🌟🕳️',title:'Star Catcher',sub:'Catch only what the sign says. Watch out, the sign changes!',modes:MODES,start,best:m=>{const b=store.get('best_'+m.id,0);return b?' · best '+b:'';}});}
+function stop(){if(raf)cancelAnimationFrame(raf);raf=null;}
+function drawShape(c,shape,col,x,y,r){c.save();c.translate(x,y);c.fillStyle=col;c.strokeStyle='#fff';c.lineWidth=Math.max(2,r*0.08);
+ if(shape==='star'){c.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*0.45:r;c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}c.closePath();c.fill();c.stroke();}
+ else if(shape==='planet'){c.beginPath();c.arc(0,0,r*0.75,0,7);c.fill();c.stroke();c.strokeStyle=col;c.lineWidth=r*0.14;c.beginPath();c.ellipse(0,0,r*1.05,r*0.3,-0.4,0,7);c.stroke();}
+ else if(shape==='moon'){c.beginPath();c.arc(0,0,r*0.8,0.6,Math.PI*2-0.6,false);c.arc(r*0.35,0,r*0.55,Math.PI*2-0.9,0.9,true);c.closePath();c.fill();c.stroke();}
+ else if(shape==='hole'){const g=c.createRadialGradient(0,0,r*0.1,0,0,r);g.addColorStop(0,'#000');g.addColorStop(0.6,'#1a0033');g.addColorStop(0.85,'#9b5de5');g.addColorStop(1,'rgba(155,93,229,0)');c.fillStyle=g;c.beginPath();c.arc(0,0,r,0,7);c.fill();}
+ c.restore();}
+function ruleText(r){if(r.kind==='hole')return 'Catch the STARS';if(r.kind==='col')return 'Catch '+r.val.toUpperCase();return 'Catch the '+r.val.toUpperCase()+'S';}
+function newRule(first){const m=G.m;let r;
+ if(m.id==='1')r={kind:'hole'};
+ else if(m.id==='2'){let v;do{v=rand(Object.keys(COL));}while(G.rule&&G.rule.val===v);r={kind:'col',val:v};}
+ else{const kind=G.rule&&G.rule.kind==='col'?'shape':'col';r={kind,val:kind==='col'?rand(Object.keys(COL).filter(v=>!G.rule||G.rule.val!==v)):rand(SH)};}
+ G.rule=r;G.ruleT=0;const el=$('rule');if(el){el.querySelector('span').textContent=ruleText(r);el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');drawRuleIcon();}
+ if(!first){tone(880,0.12,'square',0.06);tone(660,0.12,'square',0.06,0.12);}say(ruleText(r).toLowerCase().replace('catch','Catch'));}
+function drawRuleIcon(){const c=$('ri');if(!c)return;const x=c.getContext('2d');c.width=92;c.height=92;x.clearRect(0,0,92,92);const r=G.rule;
+ if(r.kind==='hole')drawShape(x,'star','#ffd43b',46,46,36);else if(r.kind==='col')drawShape(x,'planet',COL[r.val],46,46,34);else drawShape(x,r.val,'#ffffff',46,46,36);}
+function good(it){const r=G.rule;if(it.shape==='hole')return false;if(r.kind==='hole')return it.shape==='star';if(r.kind==='col')return it.col===r.val;return it.shape===r.val;}
+function start(m){GEN++;stop();G={m,items:[],score:0,miss:0,t:0,spawn:0,speed:1,rule:null,parts:[]};
+ app.innerHTML=topBar('⏱️ '+m.secs,'⭐ 0')+'<div class="rule" id="rule"><canvas id="ri"></canvas><span></span></div><canvas id="sky"></canvas><div class="msg" id="msg"></div>';
+ wireHome();newRule(true);const cv=$('sky');const fit=()=>{const r=cv.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1);cv.width=r.width*d;cv.height=r.height*d;G.d=d;};fit();
+ cv.onpointerdown=e=>{e.preventDefault();audioInit();const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*G.d,y=(e.clientY-r.top)*G.d;
+  for(let i=G.items.length-1;i>=0;i--){const it=G.items[i];if(Math.hypot(it.x-x,it.y-y)<it.r*1.25){G.items.splice(i,1);tapItem(it);return;}}};
+ let last=performance.now();const loop=t=>{const dt=Math.min(0.05,(t-last)/1000);last=t;if(!G)return;tick(dt);paint();raf=requestAnimationFrame(loop);};raf=requestAnimationFrame(loop);}
+function tapItem(it){if(good(it)){G.score++;G.speed=Math.min(2.2,G.speed+0.03);tone(700+Math.min(G.score,20)*20,0.1,'triangle',0.1);burst(it,'#ffd43b');}
+ else{G.miss++;G.speed=Math.max(0.8,G.speed-0.08);sBad();burst(it,'#ff4d6d');const msg=$('msg');if(msg){msg.textContent=it.shape==='hole'?'Oops, a black hole!':'Oops! '+ruleText(G.rule);}}
+ const r=$('right');if(r)r.textContent='⭐ '+G.score;}
+function burst(it,col){for(let i=0;i<10;i++){const a=Math.random()*7;G.parts.push({x:it.x,y:it.y,vx:Math.cos(a)*200,vy:Math.sin(a)*200,l:0.6,col});}}
+function tick(dt){const m=G.m,cv=$('sky');if(!cv)return;G.t+=dt;G.ruleT+=dt;G.spawn-=dt;
+ const left=Math.max(0,Math.ceil(m.secs-G.t));const mid=$('mid');if(mid)mid.textContent='⏱️ '+left;
+ if(G.t>=m.secs){return end();}
+ if(m.id!=='1'&&G.ruleT>(m.id==='2'?12:10))newRule(false);
+ if(G.spawn<=0){G.spawn=Math.max(0.35,1.1/G.speed);const R=cv.width*0.07;let shape,col;
+  if(Math.random()<0.18)shape='hole',col='hole';else{shape=m.id==='1'?(Math.random()<0.6?'star':rand(['planet','moon'])):rand(SH);col=rand(Object.keys(COL));
+   /* keep plenty of things that match the sign */ if(Math.random()<0.4){if(G.rule.kind==='col')col=G.rule.val;else if(G.rule.kind==='shape')shape=G.rule.val;else shape='star';}}
+  G.items.push({shape,col,x:R+Math.random()*(cv.width-2*R),y:cv.height+R,r:R,vy:-(cv.height*0.17)*G.speed*(0.8+Math.random()*0.4),wob:Math.random()*6});}
+ G.items.forEach(it=>{it.y+=it.vy*dt;it.wob+=dt*2;});G.items=G.items.filter(it=>it.y>-it.r*2);
+ G.parts.forEach(p=>{p.x+=p.vx*dt*G.d;p.y+=p.vy*dt*G.d;p.l-=dt;});G.parts=G.parts.filter(p=>p.l>0);}
+function paint(){const cv=$('sky');if(!cv)return;const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);
+ for(let i=0;i<40;i++){c.fillStyle='rgba(255,255,255,'+(0.2+((i*37)%10)/20)+')';c.fillRect((i*97)%cv.width,(i*53+G.t*8*((i%3)+1))%cv.height,2,2);}
+ G.items.forEach(it=>drawShape(c,it.shape,it.col==='hole'?'#000':COL[it.col],it.x+Math.sin(it.wob)*it.r*0.2,it.y,it.r));
+ G.parts.forEach(p=>{c.globalAlpha=Math.max(0,p.l/0.6);c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,4*G.d,0,7);c.fill();});c.globalAlpha=1;}
+function end(){stop();const m=G.m,s=G.score;const prev=store.get('best_'+m.id,0);if(s>prev)store.set('best_'+m.id,s);
+ resultScreen({title:'Time\'s up!',emoji:'🌟🧺',big:s+' caught',line:(s>prev?'New best! ':'')+(G.miss<=2?'Super careful catching!':'Great catching! Watch the sign to avoid the oops.'),extra:'Oops taps: '+G.miss,good:s>=10,again:()=>start(m)});G=null;}
+onHome=()=>{stop();G=null;};
+showMenu();
+
+</script>
+</body>
+</html>

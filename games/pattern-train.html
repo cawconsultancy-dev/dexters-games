@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Pattern Train</title>
+<style>
+:root{--bg:linear-gradient(180deg,#0e3b5c,#3b8fc9)}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg,linear-gradient(180deg,#0b0a2a,#2a1b5e));background-attachment:fixed;color:#fff;font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none}
+#app{position:relative;max-width:760px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:100vh}
+h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);color:#ffd400;text-align:center;line-height:1.05;text-shadow:0 3px 0 #0005}
+.sub{margin:0;text-align:center;font-size:clamp(16px,3.8vw,21px);opacity:.95}
+.hero{font-size:clamp(60px,15vw,96px);line-height:1;margin-top:6px}
+.btn{font:inherit;font-weight:700;font-size:clamp(18px,4.4vw,24px);color:#fff;background:#3a86ff;border:none;border-radius:22px;padding:15px 18px;width:100%;cursor:pointer;box-shadow:0 5px 0 #0004;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
+.btn small{display:block;font-weight:400;font-size:.68em;opacity:.95;margin-top:2px}
+.modes{display:grid;gap:12px;width:100%}
+.mode{display:flex;align-items:center;gap:14px;text-align:left}
+.mode .em{font-size:36px;line-height:1}
+.top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:#ffffff26;border-radius:999px;padding:8px 14px;font-weight:700;font-size:18px;white-space:nowrap}
+.home{background:#ff8c42;width:auto;padding:10px 16px;font-size:18px}
+.msg{min-height:30px;font-size:clamp(18px,4.4vw,22px);font-weight:700;text-align:center}
+.result{background:#ffffff1c;border-radius:24px;padding:20px;width:100%;text-align:center}
+.big{font-size:clamp(44px,11vw,64px);font-weight:800;color:#ffd400}
+.burst{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.burst span{position:absolute;top:-40px;font-size:30px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8px}75%{translate:8px}}
+.pop{animation:pop .35s}
+.shake{animation:shake .35s}
+
+
+.track{width:100%;overflow:hidden;padding:10px 0 4px}
+.train{display:flex;align-items:flex-end;gap:6px;transition:transform 1.6s ease-in;justify-content:center;flex-wrap:nowrap}
+.train.go{transform:translateX(120%)}
+.car{min-width:clamp(46px,11vw,66px);height:clamp(54px,13vw,74px);background:#ff6b6b;border-radius:12px 12px 6px 6px;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,7vw,40px);position:relative;box-shadow:inset 0 -6px 0 #0003}
+.car:nth-child(3n+1){background:#ffb703}.car:nth-child(3n+2){background:#2bb24c}.car:nth-child(3n){background:#9b5de5}
+.car::after{content:'';position:absolute;bottom:-12px;left:8px;width:14px;height:14px;border-radius:50%;background:#333;box-shadow:calc(clamp(46px,11vw,66px) - 30px) 0 0 #333}
+.car.q{background:#ffffff33 !important;border:3px dashed #fff;color:#fff;font-weight:800}
+.eng{font-size:clamp(46px,12vw,70px);line-height:1}
+.rail{height:6px;background:#5a3b1d;border-radius:3px;margin-top:14px;width:100%}
+.opts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%}
+.opt{height:clamp(80px,20vw,110px);font-size:clamp(36px,9vw,54px);background:#fff;color:#1a1a2e;border-radius:20px;border:none;box-shadow:0 5px 0 #0005;cursor:pointer;font-family:inherit;font-weight:800}
+.opt.right{background:#2bb24c}.opt.wrong{background:#ff8a8a}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const GAME_KEY='patterntrain';
+
+const app=document.getElementById('app');
+let voiceOn=true,AC=null;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(f,d,type,vol,delay,slideTo){if(!AC)return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+d);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+0.05);}
+function noise(d,vol,hp,delay){if(!AC)return;const t=AC.currentTime+(delay||0),n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1000;const g=AC.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sGood(){[523,659,784].forEach((f,i)=>tone(f,0.2,'triangle',0.14,i*0.07));}
+function sBad(){tone(220,0.25,'sawtooth',0.07);}
+function sTap(){tone(660,0.07,'sine',0.08);}
+function sWin(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.28,'triangle',0.14,i*0.12));}
+function say(t){if(!voiceOn)return;try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=0.92;u.pitch=1.1;const v=s.getVoices().find(x=>/en[-_]GB/i.test(x.lang));if(v)u.voice=v;s.speak(u);}catch(e){}}
+const store={get(k,d){try{const v=localStorage.getItem(GAME_KEY+'_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(GAME_KEY+'_'+k,JSON.stringify(v));}catch(e){}}};
+let GEN=0;/* each new screen gets a new number, so old timers from a finished game are ignored */
+function after(f,ms){const g=GEN;return setTimeout(()=>{if(g===GEN)f();},ms);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function rint(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function $(id){return document.getElementById(id);}
+function confetti(set){const b=document.createElement('div');b.className='burst';const em=set||['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<34;i++){const s=document.createElement('span');s.textContent=rand(em);s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*0.8+'s';b.appendChild(s);}document.body.appendChild(b);setTimeout(()=>b.remove(),3600);}
+function praise(){return rand(['Brilliant!','Well done!','Amazing!','Super!','Fantastic!','You did it!','Great job!']);}
+let onHome=null;
+function topBar(mid,right){return '<div class="top"><button class="btn home" id="home">⌂ Menu</button>'+(mid?'<span class="pill" id="mid">'+mid+'</span>':'')+(right!==undefined?'<span class="pill" id="right">'+right+'</span>':'')+'</div>';}
+function wireHome(){const h=$('home');if(h)h.onclick=()=>{try{speechSynthesis.cancel();}catch(e){}if(onHome)onHome();showMenu();};}
+function menuScreen(cfg){GEN++;app.innerHTML='<div class="hero">'+cfg.hero+'</div><h1>'+cfg.title+'</h1><p class="sub">'+cfg.sub+'</p><div class="modes" id="modes"></div><button class="btn" id="voice" style="background:#6a4c93">Voice: '+(voiceOn?'on':'off')+'</button>';
+ const m=$('modes');cfg.modes.forEach(md=>{const b=document.createElement('button');b.className='btn mode';b.style.background=md.col||'#3a86ff';b.innerHTML='<span class="em">'+md.em+'</span><span>'+md.name+'<small>'+md.desc+(cfg.best?cfg.best(md):'')+'</small></span>';b.onclick=()=>{audioInit();cfg.start(md);};m.appendChild(b);});
+ $('voice').onclick=()=>{voiceOn=!voiceOn;store.set('voice',voiceOn);menuScreen(cfg);};}
+function resultScreen(o){GEN++;sWin();if(o.good)confetti(o.confetti);app.innerHTML='<h1>'+o.title+'</h1><div class="result"><div style="font-size:72px">'+o.emoji+'</div><div class="big">'+o.big+'</div><p class="sub">'+o.line+'</p>'+(o.extra?'<p class="sub">'+o.extra+'</p>':'')+'</div><button class="btn" id="again" style="background:#2bb24c">Play again</button><button class="btn" id="tomenu" style="background:#6a4c93">Back to the menu</button>';
+ say(o.say||o.line);$('again').onclick=o.again;$('tomenu').onclick=showMenu;}
+voiceOn=store.get('voice',true);
+
+
+const SETS=[['🍎','🍌','🍇'],['🐶','🐱','🐭'],['🔴','🔵','🟡'],['⭐','🌙','☀️'],['🚗','🚌','🚲'],['🐸','🐟','🐢'],['🟥','🟦','🟩'],['🌸','🍀','🍄']];
+const TYPES={ab:['AB'],aab:['AAB','ABB'],abc:['ABC','AABB'],num:['NUM']};
+const MODES=[
+ {id:'ab',em:'🍎',name:'Two-step patterns',desc:'apple, banana, apple, banana...',col:'#2bb24c'},
+ {id:'aab',em:'🐶',name:'Three-step patterns',desc:'dog, dog, cat, dog, dog, cat...',col:'#3a86ff'},
+ {id:'abc',em:'🌈',name:'Tricky patterns',desc:'colour trains and double trouble',col:'#9b5de5'},
+ {id:'num',em:'🔢',name:'Number trains',desc:'2, 4, 6, 8... what comes next?',col:'#ff8c42'}];
+let G=null;
+function showMenu(){G=null;menuScreen({hero:'🚂',title:'Pattern Train',sub:'Choo choo! What comes next on the train?',modes:MODES,start,best:m=>{const b=store.get('best_'+m.id,0);return b?' · best '+b+'/10':'';}});}
+function make(m){const t=rand(TYPES[m.id]);
+ if(t==='NUM'){const step=rand([1,2,5,10,3]),s=step*rint(0,4)+(step===1?rint(1,10):0),seq=[];for(let i=0;i<5;i++)seq.push(s+i*step);const ans=s+5*step;
+  const opts=shuffle([ans,ans+step,ans-1].filter((v,i,a)=>a.indexOf(v)===i&&v>=0));while(opts.length<3)opts.push(ans+2*step);return{show:seq,ans:String(ans),opts:opts.map(String),num:true,rule:'counting in '+step+'s'};}
+ const set=shuffle(rand(SETS));const unit=t.split('').map(ch=>set[ch.charCodeAt(0)-65]);const seq=[];
+ const len=unit.length*2+rint(0,unit.length-1);for(let i=0;i<len+1;i++)seq.push(unit[i%unit.length]);const ans=seq.pop();
+ const opts=shuffle(set.slice(0,3));return{show:seq,ans,opts,num:false};}
+function start(m){GEN++;G={m,q:0,score:0};ask();}
+function ask(){const p=make(G.m);G.p=p;G.miss=0;
+ app.innerHTML=topBar('Train '+(G.q+1)+' of 10','⭐ '+G.score)+'<div class="track"><div class="train" id="train"><span class="eng">🚂</span>'+p.show.map(x=>'<div class="car">'+(p.num?'<span style="font-size:.7em;font-weight:800;color:#fff">'+x+'</span>':x)+'</div>').join('')+'<div class="car q" id="q">?</div></div><div class="rail"></div></div>'+
+ '<div class="msg" id="msg">What comes next?</div><div class="opts" id="opts"></div>';
+ wireHome();say(p.num?'What number comes next? '+p.show.join(', '):'What comes next on the train?');
+ const O=$('opts');p.opts.forEach(o=>{const b=document.createElement('button');b.className='opt';b.textContent=o;b.onclick=()=>tap(b,o);O.appendChild(b);});}
+function tap(b,o){if(G.lock)return;
+ if(o===G.p.ans){G.lock=true;b.classList.add('right');if(G.miss===0)G.score++;sGood();const q=$('q');q.classList.remove('q');q.innerHTML=G.p.num?'<span style="font-size:.7em;font-weight:800;color:#fff">'+o+'</span>':o;q.classList.add('pop');
+  $('msg').textContent=praise()+(G.p.num?' It was '+G.p.rule+'.':'');say(praise()+(G.p.num?' It was '+G.p.rule:''));
+  after(()=>{tone(200,0.6,'square',0.05,0,120);noise(0.5,0.08,2000);const t=$('train');if(t)t.classList.add('go');},700);
+  after(()=>{if(!G)return;G.lock=false;G.q++;if(G.q<10)ask();else end();},2500);}
+ else{G.miss++;sBad();b.classList.add('wrong','shake');$('msg').textContent='Not quite. Say the pattern out loud and listen for what comes next!';}}
+function end(){const m=G.m,s=G.score;if(s>store.get('best_'+m.id,0))store.set('best_'+m.id,s);
+ resultScreen({title:'All aboard!',emoji:'🚂⭐',big:s+'/10',line:s>=8?'You are a pattern detective!':'Great spotting! Have another ride.',extra:'⭐ = right first time',good:s>=7,again:()=>start(m)});G=null;}
+onHome=()=>{G=null;};
+showMenu();
+
+</script>
+</body>
+</html>

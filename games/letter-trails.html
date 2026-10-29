@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Magic Letter Trails</title>
+<style>
+:root{--bg:linear-gradient(180deg,#2b0f45,#6a2c91)}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg,linear-gradient(180deg,#0b0a2a,#2a1b5e));background-attachment:fixed;color:#fff;font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none}
+#app{position:relative;max-width:760px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:100vh}
+h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);color:#ffd400;text-align:center;line-height:1.05;text-shadow:0 3px 0 #0005}
+.sub{margin:0;text-align:center;font-size:clamp(16px,3.8vw,21px);opacity:.95}
+.hero{font-size:clamp(60px,15vw,96px);line-height:1;margin-top:6px}
+.btn{font:inherit;font-weight:700;font-size:clamp(18px,4.4vw,24px);color:#fff;background:#3a86ff;border:none;border-radius:22px;padding:15px 18px;width:100%;cursor:pointer;box-shadow:0 5px 0 #0004;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
+.btn small{display:block;font-weight:400;font-size:.68em;opacity:.95;margin-top:2px}
+.modes{display:grid;gap:12px;width:100%}
+.mode{display:flex;align-items:center;gap:14px;text-align:left}
+.mode .em{font-size:36px;line-height:1}
+.top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:#ffffff26;border-radius:999px;padding:8px 14px;font-weight:700;font-size:18px;white-space:nowrap}
+.home{background:#ff8c42;width:auto;padding:10px 16px;font-size:18px}
+.msg{min-height:30px;font-size:clamp(18px,4.4vw,22px);font-weight:700;text-align:center}
+.result{background:#ffffff1c;border-radius:24px;padding:20px;width:100%;text-align:center}
+.big{font-size:clamp(44px,11vw,64px);font-weight:800;color:#ffd400}
+.burst{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.burst span{position:absolute;top:-40px;font-size:30px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8px}75%{translate:8px}}
+.pop{animation:pop .35s}
+.shake{animation:shake .35s}
+
+
+#pad{width:100%;max-width:520px;aspect-ratio:1/1.05;background:#fffdf6;border-radius:24px;touch-action:none;box-shadow:0 6px 0 #0005}
+.picker{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.lt{width:52px;height:52px;border-radius:14px;border:none;background:#ffffff2a;color:#fff;font-size:30px;font-weight:700;font-family:inherit}
+.lt.done{background:#2bb24c}
+.lt.cur{outline:4px solid #ffd400}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const GAME_KEY='lettertrails';
+
+const app=document.getElementById('app');
+let voiceOn=true,AC=null;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(f,d,type,vol,delay,slideTo){if(!AC)return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+d);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+0.05);}
+function noise(d,vol,hp,delay){if(!AC)return;const t=AC.currentTime+(delay||0),n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1000;const g=AC.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sGood(){[523,659,784].forEach((f,i)=>tone(f,0.2,'triangle',0.14,i*0.07));}
+function sBad(){tone(220,0.25,'sawtooth',0.07);}
+function sTap(){tone(660,0.07,'sine',0.08);}
+function sWin(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.28,'triangle',0.14,i*0.12));}
+function say(t){if(!voiceOn)return;try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=0.92;u.pitch=1.1;const v=s.getVoices().find(x=>/en[-_]GB/i.test(x.lang));if(v)u.voice=v;s.speak(u);}catch(e){}}
+const store={get(k,d){try{const v=localStorage.getItem(GAME_KEY+'_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(GAME_KEY+'_'+k,JSON.stringify(v));}catch(e){}}};
+let GEN=0;/* each new screen gets a new number, so old timers from a finished game are ignored */
+function after(f,ms){const g=GEN;return setTimeout(()=>{if(g===GEN)f();},ms);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function rint(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function $(id){return document.getElementById(id);}
+function confetti(set){const b=document.createElement('div');b.className='burst';const em=set||['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<34;i++){const s=document.createElement('span');s.textContent=rand(em);s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*0.8+'s';b.appendChild(s);}document.body.appendChild(b);setTimeout(()=>b.remove(),3600);}
+function praise(){return rand(['Brilliant!','Well done!','Amazing!','Super!','Fantastic!','You did it!','Great job!']);}
+let onHome=null;
+function topBar(mid,right){return '<div class="top"><button class="btn home" id="home">⌂ Menu</button>'+(mid?'<span class="pill" id="mid">'+mid+'</span>':'')+(right!==undefined?'<span class="pill" id="right">'+right+'</span>':'')+'</div>';}
+function wireHome(){const h=$('home');if(h)h.onclick=()=>{try{speechSynthesis.cancel();}catch(e){}if(onHome)onHome();showMenu();};}
+function menuScreen(cfg){GEN++;app.innerHTML='<div class="hero">'+cfg.hero+'</div><h1>'+cfg.title+'</h1><p class="sub">'+cfg.sub+'</p><div class="modes" id="modes"></div><button class="btn" id="voice" style="background:#6a4c93">Voice: '+(voiceOn?'on':'off')+'</button>';
+ const m=$('modes');cfg.modes.forEach(md=>{const b=document.createElement('button');b.className='btn mode';b.style.background=md.col||'#3a86ff';b.innerHTML='<span class="em">'+md.em+'</span><span>'+md.name+'<small>'+md.desc+(cfg.best?cfg.best(md):'')+'</small></span>';b.onclick=()=>{audioInit();cfg.start(md);};m.appendChild(b);});
+ $('voice').onclick=()=>{voiceOn=!voiceOn;store.set('voice',voiceOn);menuScreen(cfg);};}
+function resultScreen(o){GEN++;sWin();if(o.good)confetti(o.confetti);app.innerHTML='<h1>'+o.title+'</h1><div class="result"><div style="font-size:72px">'+o.emoji+'</div><div class="big">'+o.big+'</div><p class="sub">'+o.line+'</p>'+(o.extra?'<p class="sub">'+o.extra+'</p>':'')+'</div><button class="btn" id="again" style="background:#2bb24c">Play again</button><button class="btn" id="tomenu" style="background:#6a4c93">Back to the menu</button>';
+ say(o.say||o.line);$('again').onclick=o.again;$('tomenu').onclick=showMenu;}
+voiceOn=store.get('voice',true);
+
+
+/* Letters drawn as strokes in a 60 x 115 box: ascender y=10, middle line y=40, baseline y=80, tail y=105 */
+function arc(cx,cy,r,a0,a1){const p=[],n=Math.max(6,Math.round(Math.abs(a1-a0)/15));for(let i=0;i<=n;i++){const a=(a0+(a1-a0)*i/n)*Math.PI/180;p.push([cx+r*Math.cos(a),cy-r*Math.sin(a)]);}return p;}
+const L={
+ c:[arc(30,60,20,40,320)],
+ o:[arc(30,60,20,80,440)],
+ a:[arc(30,60,20,30,390).concat([[50,40],[50,80]])],
+ d:[arc(30,60,20,30,390).concat([[50,40],[50,10],[50,80]])],
+ g:[arc(30,60,20,30,390).concat([[50,40],[50,95],[44,103],[34,106],[22,102]])],
+ e:[[[12,60],[48,60]].concat(arc(30,60,20,5,315))],
+ s:[[[46,45],[38,40],[24,40],[15,46],[18,55],[30,60],[42,65],[46,73],[38,80],[22,80],[13,75]]],
+ l:[[[30,10],[30,80]]],
+ t:[[[30,20],[30,74],[35,80],[44,80]],[[16,42],[44,42]]],
+ i:[[[30,42],[30,80]],[[30,27]]],
+ h:[[[12,10],[12,80],[12,58],[18,46],[30,40],[42,44],[48,55],[48,80]]],
+ k:[[[12,10],[12,80]],[[44,40],[14,62],[44,80]]],
+ b:[[[12,10],[12,80],[12,62]].concat(arc(30,62,18,160,-175))],
+ n:[[[12,40],[12,80],[12,58],[18,46],[30,40],[42,44],[48,55],[48,80]]],
+ m:[[[8,40],[8,80],[8,55],[14,44],[22,40],[30,48],[30,80],[30,55],[36,44],[44,40],[52,48],[52,80]]],
+ r:[[[14,40],[14,80],[14,58],[22,45],[34,40],[44,44]]],
+ p:[[[12,40],[12,105],[12,58]].concat(arc(30,60,18,160,-175))],
+ u:[[[12,40],[12,68],[18,78],[30,80],[42,76],[48,66],[48,40],[48,80]]]};
+const MODES=[
+ {id:'round',em:'🌀',name:'Round and round',desc:'c o a d g e s',set:'coadges',col:'#ff6b9d'},
+ {id:'tall',em:'🗼',name:'Tall towers',desc:'l t i h k b',set:'ltihkb',col:'#3a86ff'},
+ {id:'bounce',em:'🦘',name:'Bouncy humps',desc:'n m r p u',set:'nmrpu',col:'#2bb24c'},
+ {id:'bdp',em:'🪄',name:'Tricky twins',desc:'b d p: which way?',set:'bdpbdp',col:'#ff8c42'}];
+let G=null;
+function showMenu(){G=null;menuScreen({hero:'🪄✨',title:'Magic Letter Trails',sub:'Follow the sparkly trail with your finger or pencil to make magic letters!',modes:MODES,start,best:m=>{const d=store.get('done_'+m.id,0);return d?' · finished '+d+' times':'';}});}
+/* resample a stroke into evenly spaced checkpoints */
+function resample(pts,step){const out=[pts[0]];let carry=0;for(let i=1;i<pts.length;i++){let [x0,y0]=pts[i-1];const [x1,y1]=pts[i];let seg=Math.hypot(x1-x0,y1-y0);while(carry+seg>=step){const t=(step-carry)/seg;x0=x0+(x1-x0)*t;y0=y0+(y1-y0)*t;out.push([x0,y0]);seg=Math.hypot(x1-x0,y1-y0);carry=0;}carry+=seg;}const last=pts[pts.length-1];const o=out[out.length-1];if(Math.hypot(o[0]-last[0],o[1]-last[1])>1)out.push(last);return out;}
+function start(m){GEN++;G={m,list:m.set.split(''),i:0};letter();}
+function letter(){const ch=G.list[G.i];G.ch=ch;G.strokes=L[ch].map(s=>resample(s,5));G.s=0;G.k=0;G.trail=[];G.down=false;
+ app.innerHTML=topBar('Letter '+(G.i+1)+' of '+G.list.length,'✨')+'<svg id="pad" viewBox="-12 0 84 115"></svg><div class="msg" id="msg">Start at the green dot</div><div class="picker">'+G.list.map((c,j)=>'<span class="lt'+(j<G.i?' done':'')+(j===G.i?' cur':'')+'">'+c+'</span>').join('')+'</div>';
+ wireHome();render();say('Let\'s write '+ch+'. Start at the green dot.');
+ const pad=$('pad');
+ const pt=e=>{const r=pad.getBoundingClientRect();return[-12+(e.clientX-r.left)/r.width*84,(e.clientY-r.top)/r.height*115];};
+ pad.onpointerdown=e=>{e.preventDefault();audioInit();G.down=true;pad.setPointerCapture(e.pointerId);G.trail=[pt(e)];check(pt(e));render();};
+ pad.onpointermove=e=>{if(!G||!G.down)return;e.preventDefault();const p=pt(e);G.trail.push(p);check(p);render();};
+ pad.onpointerup=()=>{if(G)G.down=false;};}
+function check(p){const st=G.strokes[G.s];if(!st)return;const tol=8;
+ /* only advance along the trail in order; a dot is a single checkpoint you just tap */
+ let moved=false;while(G.k<st.length&&Math.hypot(p[0]-st[G.k][0],p[1]-st[G.k][1])<tol){G.k++;moved=true;}
+ if(moved&&G.k%4===0)tone(500+G.k*15,0.05,'sine',0.05);
+ if(G.k>=st.length){G.s++;G.k=0;G.down=false;sGood();
+  if(G.s>=G.strokes.length){done();}else{$('msg').textContent='Now the next part: start at the green dot';say('Now the next part');}}}
+function render(){const pad=$('pad');if(!pad)return;let h='';
+ h+='<line x1="-12" x2="72" y1="10" y2="10" stroke="#c9c3e6" stroke-dasharray="2 2" stroke-width=".6"/><line x1="-12" x2="72" y1="40" y2="40" stroke="#9db7ff" stroke-dasharray="3 2" stroke-width=".8"/><line x1="-12" x2="72" y1="80" y2="80" stroke="#ff8fb1" stroke-width="1.2"/><line x1="-12" x2="72" y1="105" y2="105" stroke="#c9c3e6" stroke-dasharray="2 2" stroke-width=".6"/>';
+ G.strokes.forEach((st,si)=>{const d='M'+st.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L');
+  if(st.length===1){h+='<circle cx="'+st[0][0]+'" cy="'+st[0][1]+'" r="4" fill="'+(si<G.s?'#9b5de5':'#ddd')+'"/>';return;}
+  h+='<path d="'+d+'" fill="none" stroke="#e6e1f5" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>';
+  const upto=si<G.s?st.length:si===G.s?G.k:0;
+  if(upto>1)h+='<path d="M'+st.slice(0,upto).map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L')+'" fill="none" stroke="url(#rb)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>';});
+ const st=G.strokes[G.s];
+ if(st){const k=G.k,p=st[Math.min(k,st.length-1)];
+  if(k===0){h+='<circle cx="'+st[0][0]+'" cy="'+st[0][1]+'" r="6" fill="#2bb24c"><animate attributeName="r" values="5;7.5;5" dur="1s" repeatCount="indefinite"/></circle><text x="'+st[0][0]+'" y="'+(st[0][1]+0.5)+'" font-size="6" font-weight="700" fill="#fff" text-anchor="middle" dominant-baseline="middle">'+(G.s+1)+'</text>';}
+  else h+='<circle cx="'+p[0]+'" cy="'+p[1]+'" r="4.5" fill="#ffd400" stroke="#ff8c42" stroke-width="1"/>';
+  /* little arrow showing which way to go next */
+  if(st.length>1){const a=st[Math.min(k,st.length-2)],b2=st[Math.min(k+1,st.length-1)],ang=Math.atan2(b2[1]-a[1],b2[0]-a[0])*180/Math.PI;h+='<g transform="translate('+a[0]+' '+a[1]+') rotate('+ang+')"><path d="M6 -3 L11 0 L6 3" fill="none" stroke="#2bb24c" stroke-width="1.6" stroke-linecap="round"/></g>';}}
+ if(G.trail.length>1)h+='<path d="M'+G.trail.map(q=>q[0].toFixed(1)+' '+q[1].toFixed(1)).join(' L')+'" fill="none" stroke="#7b61ff" stroke-opacity=".35" stroke-width="2.5" stroke-linecap="round"/>';
+ pad.innerHTML='<defs><linearGradient id="rb" x1="0" x2="1"><stop offset="0" stop-color="#ff6b6b"/><stop offset=".33" stop-color="#ffd400"/><stop offset=".66" stop-color="#2bb24c"/><stop offset="1" stop-color="#3a86ff"/></linearGradient></defs>'+h;}
+function done(){const pad=$('pad');render();confetti(['✨','⭐','🪄']);$('msg').textContent=praise()+' A magic '+G.ch+'!';say(praise()+' That is '+G.ch);
+ after(()=>{if(!G)return;G.i++;if(G.i<G.list.length)letter();else{const m=G.m;store.set('done_'+m.id,store.get('done_'+m.id,0)+1);resultScreen({title:'Magic done!',emoji:'🪄✨',big:G.list.length+' letters',line:'You followed every trail!',good:true,again:()=>start(m)});G=null;}},1600);}
+onHome=()=>{G=null;};
+showMenu();
+
+</script>
+</body>
+</html>

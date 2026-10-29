@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Rocket Race</title>
+<style>
+:root{--bg:linear-gradient(180deg,#071437,#1b2a6b)}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg,linear-gradient(180deg,#0b0a2a,#2a1b5e));background-attachment:fixed;color:#fff;font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none}
+#app{position:relative;max-width:760px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:100vh}
+h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);color:#ffd400;text-align:center;line-height:1.05;text-shadow:0 3px 0 #0005}
+.sub{margin:0;text-align:center;font-size:clamp(16px,3.8vw,21px);opacity:.95}
+.hero{font-size:clamp(60px,15vw,96px);line-height:1;margin-top:6px}
+.btn{font:inherit;font-weight:700;font-size:clamp(18px,4.4vw,24px);color:#fff;background:#3a86ff;border:none;border-radius:22px;padding:15px 18px;width:100%;cursor:pointer;box-shadow:0 5px 0 #0004;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
+.btn small{display:block;font-weight:400;font-size:.68em;opacity:.95;margin-top:2px}
+.modes{display:grid;gap:12px;width:100%}
+.mode{display:flex;align-items:center;gap:14px;text-align:left}
+.mode .em{font-size:36px;line-height:1}
+.top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:#ffffff26;border-radius:999px;padding:8px 14px;font-weight:700;font-size:18px;white-space:nowrap}
+.home{background:#ff8c42;width:auto;padding:10px 16px;font-size:18px}
+.msg{min-height:30px;font-size:clamp(18px,4.4vw,22px);font-weight:700;text-align:center}
+.result{background:#ffffff1c;border-radius:24px;padding:20px;width:100%;text-align:center}
+.big{font-size:clamp(44px,11vw,64px);font-weight:800;color:#ffd400}
+.burst{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.burst span{position:absolute;top:-40px;font-size:30px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8px}75%{translate:8px}}
+.pop{animation:pop .35s}
+.shake{animation:shake .35s}
+
+
+.board{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;width:100%}
+.sq{position:relative;aspect-ratio:1;border-radius:10px;background:#ffffff;color:#1a1a2e;font-weight:800;font-size:clamp(12px,3.2vw,20px);display:flex;align-items:center;justify-content:center;border:3px solid transparent;cursor:pointer}
+.sq.alt{background:#e8f0ff}
+.sq.star{background:#fff3b0}
+.sq.goal{background:#ffd400}
+.sq.hint{border-color:#2bb24c;background:#d7ffe0}
+.sq.wrong{background:#ffc9c9}
+.sq .tok{position:absolute;font-size:clamp(16px,4.6vw,30px);line-height:1;pointer-events:none;filter:drop-shadow(0 2px 2px #0006)}
+.sq .tok.me{top:-6px;left:-4px}.sq .tok.al{bottom:-6px;right:-4px}
+.sq .st{position:absolute;top:1px;right:3px;font-size:.7em}
+.spin{width:130px;height:130px;border-radius:50%;background:conic-gradient(#ff6b6b 0 60deg,#ffd400 0 120deg,#2bb24c 0 180deg,#3a86ff 0 240deg,#9b5de5 0 300deg,#ff8c42 0);border:6px solid #fff;display:flex;align-items:center;justify-content:center;font-size:54px;font-weight:900;color:#fff;text-shadow:0 3px 0 #0007;cursor:pointer;box-shadow:0 6px 0 #0005}
+.spin.go{animation:spinit .8s ease-out}
+@keyframes spinit{to{transform:rotate(720deg)}}
+.row{display:flex;gap:14px;align-items:center;justify-content:center;width:100%}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const GAME_KEY='rocketrace';
+
+const app=document.getElementById('app');
+let voiceOn=true,AC=null;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(f,d,type,vol,delay,slideTo){if(!AC)return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+d);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+0.05);}
+function noise(d,vol,hp,delay){if(!AC)return;const t=AC.currentTime+(delay||0),n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1000;const g=AC.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sGood(){[523,659,784].forEach((f,i)=>tone(f,0.2,'triangle',0.14,i*0.07));}
+function sBad(){tone(220,0.25,'sawtooth',0.07);}
+function sTap(){tone(660,0.07,'sine',0.08);}
+function sWin(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.28,'triangle',0.14,i*0.12));}
+function say(t){if(!voiceOn)return;try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=0.92;u.pitch=1.1;const v=s.getVoices().find(x=>/en[-_]GB/i.test(x.lang));if(v)u.voice=v;s.speak(u);}catch(e){}}
+const store={get(k,d){try{const v=localStorage.getItem(GAME_KEY+'_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(GAME_KEY+'_'+k,JSON.stringify(v));}catch(e){}}};
+let GEN=0;/* each new screen gets a new number, so old timers from a finished game are ignored */
+function after(f,ms){const g=GEN;return setTimeout(()=>{if(g===GEN)f();},ms);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function rint(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function $(id){return document.getElementById(id);}
+function confetti(set){const b=document.createElement('div');b.className='burst';const em=set||['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<34;i++){const s=document.createElement('span');s.textContent=rand(em);s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*0.8+'s';b.appendChild(s);}document.body.appendChild(b);setTimeout(()=>b.remove(),3600);}
+function praise(){return rand(['Brilliant!','Well done!','Amazing!','Super!','Fantastic!','You did it!','Great job!']);}
+let onHome=null;
+function topBar(mid,right){return '<div class="top"><button class="btn home" id="home">⌂ Menu</button>'+(mid?'<span class="pill" id="mid">'+mid+'</span>':'')+(right!==undefined?'<span class="pill" id="right">'+right+'</span>':'')+'</div>';}
+function wireHome(){const h=$('home');if(h)h.onclick=()=>{try{speechSynthesis.cancel();}catch(e){}if(onHome)onHome();showMenu();};}
+function menuScreen(cfg){GEN++;app.innerHTML='<div class="hero">'+cfg.hero+'</div><h1>'+cfg.title+'</h1><p class="sub">'+cfg.sub+'</p><div class="modes" id="modes"></div><button class="btn" id="voice" style="background:#6a4c93">Voice: '+(voiceOn?'on':'off')+'</button>';
+ const m=$('modes');cfg.modes.forEach(md=>{const b=document.createElement('button');b.className='btn mode';b.style.background=md.col||'#3a86ff';b.innerHTML='<span class="em">'+md.em+'</span><span>'+md.name+'<small>'+md.desc+(cfg.best?cfg.best(md):'')+'</small></span>';b.onclick=()=>{audioInit();cfg.start(md);};m.appendChild(b);});
+ $('voice').onclick=()=>{voiceOn=!voiceOn;store.set('voice',voiceOn);menuScreen(cfg);};}
+function resultScreen(o){GEN++;sWin();if(o.good)confetti(o.confetti);app.innerHTML='<h1>'+o.title+'</h1><div class="result"><div style="font-size:72px">'+o.emoji+'</div><div class="big">'+o.big+'</div><p class="sub">'+o.line+'</p>'+(o.extra?'<p class="sub">'+o.extra+'</p>':'')+'</div><button class="btn" id="again" style="background:#2bb24c">Play again</button><button class="btn" id="tomenu" style="background:#6a4c93">Back to the menu</button>';
+ say(o.say||o.line);$('again').onclick=o.again;$('tomenu').onclick=showMenu;}
+voiceOn=store.get('voice',true);
+
+
+const MODES=[
+ {id:'20',em:'🚀',name:'Race to 20',desc:'A short race',n:20,max:4,col:'#2bb24c'},
+ {id:'50',em:'🌍',name:'Race to 50',desc:'Zoom across the galaxy',n:50,max:6,col:'#3a86ff'},
+ {id:'100',em:'🌌',name:'Race to 100',desc:'The big space race',n:100,max:10,col:'#9b5de5'}];
+let G=null;
+function showMenu(){G=null;menuScreen({hero:'🚀🛸',title:'Rocket Race',sub:'Spin, count on and beat the alien to the finish!',modes:MODES,start,best:m=>{const w=store.get('wins_'+m.id,0);return w?' · wins '+w:'';}});}
+function start(m){GEN++;const stars=new Set();while(stars.size<Math.floor(m.n/9)){const s=rint(3,m.n-3);stars.add(s);}
+ G={m,me:0,al:0,turn:'me',stars,busy:false,waiting:null};draw();say('Spin the wheel to start. First to '+m.n+' wins!');}
+function draw(){const m=G.m;let h=topBar('🚀 '+(G.me||'Start'),'🛸 '+(G.al||'Start'))+'<div class="board" id="board">';
+ for(let i=1;i<=m.n;i++){const row=Math.floor((i-1)/10);let c='sq';if(row%2)c+=' alt';if(G.stars.has(i))c+=' star';if(i===m.n)c+=' goal';
+  h+='<div class="'+c+'" data-n="'+i+'">'+i+(G.stars.has(i)?'<span class="st">⭐</span>':'')+(i===m.n?'<span class="st">🏁</span>':'')+(G.me===i?'<span class="tok me">🚀</span>':'')+(G.al===i?'<span class="tok al">🛸</span>':'')+'</div>';}
+ h+='</div><div class="row"><div class="spin" id="spin">'+(G.waiting?G.waiting.roll:'?')+'</div><div class="msg" id="msg" style="flex:1;text-align:left">'+(G.turn==='me'?(G.waiting?'Tap the square you will land on!':'Your turn: tap the wheel!'):'Alien is having a go...')+'</div></div>';
+ app.innerHTML=h;wireHome();
+ $('spin').onclick=()=>{if(G.turn!=='me'||G.busy||G.waiting)return;spin('me');};
+ document.querySelectorAll('.sq').forEach(s=>s.onclick=()=>pick(+s.dataset.n,s));}
+function spin(who){const r=rint(1,G.m.max);G.busy=true;const sp=$('spin');sp.classList.add('go');tone(300,0.6,'triangle',0.08,0,900);
+ after(()=>{G.busy=false;if(!G)return;if(who==='me'){const from=G.me,target=Math.min(G.m.n,from+r);G.waiting={roll:r,target};draw();say('You spun '+r+'. Where will you land?');}
+  else{say('Alien spun '+r);move('al',r);}},850);}
+function pick(n,el){if(!G||!G.waiting||G.busy)return;const w=G.waiting;
+ if(n===w.target){sGood();G.waiting=null;move('me',w.roll);}
+ else{sBad();el.classList.add('wrong','shake');const from=G.me;
+  /* hint: light up each hop from the rocket */
+  for(let k=1;k<=w.roll;k++){const q=document.querySelector('.sq[data-n="'+Math.min(G.m.n,from+k)+'"]');if(q)after(()=>q.classList.add('hint'),k*250);}
+  $('msg').textContent='Count on '+w.roll+' from '+(from||'the start')+'. Follow the green squares!';say('Count on '+w.roll+' from '+(from||'the start'));}}
+function move(who,r){G.busy=true;const start=G[who],end=Math.min(G.m.n,start+r);let pos=start;
+ const step=()=>{if(!G)return;pos++;G[who]=pos;draw();tone(400+pos*6,0.08,'sine',0.07);if(pos<end){after(step,who==='me'?520:400);if(who==='me')say(String(pos));}
+  else{say(String(pos));after(()=>land(who),600);}};
+ after(step,200);}
+function land(who){if(!G)return;const p=G[who];
+ if(p>=G.m.n){G.busy=false;return finish(who);}
+ if(G.stars.has(p)){const z=Math.min(G.m.n,p+3);G[who]=z;draw();tone(500,0.4,'triangle',0.12,0,1200);
+  if(who==='me')say('Star! Zoom forward 3 to '+z);
+  if(z>=G.m.n){G.busy=false;return finish(who);}}
+ after(()=>{if(!G)return;G.busy=false;G.turn=who==='me'?'al':'me';draw();if(G.turn==='al')after(()=>{if(G)spin('al');},700);},who==='me'&&G.stars.has(p)?1500:500);}
+function finish(who){const m=G.m;if(who==='me'){store.set('wins_'+m.id,store.get('wins_'+m.id,0)+1);resultScreen({title:'You win!',emoji:'🚀🏁',big:'First to '+m.n+'!',line:'Your rocket beat the alien!',good:true,again:()=>start(m)});}
+ else resultScreen({title:'So close!',emoji:'🛸🏁',big:'Alien wins',line:'Have another race, you can beat it!',again:()=>start(m)});G=null;}
+onHome=()=>{G=null;};
+showMenu();
+
+</script>
+</body>
+</html>

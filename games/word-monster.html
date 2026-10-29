@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Feed the Word Monster</title>
+<style>
+:root{--bg:linear-gradient(180deg,#123b2a,#2f7d4f)}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg,linear-gradient(180deg,#0b0a2a,#2a1b5e));background-attachment:fixed;color:#fff;font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none}
+#app{position:relative;max-width:760px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:100vh}
+h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);color:#ffd400;text-align:center;line-height:1.05;text-shadow:0 3px 0 #0005}
+.sub{margin:0;text-align:center;font-size:clamp(16px,3.8vw,21px);opacity:.95}
+.hero{font-size:clamp(60px,15vw,96px);line-height:1;margin-top:6px}
+.btn{font:inherit;font-weight:700;font-size:clamp(18px,4.4vw,24px);color:#fff;background:#3a86ff;border:none;border-radius:22px;padding:15px 18px;width:100%;cursor:pointer;box-shadow:0 5px 0 #0004;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
+.btn small{display:block;font-weight:400;font-size:.68em;opacity:.95;margin-top:2px}
+.modes{display:grid;gap:12px;width:100%}
+.mode{display:flex;align-items:center;gap:14px;text-align:left}
+.mode .em{font-size:36px;line-height:1}
+.top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:#ffffff26;border-radius:999px;padding:8px 14px;font-weight:700;font-size:18px;white-space:nowrap}
+.home{background:#ff8c42;width:auto;padding:10px 16px;font-size:18px}
+.msg{min-height:30px;font-size:clamp(18px,4.4vw,22px);font-weight:700;text-align:center}
+.result{background:#ffffff1c;border-radius:24px;padding:20px;width:100%;text-align:center}
+.big{font-size:clamp(44px,11vw,64px);font-weight:800;color:#ffd400}
+.burst{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.burst span{position:absolute;top:-40px;font-size:30px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8px}75%{translate:8px}}
+.pop{animation:pop .35s}
+.shake{animation:shake .35s}
+
+
+.stage{display:flex;align-items:center;justify-content:center;gap:10px;width:100%}
+.pic{font-size:clamp(70px,18vw,110px);line-height:1;background:#ffffff22;border-radius:24px;padding:10px 16px;cursor:pointer}
+.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.slot{min-width:clamp(54px,14vw,78px);height:clamp(64px,16vw,88px);border-radius:16px;border:4px dashed #ffffff99;display:flex;align-items:center;justify-content:center;font-size:clamp(30px,8vw,46px);font-weight:800;color:#1a1a2e;background:#ffffff18}
+.slot.full{background:#fff;border-style:solid;border-color:#ffd400}
+.tiles{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;width:100%}
+.tile{min-width:clamp(60px,15vw,84px);height:clamp(66px,16vw,88px);border-radius:16px;background:#ffd400;color:#1a1a2e;font-size:clamp(30px,8vw,44px);font-weight:800;border:none;box-shadow:0 5px 0 #b8860b;cursor:pointer;font-family:inherit;padding:0 10px}
+.tile:active{transform:translateY(3px);box-shadow:0 2px 0 #b8860b}
+.tile.used{visibility:hidden}
+.mon{width:clamp(120px,30vw,170px);height:auto}
+.mon .mouth{transition:transform .25s;transform-origin:50% 70%}
+.mon.eat .mouth{transform:scaleY(1.8)}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const GAME_KEY='wordmonster';
+
+const app=document.getElementById('app');
+let voiceOn=true,AC=null;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(f,d,type,vol,delay,slideTo){if(!AC)return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+d);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+0.05);}
+function noise(d,vol,hp,delay){if(!AC)return;const t=AC.currentTime+(delay||0),n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1000;const g=AC.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sGood(){[523,659,784].forEach((f,i)=>tone(f,0.2,'triangle',0.14,i*0.07));}
+function sBad(){tone(220,0.25,'sawtooth',0.07);}
+function sTap(){tone(660,0.07,'sine',0.08);}
+function sWin(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.28,'triangle',0.14,i*0.12));}
+function say(t){if(!voiceOn)return;try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=0.92;u.pitch=1.1;const v=s.getVoices().find(x=>/en[-_]GB/i.test(x.lang));if(v)u.voice=v;s.speak(u);}catch(e){}}
+const store={get(k,d){try{const v=localStorage.getItem(GAME_KEY+'_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(GAME_KEY+'_'+k,JSON.stringify(v));}catch(e){}}};
+let GEN=0;/* each new screen gets a new number, so old timers from a finished game are ignored */
+function after(f,ms){const g=GEN;return setTimeout(()=>{if(g===GEN)f();},ms);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function rint(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function $(id){return document.getElementById(id);}
+function confetti(set){const b=document.createElement('div');b.className='burst';const em=set||['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<34;i++){const s=document.createElement('span');s.textContent=rand(em);s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*0.8+'s';b.appendChild(s);}document.body.appendChild(b);setTimeout(()=>b.remove(),3600);}
+function praise(){return rand(['Brilliant!','Well done!','Amazing!','Super!','Fantastic!','You did it!','Great job!']);}
+let onHome=null;
+function topBar(mid,right){return '<div class="top"><button class="btn home" id="home">⌂ Menu</button>'+(mid?'<span class="pill" id="mid">'+mid+'</span>':'')+(right!==undefined?'<span class="pill" id="right">'+right+'</span>':'')+'</div>';}
+function wireHome(){const h=$('home');if(h)h.onclick=()=>{try{speechSynthesis.cancel();}catch(e){}if(onHome)onHome();showMenu();};}
+function menuScreen(cfg){GEN++;app.innerHTML='<div class="hero">'+cfg.hero+'</div><h1>'+cfg.title+'</h1><p class="sub">'+cfg.sub+'</p><div class="modes" id="modes"></div><button class="btn" id="voice" style="background:#6a4c93">Voice: '+(voiceOn?'on':'off')+'</button>';
+ const m=$('modes');cfg.modes.forEach(md=>{const b=document.createElement('button');b.className='btn mode';b.style.background=md.col||'#3a86ff';b.innerHTML='<span class="em">'+md.em+'</span><span>'+md.name+'<small>'+md.desc+(cfg.best?cfg.best(md):'')+'</small></span>';b.onclick=()=>{audioInit();cfg.start(md);};m.appendChild(b);});
+ $('voice').onclick=()=>{voiceOn=!voiceOn;store.set('voice',voiceOn);menuScreen(cfg);};}
+function resultScreen(o){GEN++;sWin();if(o.good)confetti(o.confetti);app.innerHTML='<h1>'+o.title+'</h1><div class="result"><div style="font-size:72px">'+o.emoji+'</div><div class="big">'+o.big+'</div><p class="sub">'+o.line+'</p>'+(o.extra?'<p class="sub">'+o.extra+'</p>':'')+'</div><button class="btn" id="again" style="background:#2bb24c">Play again</button><button class="btn" id="tomenu" style="background:#6a4c93">Back to the menu</button>';
+ say(o.say||o.line);$('again').onclick=o.again;$('tomenu').onclick=showMenu;}
+voiceOn=store.get('voice',true);
+
+
+/* Words split into their sounds (graphemes). Pictures are emoji. */
+const SETS={
+ cvc:[['cat','🐱',['c','a','t']],['dog','🐶',['d','o','g']],['sun','☀️',['s','u','n']],['bus','🚌',['b','u','s']],['pig','🐷',['p','i','g']],['hen','🐔',['h','e','n']],['fox','🦊',['f','o','x']],['bed','🛏️',['b','e','d']],['bat','🦇',['b','a','t']],['web','🕸️',['w','e','b']],['box','📦',['b','o','x']],['nut','🥜',['n','u','t']],['van','🚐',['v','a','n']],['ten','🔟',['t','e','n']],['map','🗺️',['m','a','p']],['pen','🖊️',['p','e','n']],['bug','🐛',['b','u','g']]],
+ pairs:[['ship','🚢',['sh','i','p']],['fish','🐟',['f','i','sh']],['chick','🐤',['ch','i','ck']],['moon','🌙',['m','oo','n']],['rain','🌧️',['r','ai','n']],['boat','⛵',['b','oa','t']],['light','💡',['l','igh','t']],['car','🚗',['c','ar']],['fork','🍴',['f','or','k']],['sheep','🐑',['sh','ee','p']],['coin','🪙',['c','oi','n']],['cow','🐄',['c','ow']],['shell','🐚',['sh','e','ll']],['duck','🦆',['d','u','ck']],['king','👑',['k','i','ng']],['ring','💍',['r','i','ng']],['bee','🐝',['b','ee']],['goat','🐐',['g','oa','t']],['book','📖',['b','oo','k']],['corn','🌽',['c','or','n']]],
+ big:[['frog','🐸',['f','r','o','g']],['drum','🥁',['d','r','u','m']],['crab','🦀',['c','r','a','b']],['tent','⛺',['t','e','n','t']],['hand','✋',['h','a','n','d']],['milk','🥛',['m','i','l','k']],['snail','🐌',['s','n','ai','l']],['train','🚆',['t','r','ai','n']],['plant','🌱',['p','l','a','n','t']],['star','⭐',['s','t','ar']],['tree','🌳',['t','r','ee']],['clock','🕰️',['c','l','o','ck']],['flag','🚩',['f','l','a','g']],['spoon','🥄',['s','p','oo','n']],['sleep','😴',['s','l','ee','p']]]};
+const EXTRA=['a','e','i','o','u','s','t','p','n','m','d','g','b','sh','ch','ee','oo','ai','ar','or','ck','ng','l','r'];
+const MODES=[
+ {id:'cvc',em:'🐱',name:'Little words',desc:'cat, dog, sun',col:'#2bb24c'},
+ {id:'pairs',em:'🚢',name:'Sound buddies',desc:'ship, moon, light',col:'#3a86ff'},
+ {id:'big',em:'🐸',name:'Big munchy words',desc:'frog, train, plant',col:'#9b5de5'}];
+let G=null;
+function showMenu(){G=null;menuScreen({hero:'👾',title:'Feed the Word Monster',sub:'Build the word with the sound tiles and the monster gobbles it up!',modes:MODES,start,best:m=>{const b=store.get('best_'+m.id,0);return b?' · best '+b+'/10':'';}});}
+function monster(){return '<svg class="mon" id="mon" viewBox="0 0 200 180"><ellipse cx="100" cy="105" rx="90" ry="72" fill="#7b61ff"/><ellipse cx="100" cy="120" rx="58" ry="40" fill="#9d8cff"/>'+
+ '<circle cx="70" cy="62" r="24" fill="#fff"/><circle cx="130" cy="62" r="24" fill="#fff"/><circle cx="74" cy="66" r="11" fill="#1a1a2e"/><circle cx="126" cy="66" r="11" fill="#1a1a2e"/>'+
+ '<path d="M40 40 L30 8 L58 30Z M160 40 L170 8 L142 30Z" fill="#ffd400"/><g class="mouth"><path d="M62 112 Q100 150 138 112 Z" fill="#3a0a3a"/><path d="M72 112 L80 124 L88 112 M112 112 L120 124 L128 112" fill="#fff"/></g></svg>';}
+function start(m){GEN++;G={m,list:shuffle(SETS[m.id]).slice(0,10),q:0,score:0,tries:0};ask();}
+function ask(){const [word,pic,parts]=G.list[G.q];G.got=[];G.tries=0;
+ const opts=shuffle(parts.concat(shuffle(EXTRA.filter(x=>!parts.includes(x))).slice(0,2)));
+ app.innerHTML=topBar('Word '+(G.q+1)+' of 10','⭐ '+G.score)+'<div class="stage">'+monster()+'<div class="pic" id="pic" title="Hear it again">'+pic+'</div></div>'+
+ '<div class="slots" id="slots">'+parts.map((p,i)=>'<div class="slot" id="s'+i+'"></div>').join('')+'</div><div class="tiles" id="tiles"></div><div class="msg" id="msg">Tap the sounds in order</div>';
+ wireHome();const T=$('tiles');
+ opts.forEach(o=>{const b=document.createElement('button');b.className='tile';b.textContent=o;b.onclick=()=>tap(b,o);T.appendChild(b);});
+ $('pic').onclick=()=>say(word);say(word);}
+function tap(b,o){const [word,pic,parts]=G.list[G.q],i=G.got.length;if(i>=parts.length)return;
+ if(o===parts[i]){sTap();b.classList.add('used');G.got.push(o);const s=$('s'+i);s.textContent=o;s.classList.add('full','pop');
+  if(G.got.length===parts.length){if(G.tries===0)G.score++;sGood();const mn=$('mon');mn.classList.add('eat');$('msg').textContent='Yum! '+word+'!';say(parts.join(' ').length<1?word:word+'! Yum!');
+   after(()=>{$('pic').textContent='😋';},350);after(()=>{G.q++;if(G.q<10)ask();else end();},1700);}}
+ else{G.tries++;sBad();b.classList.add('shake');after(()=>b.classList.remove('shake'),400);$('msg').textContent='Not that one. Say the word slowly: '+word;say(word);}}
+function end(){const m=G.m,s=G.score;if(s>store.get('best_'+m.id,0))store.set('best_'+m.id,s);
+ resultScreen({title:'The monster is full!',emoji:'👾😋',big:s+'/10',line:s>=8?'What a word builder!':'Good munching! Try again to feed it even more.',extra:'⭐ = built first time',good:s>=7,again:()=>start(m)});}
+onHome=()=>{G=null;};
+showMenu();
+
+</script>
+</body>
+</html>

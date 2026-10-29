@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Drum Copycat</title>
+<style>
+:root{--bg:linear-gradient(180deg,#2d0a0a,#7a1f1f)}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg,linear-gradient(180deg,#0b0a2a,#2a1b5e));background-attachment:fixed;color:#fff;font-family:Arial,Helvetica,sans-serif;-webkit-user-select:none;user-select:none}
+#app{position:relative;max-width:760px;margin:0 auto;padding:14px 14px 40px;display:flex;flex-direction:column;align-items:center;gap:12px;min-height:100vh}
+h1{margin:4px 0 0;font-size:clamp(30px,7vw,48px);color:#ffd400;text-align:center;line-height:1.05;text-shadow:0 3px 0 #0005}
+.sub{margin:0;text-align:center;font-size:clamp(16px,3.8vw,21px);opacity:.95}
+.hero{font-size:clamp(60px,15vw,96px);line-height:1;margin-top:6px}
+.btn{font:inherit;font-weight:700;font-size:clamp(18px,4.4vw,24px);color:#fff;background:#3a86ff;border:none;border-radius:22px;padding:15px 18px;width:100%;cursor:pointer;box-shadow:0 5px 0 #0004;touch-action:manipulation}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #0004}
+.btn small{display:block;font-weight:400;font-size:.68em;opacity:.95;margin-top:2px}
+.modes{display:grid;gap:12px;width:100%}
+.mode{display:flex;align-items:center;gap:14px;text-align:left}
+.mode .em{font-size:36px;line-height:1}
+.top{display:flex;width:100%;justify-content:space-between;align-items:center;gap:8px}
+.pill{background:#ffffff26;border-radius:999px;padding:8px 14px;font-weight:700;font-size:18px;white-space:nowrap}
+.home{background:#ff8c42;width:auto;padding:10px 16px;font-size:18px}
+.msg{min-height:30px;font-size:clamp(18px,4.4vw,22px);font-weight:700;text-align:center}
+.result{background:#ffffff1c;border-radius:24px;padding:20px;width:100%;text-align:center}
+.big{font-size:clamp(44px,11vw,64px);font-weight:800;color:#ffd400}
+.burst{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:50}
+.burst span{position:absolute;top:-40px;font-size:30px;animation:fall 2.4s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{translate:0}25%{translate:-8px}75%{translate:8px}}
+.pop{animation:pop .35s}
+.shake{animation:shake .35s}
+
+
+.kit{display:grid;grid-template-columns:1fr 1fr;gap:14px;width:100%;max-width:520px}
+.drum{aspect-ratio:1;border-radius:50%;border:8px solid #fff3;font-size:clamp(40px,12vw,70px);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 0 #0006;transition:transform .08s,filter .08s;touch-action:manipulation;font-family:inherit}
+.drum.lit{transform:scale(1.08);filter:brightness(1.5);border-color:#fff}
+.d0{background:radial-gradient(circle,#ff6b6b,#c1121f)}.d1{background:radial-gradient(circle,#ffd43b,#e09f3e)}.d2{background:radial-gradient(circle,#4dabf7,#1864ab)}.d3{background:radial-gradient(circle,#69db7c,#2b8a3e)}
+.big1{width:min(80vw,360px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#ff8787,#c1121f);border:10px solid #fff4;font-size:90px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 0 #0006;cursor:pointer;touch-action:manipulation}
+.big1.lit{transform:scale(1.06);filter:brightness(1.4)}
+.dots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:520px}
+.dot{width:20px;height:20px;border-radius:50%;background:#ffffff33}
+.dot.now{background:#fff}.dot.hit{background:#2bb24c}.dot.off{background:#ff6b6b}
+.alien{font-size:60px;transition:transform .1s}
+.alien.bop{transform:translateY(-14px)}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const GAME_KEY='drumcopycat';
+
+const app=document.getElementById('app');
+let voiceOn=true,AC=null;
+function audioInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();}
+function tone(f,d,type,vol,delay,slideTo){if(!AC)return;const t=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slideTo)o.frequency.exponentialRampToValueAtTime(slideTo,t+d);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol||0.15,t+0.01);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+d+0.05);}
+function noise(d,vol,hp,delay){if(!AC)return;const t=AC.currentTime+(delay||0),n=Math.floor(AC.sampleRate*d),b=AC.createBuffer(1,n,AC.sampleRate),c=b.getChannelData(0);for(let i=0;i<n;i++)c[i]=(Math.random()*2-1)*(1-i/n);const s=AC.createBufferSource();s.buffer=b;const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=hp||1000;const g=AC.createGain();g.gain.value=vol||0.2;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);}
+function sGood(){[523,659,784].forEach((f,i)=>tone(f,0.2,'triangle',0.14,i*0.07));}
+function sBad(){tone(220,0.25,'sawtooth',0.07);}
+function sTap(){tone(660,0.07,'sine',0.08);}
+function sWin(){[523,659,784,1047,784,1047].forEach((f,i)=>tone(f,0.28,'triangle',0.14,i*0.12));}
+function say(t){if(!voiceOn)return;try{const s=speechSynthesis;s.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';u.rate=0.92;u.pitch=1.1;const v=s.getVoices().find(x=>/en[-_]GB/i.test(x.lang));if(v)u.voice=v;s.speak(u);}catch(e){}}
+const store={get(k,d){try{const v=localStorage.getItem(GAME_KEY+'_'+k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(GAME_KEY+'_'+k,JSON.stringify(v));}catch(e){}}};
+let GEN=0;/* each new screen gets a new number, so old timers from a finished game are ignored */
+function after(f,ms){const g=GEN;return setTimeout(()=>{if(g===GEN)f();},ms);}
+function rand(a){return a[Math.floor(Math.random()*a.length)];}
+function rint(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function $(id){return document.getElementById(id);}
+function confetti(set){const b=document.createElement('div');b.className='burst';const em=set||['⭐','🎉','✨','🌟','🎈'];for(let i=0;i<34;i++){const s=document.createElement('span');s.textContent=rand(em);s.style.left=Math.random()*100+'%';s.style.animationDelay=Math.random()*0.8+'s';b.appendChild(s);}document.body.appendChild(b);setTimeout(()=>b.remove(),3600);}
+function praise(){return rand(['Brilliant!','Well done!','Amazing!','Super!','Fantastic!','You did it!','Great job!']);}
+let onHome=null;
+function topBar(mid,right){return '<div class="top"><button class="btn home" id="home">⌂ Menu</button>'+(mid?'<span class="pill" id="mid">'+mid+'</span>':'')+(right!==undefined?'<span class="pill" id="right">'+right+'</span>':'')+'</div>';}
+function wireHome(){const h=$('home');if(h)h.onclick=()=>{try{speechSynthesis.cancel();}catch(e){}if(onHome)onHome();showMenu();};}
+function menuScreen(cfg){GEN++;app.innerHTML='<div class="hero">'+cfg.hero+'</div><h1>'+cfg.title+'</h1><p class="sub">'+cfg.sub+'</p><div class="modes" id="modes"></div><button class="btn" id="voice" style="background:#6a4c93">Voice: '+(voiceOn?'on':'off')+'</button>';
+ const m=$('modes');cfg.modes.forEach(md=>{const b=document.createElement('button');b.className='btn mode';b.style.background=md.col||'#3a86ff';b.innerHTML='<span class="em">'+md.em+'</span><span>'+md.name+'<small>'+md.desc+(cfg.best?cfg.best(md):'')+'</small></span>';b.onclick=()=>{audioInit();cfg.start(md);};m.appendChild(b);});
+ $('voice').onclick=()=>{voiceOn=!voiceOn;store.set('voice',voiceOn);menuScreen(cfg);};}
+function resultScreen(o){GEN++;sWin();if(o.good)confetti(o.confetti);app.innerHTML='<h1>'+o.title+'</h1><div class="result"><div style="font-size:72px">'+o.emoji+'</div><div class="big">'+o.big+'</div><p class="sub">'+o.line+'</p>'+(o.extra?'<p class="sub">'+o.extra+'</p>':'')+'</div><button class="btn" id="again" style="background:#2bb24c">Play again</button><button class="btn" id="tomenu" style="background:#6a4c93">Back to the menu</button>';
+ say(o.say||o.line);$('again').onclick=o.again;$('tomenu').onclick=showMenu;}
+voiceOn=store.get('voice',true);
+
+
+const PADS=[{e:'🥁',name:'drum'},{e:'🔔',name:'bell'},{e:'🪘',name:'bongo'},{e:'💥',name:'crash'}];
+function play(i){if(!AC)return;
+ if(i===0){tone(160,0.35,'sine',0.5,0,45);noise(0.05,0.15,800);}
+ else if(i===1){tone(540,0.35,'square',0.06);tone(800,0.35,'square',0.05);}
+ else if(i===2){tone(260,0.22,'sine',0.35,0,180);}
+ else{noise(0.5,0.25,5000);}}
+const MODES=[
+ {id:'copy',em:'🥁',name:'Copy my beat',desc:'Listen, watch, then play it back. It gets longer!',col:'#e63946'},
+ {id:'keep',em:'👽',name:'Keep the beat: slow',desc:'Tap the big drum in time with the dancing alien',bpm:80,col:'#3a86ff'},
+ {id:'keepf',em:'🕺',name:'Keep the beat: fast',desc:'A speedier dance!',bpm:110,col:'#9b5de5'}];
+let G=null,timers=[];
+function clearT(){timers.forEach(clearTimeout);timers=[];}
+function later(f,ms){timers.push(setTimeout(f,ms));}
+function showMenu(){clearT();G=null;menuScreen({hero:'🥁👽',title:'Drum Copycat',sub:'Be the drummer! Copy the beats and keep in time.',modes:MODES,start,best:m=>{const b=store.get('best_'+m.id,0);return b?(m.id==='copy'?' · longest beat '+b:' · best '+b+'%'):'';}});}
+function start(m){GEN++;clearT();if(m.id==='copy'){G={m,seq:[rint(0,3),rint(0,3)],i:0,listen:true};copyScreen();later(playSeq,900);}else keepStart(m);}
+/* ---------- copy the beat (memory) ---------- */
+function copyScreen(){app.innerHTML=topBar('Beat length '+G.seq.length,'🥁')+'<div class="msg" id="msg">Listen and watch...</div><div class="kit">'+PADS.map((p,i)=>'<button class="drum d'+i+'" id="p'+i+'">'+p.e+'</button>').join('')+'</div>';
+ wireHome();PADS.forEach((p,i)=>{$('p'+i).onpointerdown=e=>{e.preventDefault();audioInit();hitPad(i);};});}
+function flash(i,ms){const el=$('p'+i);if(!el)return;el.classList.add('lit');play(i);later(()=>{if(el)el.classList.remove('lit');},ms||260);}
+function playSeq(){if(!G)return;G.listen=true;G.i=0;$('msg').textContent='Listen and watch...';const gap=Math.max(380,620-G.seq.length*20);
+ G.seq.forEach((p,k)=>later(()=>flash(p),k*gap));later(()=>{if(!G)return;G.listen=false;$('msg').textContent='Your turn! Play it back.';},G.seq.length*gap+100);}
+function hitPad(i){if(!G||G.m.id!=='copy')return;flash(i,180);if(G.listen)return;
+ if(i===G.seq[G.i]){G.i++;if(G.i===G.seq.length){G.listen=true;const len=G.seq.length;if(len>store.get('best_copy',0))store.set('best_copy',len);
+   $('msg').textContent=praise()+' '+len+' beats!';later(()=>{sGood();},250);G.seq.push(rint(0,3));later(()=>{if(!G)return;const mid=$('mid');if(mid)mid.textContent='Beat length '+G.seq.length;playSeq();},1600);}}
+ else{G.listen=true;sBad();const len=G.seq.length-1;later(()=>{if(!G)return;resultScreen({title:'Great drumming!',emoji:'🥁🎶',big:len+' beats',line:len>=5?'What a memory!':'Have another go and beat your record!',extra:'Your record: '+store.get('best_copy',0)+' beats',good:len>=5,confetti:['🥁','🎵','🎶','⭐'],again:()=>start(G.m)});},500);}}
+/* ---------- keep the beat (timing) ---------- */
+function keepStart(m){const beat=60000/m.bpm;G={m,beat,n:16,count:0,hits:[],t0:0,res:[]};
+ app.innerHTML=topBar('Beat 0 of 16','🎯')+'<div class="alien" id="al">👽</div><div class="msg" id="msg">Watch the alien bounce. Tap the drum on every bounce!</div><div class="big1" id="big">🥁</div><div class="dots" id="dots">'+Array.from({length:16},(_,i)=>'<span class="dot" id="b'+i+'"></span>').join('')+'</div>';
+ wireHome();say('Listen to the beat. Join in when the dots start!');
+ $('big').onpointerdown=e=>{e.preventDefault();audioInit();const b=$('big');b.classList.add('lit');setTimeout(()=>b&&b.classList.remove('lit'),90);play(0);if(G&&G.t0)G.hits.push(performance.now());};
+ /* 4 count-in clicks, then 16 beats to tap along with */
+ const t0=performance.now()+800;G.t0=t0+4*beat;
+ for(let k=0;k<20;k++)later(()=>{if(!G)return;tone(k<4?1200:900,0.05,'square',0.06);const al=$('al');if(al){al.classList.add('bop');setTimeout(()=>al&&al.classList.remove('bop'),120);}
+  if(k>=4){const d=$('b'+(k-4));if(d)d.classList.add('now');const mid=$('mid');if(mid)mid.textContent='Beat '+(k-3)+' of 16';}},t0-performance.now()+k*beat);
+ later(scoreKeep,t0-performance.now()+20*beat+300);}
+function scoreKeep(){if(!G)return;const win=Math.min(160,G.beat*0.25);let onBeat=0;
+ for(let k=0;k<16;k++){const bt=G.t0+k*G.beat;const hit=G.hits.some(h=>Math.abs(h-bt)<=win);if(hit)onBeat++;const d=$('b'+k);if(d)d.classList.add(hit?'hit':'off');}
+ const pct=Math.round(onBeat/16*100),m=G.m;if(pct>store.get('best_'+m.id,0))store.set('best_'+m.id,pct);
+ later(()=>{if(!G)return;resultScreen({title:'Dance over!',emoji:'👽🥁',big:pct+'% on the beat',line:pct>=75?'You kept the beat like a pro drummer!':pct>=40?'Good drumming! Listen for the click and tap with it.':'Try tapping with the alien\'s bounce!',extra:onBeat+' of 16 beats',good:pct>=60,confetti:['🥁','🎵','👽'],again:()=>start(m)});},1200);}
+onHome=()=>{clearT();G=null;};
+showMenu();
+
+</script>
+</body>
+</html>

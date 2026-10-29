@@ -41,7 +41,13 @@ button{font-family:inherit;cursor:pointer}
 .brand{line-height:1.05}
 .brand b{display:block;font-size:24px;font-weight:700;letter-spacing:-.01em}
 .brand span{font-size:14px;color:var(--mist)}
-.adult{margin-left:auto;display:flex;align-items:center;gap:8px;background:#ffffff14;border:2px solid #ffffff2e;color:var(--cream);border-radius:999px;padding:9px 16px;font-size:16px;font-weight:600}
+.music{margin-left:auto;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;background:#ffffff14;border:2px solid #ffffff2e;color:var(--cream);font-size:20px}
+.music[aria-pressed=false]{opacity:.55}
+.music[aria-pressed=false]::after{content:"";position:absolute;width:26px;height:3px;background:var(--cream);transform:rotate(-45deg);border-radius:2px}
+.music{position:relative}
+.music.playing svg{animation:note 1.6s ease-in-out infinite}
+@keyframes note{50%{transform:translateY(-3px) rotate(-6deg)}}
+.adult{margin-left:8px;display:flex;align-items:center;gap:8px;background:#ffffff14;border:2px solid #ffffff2e;color:var(--cream);border-radius:999px;padding:9px 16px;font-size:16px;font-weight:600}
 .adult svg{width:20px;height:20px}
 
 /* hero porthole */
@@ -155,6 +161,7 @@ footer a{color:var(--gold-2)}
  <header class="top">
   <img src="img/logo-192.png" alt="">
   <div class="brand"><b>Dexter's Games</b><span>from Dexter's Learning Tube</span></div>
+  <button class="music" id="musicBtn" aria-pressed="true" aria-label="Background music"><svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></button>
   <button class="adult" id="toGrown" aria-label="Grown-ups">
    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.4 4.2-6.5 8-6.5s7 2.1 8 6.5"/></svg><span>Grown-ups</span></button>
  </header>
@@ -241,6 +248,7 @@ footer a{color:var(--gold-2)}
 <script>
 const WORLDS=[
  {id:'all',name:'All games',em:'✨',c:'#6b4fbf',d:'#3d2a80'},
+ {id:'arcade',name:'Arcade',em:'🕹️',c:'#ff5d8f',d:'#b02a5e'},
  {id:'rockets',name:'Rockets and robots',em:'🚀',c:'#7a5ae0',d:'#4a2fa3'},
  {id:'monsters',name:'Monsters and stories',em:'👾',c:'#e0567a',d:'#a02e52'},
  {id:'puzzles',name:'Puzzles, fish and trains',em:'🧩',c:'#2ba6b8',d:'#17707e'},
@@ -251,16 +259,26 @@ const WORLDS=[
  {id:'animals',name:'Animals',em:'🐾',c:'#c98b3a',d:'#8a5a1c'},
  {id:'vehicles',name:'Vehicles',em:'🚒',c:'#d9443a',d:'#932219'}];
 const GAMES=[
- ['rocket-race','Rocket Race','🛸','rockets','Spin the wheel and beat the alien to the finish',1],
- ['robo-snack','Robo Snack','🤖','rockets','Steer the robot to the cookie',1],
- ['star-catcher','Star Catcher','🌟','rockets','Catch what the sign says, dodge the black holes',1],
- ['word-monster','Feed the Word Monster','👾','monsters','Build words for a hungry monster',1],
- ['letter-trails','Magic Letter Trails','🪄','monsters','Follow the sparkly trails',1],
- ['story-shuffle','Story Shuffle','📚','monsters','Fix the mixed-up picture stories',1],
- ['shape-puzzles','Shape Shifter Puzzles','🧩','puzzles','Turn and fit shapes to make a rocket, fish and more',1],
- ['pattern-train','Pattern Train','🚂','puzzles','What comes next on the train?',1],
- ['fish-tank','Fish Tank Dash','🐠','puzzles','Quick! Which tank has more fish?',1],
- ['drum-copycat','Drum Copycat','🥁','drums','Copy the beats and dance with the alien',1],
+ ['bubble-pop','Bubble Pop Party','🫧','arcade','Pop bubbles, grab rainbows and freeze time',1],
+ ['star-notes','Star Notes','🎹','arcade','Tap the falling stars to play real songs',1],
+ ['dino-dash','Dino Dash','🦖','arcade','Jump the rocks and grab the shiny eggs',1],
+ ['comet-flyer','Comet Flyer','🚀','arcade','Fly your rocket through the space gates',1],
+ ['fruit-swipe','Fruit Swipe','🍉','arcade','Slice the fruit, dodge the cactus',1],
+ ['sky-hopper','Sky Hopper','🌤️','arcade','Bounce Bobo up through the clouds to space',1],
+ ['turbo-lanes','Turbo Lanes','🏎️','arcade','Dodge the traffic and collect the coins',1],
+ ['tower-stack','Sky Tower','🏙️','arcade','Stack the floors as high as you can',1],
+ ['monster-match','Monster Match','👾','arcade','Flip the cards and find the monster pairs',1],
+ ['magic-paint','Magic Paint','🎨','arcade','Paint with rainbows, glitter and stamps',1],
+ ['rocket-race','Rocket Race','🛸','rockets','Spin the wheel and beat the alien to the finish'],
+ ['robo-snack','Robo Snack','🤖','rockets','Steer the robot to the cookie'],
+ ['star-catcher','Star Catcher','🌟','rockets','Catch what the sign says, dodge the black holes'],
+ ['word-monster','Feed the Word Monster','👾','monsters','Build words for a hungry monster'],
+ ['letter-trails','Magic Letter Trails','🪄','monsters','Follow the sparkly trails'],
+ ['story-shuffle','Story Shuffle','📚','monsters','Fix the mixed-up picture stories'],
+ ['shape-puzzles','Shape Shifter Puzzles','🧩','puzzles','Turn and fit shapes to make a rocket, fish and more'],
+ ['pattern-train','Pattern Train','🚂','puzzles','What comes next on the train?'],
+ ['fish-tank','Fish Tank Dash','🐠','puzzles','Quick! Which tank has more fish?'],
+ ['drum-copycat','Drum Copycat','🥁','drums','Copy the beats and dance with the alien'],
  ['cosmic-quiz','Cosmic Quiz','🪐','space','Planets, stars, moons and black holes'],
  ['galaxy-treasure-hunt','Galaxy Treasure Hunt','🗺️','space','Fly planet to planet on missions'],
  ['planet-number-run','Planet Number Run','🌍','space','Double up from asteroids to the universe'],
@@ -305,10 +323,10 @@ renderRecent();
 
 /* player */
 let open=null;
-function openGame(id,fromHash){const g=G[id];if(!g)return;open=id;$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';
+function openGame(id,fromHash){const g=G[id];if(!g)return;open=id;$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';Music.level(0.45);
  const r=[id,...store.get('recent',[]).filter(x=>x!==id)].slice(0,6);store.set('recent',r);
  if(!fromHash)history.pushState({g:id},'','#play='+id);setTimeout(()=>$('back').focus(),50);}
-function closeGame(){if(!open)return;open=null;$('player').classList.remove('on');$('frame').src='about:blank';document.body.style.overflow='';renderRecent();}
+function closeGame(){if(!open)return;open=null;$('player').classList.remove('on');$('frame').src='about:blank';document.body.style.overflow='';renderRecent();Music.level(1);}
 $('back').onclick=()=>{if(history.state&&history.state.g)history.back();else{closeGame();history.replaceState(null,'',location.pathname);}};
 addEventListener('popstate',()=>{const m=location.hash.match(/^#play=(.+)$/);if(m)openGame(m[1],true);else closeGame();});
 addEventListener('keydown',e=>{if(e.key==='Escape'&&open)$('back').click();});
@@ -327,6 +345,36 @@ else if(isAndroid){$('iosSteps').hidden=true;$('androidSteps').hidden=false;}
 let deferred=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('installBtn').hidden=false;$('iosSteps').hidden=true;$('androidSteps').hidden=true;});
 $('installBtn').onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice;deferred=null;$('installBtn').hidden=true;};
+
+/* background music: a gentle music-box lullaby in 3/4, composed for this app and played live with Web Audio */
+const Music=(()=>{let ac=null,out=null,lvl=1,on=true,timer=null,next=0,step=0;try{on=localStorage.getItem('dg_music')!=='off';}catch(e){}
+ const BPM=72,BEAT=60/BPM;
+ const N=n=>{const m=n.match(/([A-G])(\d)/);return 440*Math.pow(2,(12*(+m[2]+1)+{C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]-69)/12);};
+ const CH=[['C3','E4','G4','C5'],['A2','C4','E4','A4'],['F2','A3','C4','F4'],['G2','B3','D4','G4'],['C3','E4','G4','C5'],['E2','B3','E4','G4'],['F2','A3','C4','F4'],['C3','G3','E4','C5']];
+ const MEL=[['E5',2,'D5',1],['C5',3],['A4',2,'C5',1],['D5',3],['E5',1,'G5',1,'E5',1],['D5',2,'B4',1],['C5',1,'A4',2],['C5',3]];
+ const MEL2=[['G5',2,'E5',1],['E5',2,'C5',1],['F5',1,'E5',1,'C5',1],['B4',3],['C5',1,'E5',1,'G5',1],['G5',2,'E5',1],['A5',1,'G5',1,'F5',1],['E5',3]];
+ function reverb(){const len=ac.sampleRate*2.8,b=ac.createBuffer(2,len,ac.sampleRate);for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}const cv=ac.createConvolver();cv.buffer=b;return cv;}
+ let dry,wet;
+ function init(){if(ac)return;try{ac=new(window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
+  out=ac.createGain();out.gain.value=0;const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;dry=ac.createGain();dry.gain.value=0.8;wet=ac.createGain();wet.gain.value=0.45;const rv=reverb();
+  dry.connect(lp);wet.connect(rv);rv.connect(lp);lp.connect(out);out.connect(ac.destination);}
+ function note(f,t,d,type,vol,dest){const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.015);g.gain.exponentialRampToValueAtTime(0.0001,t+d);o.connect(g);g.connect(dry);g.connect(wet);o.start(t);o.stop(t+d+0.1);}
+ function box(f,t,vol){note(f,t,1.8,'sine',vol);note(f*2,t,0.6,'sine',vol*0.25);note(f*3.01,t,0.25,'triangle',vol*0.08);}
+ function pad(fs,t,d){fs.forEach(f=>{const o=ac.createOscillator(),g=ac.createGain();o.type='triangle';o.frequency.value=f;o.detune.value=Math.random()*8-4;g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(0.018,t+0.8);g.gain.linearRampToValueAtTime(0.0001,t+d+0.6);o.connect(g);g.connect(dry);g.connect(wet);o.start(t);o.stop(t+d+0.8);});}
+ function bar(i,t){const bar=i%8,cyc=Math.floor(i/8)%4,ch=CH[bar].map(N);
+  note(ch[0],t,BEAT*3,'sine',0.07);pad(ch.slice(1),t,BEAT*3);
+  [1,2,3,2,1,3].forEach((k,j)=>{if(cyc===0&&j%2)return;box(ch[k]*(j>2?1:1),t+j*BEAT/2,0.022);});
+  if(cyc===1||cyc===3){let tt=t;const m=(cyc===1?MEL:MEL2)[bar];for(let k=0;k<m.length;k+=2){box(N(m[k]),tt,0.05);tt+=m[k+1]*BEAT;}}}
+ function tick(){if(!ac)return;while(next<ac.currentTime+0.6){bar(step,next);step++;next+=BEAT*3;}}
+ function start(){init();if(!ac)return;if(ac.state==='suspended')ac.resume();if(!timer){next=ac.currentTime+0.15;timer=setInterval(tick,200);tick();}fade();}
+ function fade(){if(!ac)return;const t=ac.currentTime;out.gain.cancelScheduledValues(t);out.gain.setValueAtTime(out.gain.value,t);out.gain.linearRampToValueAtTime(on&&!document.hidden?0.55*lvl:0,t+(on?2.5:0.4));}
+ function set(v){on=v;try{localStorage.setItem('dg_music',v?'on':'off');}catch(e){}ui();if(v)start();else fade();}
+ function ui(){const b=document.getElementById('musicBtn');if(!b)return;b.setAttribute('aria-pressed',on);b.classList.toggle('playing',on&&!!timer);b.title=on?'Music on':'Music off';}
+ document.addEventListener('visibilitychange',()=>{if(!ac)return;if(document.hidden){fade();setTimeout(()=>{if(document.hidden)ac.suspend();},600);}else{ac.resume();fade();}});
+ return{first(){if(on)start();ui();},toggle(){set(!on);},level(v){lvl=v;fade();},ui};})();
+document.getElementById('musicBtn').onclick=e=>{e.stopPropagation();Music.toggle();};
+Music.ui();
+{let begun=false;const once=e=>{if(begun)return;begun=true;removeEventListener('pointerdown',once,true);removeEventListener('keydown',once,true);if(e.target&&e.target.closest&&e.target.closest('#musicBtn'))return;Music.first();};addEventListener('pointerdown',once,true);addEventListener('keydown',once,true);}
 
 /* offline */
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js');

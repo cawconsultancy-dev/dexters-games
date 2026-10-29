@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dexter's Cosmic Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-1: #0b0f2e;
+    --bg-2: #050714;
+    --panel: rgba(255,255,255,0.06);
+    --panel-border: rgba(255,255,255,0.14);
+    --text-primary: #f5f3ff;
+    --text-secondary: #a9b0d6;
+    --gold: #ffd166;
+    --teal: #4cc9f0;
+    --violet: #bd93ff;
+    --coral: #ff9366;
+    --mint: #45e0ad;
+    --miss: #ff6b6b;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-1: #0b0f2e; --bg-2: #050714; --text-primary: #f5f3ff;
+    }
+  }
+  :root[data-theme="dark"] { --bg-1: #0b0f2e; --bg-2: #050714; --text-primary: #f5f3ff; }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { height: 100%; margin: 0; scroll-padding-top: var(--safe-top); }
+  body {
+    font-family: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+    background: radial-gradient(ellipse at 50% -10%, #1a2154 0%, var(--bg-1) 45%, var(--bg-2) 100%);
+    color: var(--text-primary);
+    min-height: 100%;
+    overflow-x: hidden;
+    position: relative;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  #stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star { position: absolute; background: #fff; border-radius: 50%; animation: twinkle ease-in-out infinite; }
+  @keyframes twinkle { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .star { animation: none; opacity: 0.6; }
+  }
+
+  #app { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; padding: 20px 20px 40px; min-height: 100%; }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.35s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .home-header { text-align: center; padding: 18px 0 8px; }
+  .home-header h1 {
+    font-size: clamp(26px, 7.5vw, 38px);
+    font-weight: 800;
+    margin: 0 0 6px;
+    line-height: 1.1;
+    background: linear-gradient(135deg, var(--gold), var(--coral));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .home-header p { margin: 0; color: var(--text-secondary); font-size: 16px; font-weight: 500; }
+
+  .total-stars {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin: 14px auto 22px; padding: 8px 18px; width: fit-content;
+    background: var(--panel); border: 1px solid var(--panel-border); border-radius: 999px;
+    font-weight: 700; font-size: 15px;
+  }
+
+  .worlds { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  @media (min-width: 480px) { .worlds { grid-template-columns: 1fr 1fr; } }
+
+  .world-card {
+    position: relative;
+    border: 1px solid var(--panel-border);
+    background: var(--panel);
+    border-radius: 22px;
+    padding: 20px 18px;
+    text-align: left;
+    cursor: pointer;
+    color: inherit;
+    font-family: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .world-card:active { transform: scale(0.97); }
+  .world-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .world-card .emoji { font-size: 40px; display: block; margin-bottom: 8px; filter: drop-shadow(0 0 10px currentColor); }
+  .world-card h3 { margin: 0 0 4px; font-size: 19px; font-weight: 700; }
+  .world-card p { margin: 0; color: var(--text-secondary); font-size: 13.5px; font-weight: 500; }
+  .world-card .badge {
+    position: absolute; top: 14px; right: 14px; font-size: 12px; font-weight: 700;
+    padding: 4px 9px; border-radius: 999px; background: rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+  }
+  .world-card .badge.done { color: var(--bg-1); background: var(--gold); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: calc(var(--safe-top) + 10px) 4px 10px;
+    margin: -20px -20px 16px;
+    padding-left: 20px; padding-right: 20px;
+    background: linear-gradient(var(--bg-1) 60%, transparent);
+  }
+  .back-btn {
+    background: var(--panel); border: 1px solid var(--panel-border); color: var(--text-primary);
+    border-radius: 999px; padding: 8px 14px; font-family: inherit; font-weight: 700; font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .star-count { display: flex; align-items: center; gap: 6px; font-weight: 700; font-size: 14px; }
+
+  .progress-dots { display: flex; gap: 6px; justify-content: center; margin: 4px 0 22px; flex-wrap: wrap; }
+  .progress-dots span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.18); transition: background 0.2s; }
+  .progress-dots span.filled { background: var(--world-color, var(--gold)); }
+  .progress-dots span.current { outline: 2px solid var(--world-color, var(--gold)); outline-offset: 2px; }
+
+  .question-card {
+    background: var(--panel); border: 1px solid var(--panel-border); border-radius: 24px;
+    padding: 26px 22px; text-align: center; margin-bottom: 18px;
+  }
+  .world-tag {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700;
+    color: var(--world-color, var(--gold)); margin-bottom: 10px;
+  }
+  .question-text { font-size: clamp(18px, 5vw, 23px); font-weight: 700; line-height: 1.3; margin: 0 0 14px; }
+  .speak-btn {
+    background: transparent; border: 1.5px solid var(--panel-border); color: var(--text-secondary);
+    border-radius: 999px; padding: 7px 14px; font-family: inherit; font-weight: 600; font-size: 13px;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .speak-btn:active { transform: scale(0.96); }
+
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .option-btn {
+    background: var(--panel); border: 2px solid var(--panel-border); color: var(--text-primary);
+    border-radius: 18px; padding: 15px 18px; font-family: inherit; font-size: 16px; font-weight: 600;
+    text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px;
+    transition: transform 0.12s ease, border-color 0.15s ease, background 0.15s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .option-btn:active { transform: scale(0.98); }
+  .option-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+  .option-btn .letter {
+    flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+  }
+  .option-btn.correct { border-color: var(--mint); background: rgba(69,224,173,0.16); }
+  .option-btn.correct .letter { background: var(--mint); color: var(--bg-1); }
+  .option-btn.wrong { border-color: var(--miss); background: rgba(255,107,107,0.14); animation: shake 0.4s; }
+  .option-btn.disabled { opacity: 0.55; pointer-events: none; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  .feedback-msg {
+    text-align: center; font-weight: 700; font-size: 16px; min-height: 24px; margin-top: 14px;
+    color: var(--mint);
+  }
+  .feedback-msg.wrong { color: var(--miss); }
+  .fun-fact {
+    margin-top: 10px; font-size: 13.5px; color: var(--text-secondary); font-weight: 500;
+    background: rgba(255,255,255,0.05); border-radius: 12px; padding: 10px 14px; text-align: left;
+    display: none;
+  }
+  .fun-fact.show { display: block; }
+
+  .complete-card { text-align: center; padding: 30px 20px; }
+  .complete-emoji { font-size: 64px; display: block; margin-bottom: 10px; }
+  .complete-card h2 { font-size: 26px; margin: 0 0 6px; font-weight: 800; }
+  .complete-card p { color: var(--text-secondary); font-weight: 500; margin: 0 0 20px; }
+  .score-big { font-size: 40px; font-weight: 800; color: var(--gold); margin-bottom: 22px; }
+  .complete-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    font-family: inherit; font-weight: 700; font-size: 15px; border-radius: 999px;
+    padding: 12px 22px; cursor: pointer; border: none;
+  }
+  .btn-primary { background: linear-gradient(135deg, var(--gold), var(--coral)); color: var(--bg-1); }
+  .btn-secondary { background: var(--panel); border: 1px solid var(--panel-border); color: var(--text-primary); }
+  .btn:active { transform: scale(0.97); }
+
+  .confetti-piece {
+    position: fixed; top: -12px; z-index: 10; border-radius: 2px; pointer-events: none;
+    animation: fall linear forwards;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(420deg); opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+
+<div id="app">
+
+  <section class="screen active" id="screen-home">
+    <div class="home-header">
+      <h1>Dexter's Cosmic Quiz</h1>
+      <p>Pick a world to explore!</p>
+    </div>
+    <div class="total-stars">
+      <span>⭐</span>
+      <span id="total-stars-count">0</span>
+      <span style="color: var(--text-secondary); font-weight: 600;">stars collected</span>
+    </div>
+    <div class="worlds" id="worlds-list"></div>
+  </section>
+
+  <section class="screen" id="screen-question">
+    <div class="topbar">
+      <button class="back-btn" id="btn-back" aria-label="Back to worlds">← Worlds</button>
+      <div class="star-count"><span>⭐</span><span id="round-stars-count">0</span></div>
+    </div>
+    <div class="progress-dots" id="progress-dots"></div>
+    <div class="question-card">
+      <div class="world-tag" id="world-tag"></div>
+      <p class="question-text" id="question-text"></p>
+      <button class="speak-btn" id="btn-speak">🔊 Hear it again</button>
+    </div>
+    <div class="options" id="options-list"></div>
+    <p class="feedback-msg" id="feedback-msg"></p>
+    <div class="fun-fact" id="fun-fact"></div>
+  </section>
+
+  <section class="screen" id="screen-complete">
+    <div class="question-card complete-card">
+      <span class="complete-emoji" id="complete-emoji">🎉</span>
+      <h2 id="complete-title">World complete!</h2>
+      <p id="complete-sub">Great exploring.</p>
+      <div class="score-big" id="complete-score">0 / 0 ⭐</div>
+      <div class="complete-actions">
+        <button class="btn btn-primary" id="btn-replay">Play again</button>
+        <button class="btn btn-secondary" id="btn-home">Back to worlds</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var WORLDS = [
+    {
+      id: "solar",
+      name: "Solar System",
+      emoji: "🪐",
+      colorHex: "#4cc9f0",
+      blurb: "8 planets, order & facts",
+      questions: [
+        { q: "Which planet do we live on?", options: ["Mars", "Earth", "Venus", "Jupiter"], answer: 1, fact: "Earth is the only planet we know of that has life on it!" },
+        { q: "Which planet is closest to the Sun?", options: ["Mercury", "Earth", "Jupiter", "Venus"], answer: 0, fact: "Mercury is so close to the Sun that a year there is only 88 days long." },
+        { q: "Which planet has huge, beautiful rings?", options: ["Mars", "Saturn", "Earth", "Venus"], answer: 1, fact: "Saturn's rings are made of billions of pieces of ice and rock." },
+        { q: "Which is the biggest planet in our solar system?", options: ["Jupiter", "Mercury", "Earth", "Saturn"], answer: 0, fact: "Jupiter is so big that over 1,300 Earths could fit inside it." },
+        { q: "Which planet is known as the Red Planet?", options: ["Venus", "Neptune", "Mars", "Mercury"], answer: 2, fact: "Mars looks red because of rusty iron dust covering its surface." },
+        { q: "Which planet is the smallest?", options: ["Mercury", "Saturn", "Earth", "Neptune"], answer: 0, fact: "Mercury is only a little bigger than our Moon." },
+        { q: "Which planet is famous for being the hottest, under thick clouds?", options: ["Venus", "Neptune", "Earth", "Mars"], answer: 0, fact: "Venus is hotter than Mercury, even though it's further from the Sun!" },
+        { q: "How many planets are in our solar system?", options: ["7", "8", "10", "9"], answer: 1, fact: "Pluto used to be the 9th planet, but is now called a dwarf planet." }
+      ]
+    },
+    {
+      id: "stars",
+      name: "Stars & Constellations",
+      emoji: "⭐",
+      colorHex: "#ffd166",
+      blurb: "Stars, galaxies & the night sky",
+      questions: [
+        { q: "What is a star made of?", options: ["Rock", "Hot gas", "Ice", "Metal"], answer: 1, fact: "Stars are giant balls of glowing hot gas, mostly hydrogen." },
+        { q: "Which star is closest to Earth?", options: ["The Sun", "Sirius", "Polaris", "Alpha Centauri"], answer: 0, fact: "The Sun is actually a star — just a lot closer than all the others!" },
+        { q: "What do we call a group of stars that make a picture in the sky?", options: ["A galaxy", "A constellation", "A comet", "A nebula"], answer: 1, fact: "There are 88 official constellations that astronomers use." },
+        { q: "What's another name for the North Star?", options: ["Polaris", "Sirius", "Vega", "Rigel"], answer: 0, fact: "Polaris sits almost exactly above the North Pole, so it barely seems to move." },
+        { q: "What happens when a huge star runs out of fuel and explodes?", options: ["A sunrise", "A supernova", "An eclipse", "A meteor shower"], answer: 1, fact: "A supernova can shine brighter than an entire galaxy for a while!" },
+        { q: "What do we call millions of stars grouped together?", options: ["A galaxy", "A planet", "An asteroid", "A nebula"], answer: 0, fact: "Our galaxy alone has over 100 billion stars in it." },
+        { q: "What is the name of our own galaxy?", options: ["Andromeda", "The Milky Way", "Orion", "Triangulum"], answer: 1, fact: "On a clear dark night, you can sometimes see the Milky Way as a hazy band of light." },
+        { q: "Which shape do the stars of the Big Dipper make?", options: ["A saucepan", "A circle", "A triangle", "A square"], answer: 0, fact: "The Big Dipper is part of a bigger constellation called Ursa Major, the Great Bear." }
+      ]
+    },
+    {
+      id: "exo",
+      name: "Exoplanets",
+      emoji: "🌌",
+      colorHex: "#bd93ff",
+      blurb: "Worlds beyond our solar system",
+      questions: [
+        { q: "What is an exoplanet?", options: ["A moon", "A planet outside our solar system", "A type of star", "An asteroid"], answer: 1, fact: "Scientists have found over 5,000 exoplanets so far!" },
+        { q: "What do scientists mostly use to find far-away planets?", options: ["Telescopes", "Binoculars", "Magnifying glasses", "Microscopes"], answer: 0, fact: "Special space telescopes can spot tiny dips in starlight when a planet passes by." },
+        { q: "What do we call the area around a star where liquid water could exist?", options: ["The danger zone", "The habitable zone", "The ice zone", "The hot zone"], answer: 1, fact: "It's sometimes nicknamed the 'Goldilocks zone' — not too hot, not too cold!" },
+        { q: "The star TRAPPIST-1 has a whole family of rocky planets around it — about how many?", options: ["2", "7", "20", "100"], answer: 1, fact: "Several of TRAPPIST-1's planets are close to the size of Earth." },
+        { q: "What do we call a planet that might be able to support life?", options: ["A gas giant", "A habitable planet", "A dwarf planet", "An ice giant"], answer: 1, fact: "Scientists look for rocky planets with water and the right temperature." },
+        { q: "Which space telescope was launched to hunt for exoplanets by watching starlight?", options: ["Kepler", "A rover", "A satellite dish", "Hubble"], answer: 0, fact: "The Kepler telescope discovered thousands of exoplanets during its mission." },
+        { q: "What is Proxima Centauri?", options: ["A comet", "The closest star to our Sun", "A moon of Mars", "A planet"], answer: 1, fact: "It even has its own exoplanet, called Proxima Centauri b!" }
+      ]
+    },
+    {
+      id: "explorers",
+      name: "Space Explorers",
+      emoji: "🚀",
+      colorHex: "#ff9366",
+      blurb: "Astronauts, rockets & missions",
+      questions: [
+        { q: "Who was the first person to walk on the Moon?", options: ["Neil Armstrong", "Tim Peake", "Yuri Gagarin", "Buzz Aldrin"], answer: 0, fact: "Neil Armstrong stepped onto the Moon on 20 July 1969." },
+        { q: "What do we call a vehicle that explores another planet's surface?", options: ["A rover", "A submarine", "A train", "A lander"], answer: 0, fact: "Rovers like Perseverance have been driving around and exploring Mars!" },
+        { q: "Which UK astronaut lived and worked on the International Space Station?", options: ["Tim Peake", "Neil Armstrong", "Buzz Aldrin", "Chris Hadfield"], answer: 0, fact: "Tim Peake even ran the London Marathon while orbiting Earth!" },
+        { q: "What do astronauts wear to breathe and stay safe in space?", options: ["A raincoat", "A spacesuit", "A cape", "A wetsuit"], answer: 1, fact: "Spacesuits protect astronauts from the freezing cold and give them air to breathe." },
+        { q: "What's the name of the space station where astronauts live and work?", options: ["The International Space Station", "Moon Base One", "Mars Base", "The Space Shuttle"], answer: 0, fact: "It orbits Earth about every 90 minutes — that's 16 sunrises a day!" },
+        { q: "What do we call the powerful push that sends a rocket into space?", options: ["Wind", "Thrust", "Steam", "Gravity"], answer: 1, fact: "Rocket engines burn fuel super fast to create huge amounts of thrust." },
+        { q: "Who was the first woman to travel into space?", options: ["Sally Ride", "Valentina Tereshkova", "Mae Jemison", "Amelia Earhart"], answer: 1, fact: "Valentina Tereshkova flew alone on Vostok 6 in 1963." }
+      ]
+    },
+    {
+      id: "moons",
+      name: "Moons",
+      emoji: "🌕",
+      colorHex: "#b8c6ff",
+      blurb: "Earth's Moon & moons of other planets",
+      questions: [
+        { q: "What do we call Earth's only natural moon?", options: ["The Moon", "Titan", "Europa", "Ganymede"], answer: 0, fact: "The Moon is about a quarter of the size of Earth." },
+        { q: "What causes the Moon to shine?", options: ["It makes its own light", "It reflects sunlight", "It's on fire", "Electricity"], answer: 1, fact: "The Moon has no light of its own — we're actually seeing sunlight bouncing off it." },
+        { q: "Which planet has the most moons in our solar system?", options: ["Earth", "Mars", "Saturn", "Mercury"], answer: 2, fact: "Saturn has more than 100 known moons — more than any other planet!" },
+        { q: "What do we call the changing shapes of the Moon we see through the month?", options: ["Moon phases", "Moon seasons", "Moon rings", "Moon spots"], answer: 0, fact: "It takes about 29.5 days for the Moon to go through all its phases." },
+        { q: "Which of Jupiter's moons might have an ocean hiding under its icy surface?", options: ["Titan", "Europa", "The Moon", "Phobos"], answer: 1, fact: "Scientists think Europa's hidden ocean could hold twice as much water as all of Earth's oceans." },
+        { q: "Which moon has thick orange clouds and lakes of liquid methane?", options: ["Titan", "The Moon", "Europa", "Deimos"], answer: 0, fact: "Titan is the only moon in our solar system with a thick atmosphere." },
+        { q: "What are Mars's two small moons called?", options: ["Phobos and Deimos", "Titan and Europa", "Luna and Selene", "Io and Callisto"], answer: 0, fact: "Phobos and Deimos are named after the Greek gods of fear and dread!" },
+        { q: "What causes a solar eclipse?", options: ["The Moon blocks the Sun", "The Sun blocks the Moon", "Earth blocks the Sun", "Clouds cover the Sun"], answer: 0, fact: "A total solar eclipse can only be seen from a small part of Earth at a time." }
+      ]
+    },
+    {
+      id: "blackholes",
+      name: "Black Holes",
+      emoji: "🌀",
+      colorHex: "#ff4d94",
+      blurb: "Gravity, event horizons & the unknown",
+      questions: [
+        { q: "What is a black hole?", options: ["A place with super strong gravity that pulls everything in", "A hole in the ground", "A dark planet", "An empty part of space with nothing in it"], answer: 0, fact: "Not even light can escape a black hole once it gets too close!" },
+        { q: "What do we call the edge of a black hole where nothing can escape?", options: ["Event horizon", "Black border", "Gravity line", "Dark ring"], answer: 0, fact: "Once anything crosses the event horizon, it can never come back out." },
+        { q: "How are most big black holes formed?", options: ["A giant star collapses at the end of its life", "Two moons crash together", "A planet cools down", "A comet explodes"], answer: 0, fact: "Only very massive stars can collapse into black holes when they run out of fuel." },
+        { q: "What is at the centre of most galaxies, including our Milky Way?", options: ["A supermassive black hole", "A giant moon", "A cluster of comets", "An empty space"], answer: 0, fact: "Our Milky Way's black hole is called Sagittarius A*." },
+        { q: "If no light can escape a black hole, how do scientists 'see' one?", options: ["By its effect on nearby stars and gas", "By flying a rocket inside it", "With a normal telescope, directly", "They can't detect them at all"], answer: 0, fact: "In 2019, scientists released the very first real image — of glowing gas around a black hole's shadow." },
+        { q: "What do we call a black hole as small as an atom but as heavy as a mountain?", options: ["A micro black hole", "A dwarf planet", "A comet", "A meteor"], answer: 0, fact: "Scientists think tiny black holes like this might have formed just after the Big Bang." },
+        { q: "What might happen to time if you got very close to a black hole?", options: ["It would seem to slow down", "It would speed up", "It would stop existing", "Nothing would change"], answer: 0, fact: "This is called time dilation — a real effect predicted by Einstein's theory of relativity." }
+      ]
+    }
+  ];
+
+  var CHEERS = ["Brilliant! 🎉", "You got it! ⭐", "Amazing! 🚀", "Super smart! 🌟", "That's it! 🎈", "Way to go! ✨"];
+
+  function shuffleArray(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function shuffledQuestion(q) {
+    var idxs = shuffleArray(q.options.map(function (_, i) { return i; }));
+    var newOptions = idxs.map(function (i) { return q.options[i]; });
+    var newAnswer = idxs.indexOf(q.answer);
+    return { q: q.q, options: newOptions, answer: newAnswer, fact: q.fact };
+  }
+
+  var state = { worldIndex: 0, qIndex: 0, roundStars: 0, wrongOnThis: false, progress: {}, sessionQuestions: [] };
+
+  function loadProgress() {
+    try {
+      var raw = localStorage.getItem("cosmic-quiz-progress");
+      state.progress = raw ? JSON.parse(raw) : {};
+    } catch (e) { state.progress = {}; }
+  }
+  function saveProgress() {
+    try { localStorage.setItem("cosmic-quiz-progress", JSON.stringify(state.progress)); }
+    catch (e) { /* storage unavailable — game still works this session */ }
+  }
+  function totalStars() {
+    var t = 0;
+    for (var k in state.progress) { if (state.progress[k] && state.progress[k].best) t += state.progress[k].best; }
+    return t;
+  }
+
+  function buildStarfield() {
+    var el = document.getElementById("stars");
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < 70; i++) {
+      var s = document.createElement("div");
+      s.className = "star";
+      var size = (Math.random() * 2 + 1).toFixed(1);
+      s.style.width = size + "px";
+      s.style.height = size + "px";
+      s.style.left = (Math.random() * 100) + "%";
+      s.style.top = (Math.random() * 100) + "%";
+      s.style.animationDuration = (2 + Math.random() * 3).toFixed(1) + "s";
+      s.style.animationDelay = (Math.random() * 3).toFixed(1) + "s";
+      frag.appendChild(s);
+    }
+    el.appendChild(frag);
+  }
+
+  function showScreen(id) {
+    var screens = document.querySelectorAll(".screen");
+    for (var i = 0; i < screens.length; i++) screens[i].classList.remove("active");
+    document.getElementById(id).classList.add("active");
+    window.scrollTo(0, 0);
+  }
+
+  function renderHome() {
+    document.getElementById("total-stars-count").textContent = totalStars();
+    var list = document.getElementById("worlds-list");
+    list.innerHTML = "";
+    WORLDS.forEach(function (w, idx) {
+      var prog = state.progress[w.id];
+      var card = document.createElement("button");
+      card.className = "world-card";
+      card.style.color = w.colorHex;
+      card.innerHTML =
+        '<span class="emoji">' + w.emoji + '</span>' +
+        '<h3 style="color: var(--text-primary);">' + w.name + '</h3>' +
+        '<p>' + w.blurb + '</p>' +
+        (prog ? '<span class="badge done">' + prog.best + '/' + w.questions.length + ' ⭐</span>' : '<span class="badge">New</span>');
+      card.addEventListener("click", function () { startWorld(idx); });
+      list.appendChild(card);
+    });
+  }
+
+  function startWorld(idx) {
+    state.worldIndex = idx;
+    state.qIndex = 0;
+    state.roundStars = 0;
+    state.sessionQuestions = shuffleArray(WORLDS[idx].questions.map(shuffledQuestion));
+    showScreen("screen-question");
+    renderQuestion();
+  }
+
+  function currentWorld() { return WORLDS[state.worldIndex]; }
+  function currentQuestion() { return state.sessionQuestions[state.qIndex]; }
+
+  function renderDots() {
+    var wrap = document.getElementById("progress-dots");
+    wrap.innerHTML = "";
+    wrap.style.setProperty("--world-color", currentWorld().colorHex);
+    state.sessionQuestions.forEach(function (_, i) {
+      var d = document.createElement("span");
+      if (i < state.qIndex) d.classList.add("filled");
+      if (i === state.qIndex) d.classList.add("current");
+      wrap.appendChild(d);
+    });
+  }
+
+  function renderQuestion() {
+    state.wrongOnThis = false;
+    var w = currentWorld();
+    var q = currentQuestion();
+    document.getElementById("round-stars-count").textContent = state.roundStars;
+    document.querySelector(".question-card").style.setProperty("--world-color", w.colorHex);
+    document.getElementById("world-tag").style.color = w.colorHex;
+    document.getElementById("world-tag").textContent = w.emoji + " " + w.name;
+    document.getElementById("question-text").textContent = q.q;
+    document.getElementById("feedback-msg").textContent = "";
+    document.getElementById("feedback-msg").className = "feedback-msg";
+    var fact = document.getElementById("fun-fact");
+    fact.textContent = ""; fact.classList.remove("show");
+    renderDots();
+
+    var opts = document.getElementById("options-list");
+    opts.innerHTML = "";
+    var letters = ["A", "B", "C", "D"];
+    q.options.forEach(function (opt, i) {
+      var btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = '<span class="letter">' + letters[i] + '</span><span>' + opt + '</span>';
+      btn.addEventListener("click", function () { selectAnswer(i, btn); });
+      opts.appendChild(btn);
+    });
+
+    speak(q.q);
+  }
+
+  function speak(text) {
+    try {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.pitch = 1.05;
+      window.speechSynthesis.speak(u);
+    } catch (e) { /* speech not available — text is still on screen */ }
+  }
+
+  function playTone(freqs) {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var t = ctx.currentTime;
+      freqs.forEach(function (f, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(0.0001, t + i * 0.11);
+        gain.gain.exponentialRampToValueAtTime(0.18, t + i * 0.11 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.11 + 0.22);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(t + i * 0.11);
+        osc.stop(t + i * 0.11 + 0.24);
+      });
+      setTimeout(function () { try { ctx.close(); } catch (e) {} }, 900);
+    } catch (e) { /* audio not available — visuals still play */ }
+  }
+
+  function selectAnswer(i, btn) {
+    var q = currentQuestion();
+    var allBtns = document.querySelectorAll(".option-btn");
+    if (i === q.answer) {
+      for (var j = 0; j < allBtns.length; j++) allBtns[j].classList.add("disabled");
+      btn.classList.add("correct");
+      var msg = document.getElementById("feedback-msg");
+      if (!state.wrongOnThis) {
+        state.roundStars++;
+        document.getElementById("round-stars-count").textContent = state.roundStars;
+        msg.textContent = CHEERS[Math.floor(Math.random() * CHEERS.length)];
+        playTone([523.25, 659.25, 783.99]);
+        spawnConfetti(currentWorld().colorHex);
+      } else {
+        msg.textContent = "That's it! ✅";
+        playTone([523.25, 659.25]);
+      }
+      msg.classList.remove("wrong");
+      var fact = document.getElementById("fun-fact");
+      fact.textContent = "💡 " + q.fact;
+      fact.classList.add("show");
+      setTimeout(nextQuestion, 1700);
+    } else {
+      btn.classList.add("wrong");
+      btn.classList.add("disabled");
+      state.wrongOnThis = true;
+      var m = document.getElementById("feedback-msg");
+      m.textContent = "Not quite — try again!";
+      m.classList.add("wrong");
+      playTone([220]);
+    }
+  }
+
+  function nextQuestion() {
+    if (state.qIndex < state.sessionQuestions.length - 1) {
+      state.qIndex++;
+      renderQuestion();
+    } else {
+      completeWorld();
+    }
+  }
+
+  function completeWorld() {
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    var w = currentWorld();
+    var total = state.sessionQuestions.length;
+    var prev = state.progress[w.id];
+    var best = prev ? Math.max(prev.best, state.roundStars) : state.roundStars;
+    state.progress[w.id] = { best: best };
+    saveProgress();
+
+    var pct = state.roundStars / total;
+    document.getElementById("complete-emoji").textContent = pct === 1 ? "🏆" : pct >= 0.6 ? "🎉" : "🚀";
+    document.getElementById("complete-title").textContent = pct === 1 ? "Perfect mission!" : w.name + " complete!";
+    document.getElementById("complete-sub").textContent =
+      pct === 1 ? "You got every single one right." : "Nice exploring out there.";
+    document.getElementById("complete-score").textContent = state.roundStars + " / " + total + " ⭐";
+    showScreen("screen-complete");
+    spawnConfetti(w.colorHex, 26);
+  }
+
+  function spawnConfetti(color, count) {
+    var n = count || 14;
+    for (var i = 0; i < n; i++) {
+      var p = document.createElement("div");
+      p.className = "confetti-piece";
+      var size = 6 + Math.random() * 6;
+      p.style.width = size + "px";
+      p.style.height = (size * 0.4) + "px";
+      p.style.left = (Math.random() * 100) + "vw";
+      p.style.background = Math.random() > 0.5 ? color : "#ffd166";
+      p.style.animationDuration = (1.6 + Math.random() * 1.2) + "s";
+      document.body.appendChild(p);
+      (function (el) { setTimeout(function () { el.remove(); }, 3200); })(p);
+    }
+  }
+
+  document.getElementById("btn-back").addEventListener("click", function () {
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    showScreen("screen-home");
+    renderHome();
+  });
+  document.getElementById("btn-speak").addEventListener("click", function () { speak(currentQuestion().q); });
+  document.getElementById("btn-replay").addEventListener("click", function () { startWorld(state.worldIndex); });
+  document.getElementById("btn-home").addEventListener("click", function () { showScreen("screen-home"); renderHome(); });
+
+  loadProgress();
+  buildStarfield();
+  renderHome();
+})();
+</script>
+</body>
+</html>

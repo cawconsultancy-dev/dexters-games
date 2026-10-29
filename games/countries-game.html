@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dexter's Countries Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FFFCF5; --ink:#232538; --card:#FFFFFF;
+    --coral:#FF6B5B; --marigold:#FFB627; --teal:#2EC4B6; --violet:#7B61FF; --grass:#43B75D; --pink:#FF8FB1;
+    --muted:#6B6D82;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); box-sizing:border-box;
+  }
+  :root:not([data-theme="light"]){ --bg:var(--cream); --fg:var(--ink); --card-bg:var(--card); --card-border:var(--ink); }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#1B1C2B; --fg:#FDF9EE; --card-bg:#262840; --card-border:#FDF9EE; }
+  }
+  :root[data-theme="dark"]{ --bg:#1B1C2B; --fg:#FDF9EE; --card-bg:#262840; --card-border:#FDF9EE; }
+  html,body{height:100%;} *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--fg); font-family:'Baloo 2', ui-rounded, 'Segoe UI', sans-serif; min-height:100%; display:flex; justify-content:center; overflow-x:hidden; }
+  #app{ width:100%; max-width:520px; padding:22px 18px calc(28px + env(safe-area-inset-bottom,0px)); display:flex; flex-direction:column; gap:18px; scroll-padding-top:env(safe-area-inset-top,0px); }
+
+  .pill-btn{ font-family:inherit; font-weight:700; font-size:1rem; color:var(--ink); border:3px solid var(--card-border); border-radius:999px; padding:12px 20px; cursor:pointer; background:var(--card-bg); box-shadow:5px 5px 0 var(--card-border); transition:transform .08s ease, box-shadow .08s ease; }
+  .pill-btn:active{ transform:translate(4px,4px); box-shadow:1px 1px 0 var(--card-border); }
+  .icon-btn{ width:44px; height:44px; border-radius:50%; border:3px solid var(--card-border); background:var(--card-bg); font-size:1.2rem; display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:3px 3px 0 var(--card-border); transition:transform .08s ease, box-shadow .08s ease; }
+  .icon-btn:active{ transform:translate(3px,3px); box-shadow:0 0 0 var(--card-border); }
+  h1,h2,h3{ margin:0; }
+
+  .menu-hero{ position:relative; height:150px; display:flex; align-items:center; justify-content:center; margin-bottom:-6px; }
+  .menu-hero .drift{ position:absolute; animation:drift 5.5s ease-in-out infinite; opacity:.97; }
+  .menu-hero svg{ display:block; }
+  .drift.d1{ top:0; left:4%; width:72px; animation-delay:.2s; }
+  .drift.d2{ top:10px; right:6%; width:66px; animation-delay:1.1s; }
+  .drift.d3{ bottom:-4px; left:22%; width:62px; animation-delay:.6s; }
+  .drift.d4{ bottom:4px; right:22%; width:66px; animation-delay:1.6s; }
+  @keyframes drift{ 0%,100%{ transform:translateY(0) rotate(0deg); } 50%{ transform:translateY(-10px) rotate(4deg); } }
+  .title-wrap{ text-align:center; }
+  .title-wrap h1{ font-size:2rem; font-weight:800; line-height:1.05; }
+  .title-wrap p{ margin:6px 0 0; color:var(--muted); font-weight:600; font-size:.95rem; }
+
+  .mode-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:6px; }
+  @media (max-width:380px){ .mode-grid{ grid-template-columns:1fr; } }
+  .mode-card{ border:3px solid var(--card-border); border-radius:22px; background:var(--card-bg); box-shadow:6px 6px 0 var(--card-border); padding:18px 14px; text-align:left; cursor:pointer; font-family:inherit; color:var(--fg); display:flex; flex-direction:column; gap:6px; transition:transform .08s ease, box-shadow .08s ease; }
+  .mode-card:active{ transform:translate(4px,4px); box-shadow:1px 1px 0 var(--card-border); }
+  .mode-card .emoji{ font-size:1.9rem; }
+  .mode-card .label{ font-weight:800; font-size:1.05rem; }
+  .mode-card .sub{ font-weight:600; font-size:.82rem; color:var(--muted); }
+  .mode-card.mixed{ grid-column:1 / -1; flex-direction:row; align-items:center; gap:14px; }
+  .mode-card.mixed .txt{ display:flex; flex-direction:column; gap:2px; }
+
+  .best-row{ display:flex; justify-content:center; gap:14px; font-weight:700; font-size:.78rem; color:var(--muted); flex-wrap:wrap; margin-top:2px; }
+  .best-row span b{ color:var(--fg); }
+
+  .topbar{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .stat{ font-weight:800; font-size:.95rem; display:flex; align-items:center; gap:6px; background:var(--card-bg); border:3px solid var(--card-border); border-radius:999px; padding:6px 14px; box-shadow:3px 3px 0 var(--card-border); }
+  .progress-dots{ display:flex; gap:5px; justify-content:center; flex-wrap:wrap; }
+  .progress-dots span{ width:10px; height:10px; border-radius:50%; background:var(--card-border); opacity:.25; }
+  .progress-dots span.done{ opacity:1; background:var(--grass); }
+  .progress-dots span.current{ opacity:1; background:var(--marigold); transform:scale(1.3); }
+
+  .shape-card{ position:relative; align-self:center; width:min(86vw,300px); height:min(70vw,230px); background:var(--card-bg); border:4px solid var(--card-border); border-radius:28px; box-shadow:7px 7px 0 var(--card-border); transform:rotate(-1.5deg); display:flex; align-items:center; justify-content:center; margin:4px 0; }
+  .shape-card svg{ width:86%; height:86%; animation:popin .32s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes popin{ 0%{ transform:scale(.55); opacity:0; } 100%{ transform:scale(1); opacity:1; } }
+  .shape-card.wrong-shake{ animation:shake .4s ease; }
+  @keyframes shake{ 0%,100%{ transform:rotate(-1.5deg) translateX(0); } 25%{ transform:rotate(-1.5deg) translateX(-8px); } 75%{ transform:rotate(-1.5deg) translateX(8px); } }
+
+  .prompt{ text-align:center; font-weight:800; font-size:1.15rem; margin-top:2px; }
+
+  .options{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:6px; }
+  .opt-btn{ font-family:inherit; font-weight:700; font-size:1.02rem; color:var(--ink); border:3px solid var(--ink); border-radius:18px; padding:16px 8px; cursor:pointer; box-shadow:5px 5px 0 var(--ink); min-height:64px; display:flex; align-items:center; justify-content:center; text-align:center; transition:transform .08s ease, box-shadow .08s ease; }
+  .opt-btn:active:not(.locked){ transform:translate(4px,4px); box-shadow:1px 1px 0 var(--ink); }
+  .opt-btn.c0{ background:var(--coral); } .opt-btn.c1{ background:var(--teal); } .opt-btn.c2{ background:var(--marigold); } .opt-btn.c3{ background:var(--violet); color:#fff; }
+  .opt-btn.correct{ background:var(--grass); color:#fff; outline:4px solid var(--ink); }
+  .opt-btn.incorrect{ background:#E24C4C; color:#fff; }
+  .opt-btn.dim{ opacity:.45; }
+
+  .next-wrap{ display:flex; justify-content:center; margin-top:4px; min-height:52px; }
+  .next-btn{ background:var(--fg); color:var(--bg); font-weight:800; font-size:1rem; border:3px solid var(--card-border); border-radius:999px; padding:12px 26px; cursor:pointer; box-shadow:5px 5px 0 var(--card-border); animation:popin .25s ease; }
+  .next-btn:active{ transform:translate(4px,4px); box-shadow:1px 1px 0 var(--card-border); }
+
+  .burst{ position:absolute; inset:0; pointer-events:none; overflow:visible; }
+  .burst span{ position:absolute; left:50%; top:50%; font-size:1.4rem; animation:fly .8s ease-out forwards; }
+  @keyframes fly{ 0%{ transform:translate(-50%,-50%) scale(.6); opacity:1; } 100%{ transform:translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.2); opacity:0; } }
+
+  .result-card{ text-align:center; background:var(--card-bg); border:4px solid var(--card-border); border-radius:26px; box-shadow:7px 7px 0 var(--card-border); padding:30px 20px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .stars{ font-size:2.2rem; letter-spacing:4px; }
+  .score-big{ font-size:2.6rem; font-weight:800; }
+  .result-msg{ font-weight:700; color:var(--muted); }
+  .result-actions{ display:flex; gap:12px; margin-top:8px; flex-wrap:wrap; justify-content:center; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= helpers ================= */
+  function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function pick(arr,n){ return shuffle(arr).slice(0,n); }
+  function safeGet(key){ try{ return localStorage.getItem(key); } catch(e){ return null; } }
+  function safeSet(key,val){ try{ localStorage.setItem(key,val); } catch(e){} }
+
+  /* ================= country data ================= */
+  const CONTINENTS = ['Europe','Asia','Africa','North America','South America','Oceania'];
+
+  const COUNTRIES = [
+    // Europe
+    {id:'france', name:'France', capital:'Paris', continent:'Europe'},
+    {id:'italy', name:'Italy', capital:'Rome', continent:'Europe'},
+    {id:'ireland', name:'Ireland', capital:'Dublin', continent:'Europe'},
+    {id:'belgium', name:'Belgium', capital:'Brussels', continent:'Europe'},
+    {id:'germany', name:'Germany', capital:'Berlin', continent:'Europe'},
+    {id:'netherlands', name:'Netherlands', capital:'Amsterdam', continent:'Europe', the:true},
+    {id:'poland', name:'Poland', capital:'Warsaw', continent:'Europe'},
+    {id:'ukraine', name:'Ukraine', capital:'Kyiv', continent:'Europe'},
+    {id:'austria', name:'Austria', capital:'Vienna', continent:'Europe'},
+    {id:'hungary', name:'Hungary', capital:'Budapest', continent:'Europe'},
+    {id:'bulgaria', name:'Bulgaria', capital:'Sofia', continent:'Europe'},
+    {id:'romania', name:'Romania', capital:'Bucharest', continent:'Europe'},
+    {id:'sweden', name:'Sweden', capital:'Stockholm', continent:'Europe'},
+    {id:'norway', name:'Norway', capital:'Oslo', continent:'Europe'},
+    {id:'denmark', name:'Denmark', capital:'Copenhagen', continent:'Europe'},
+    {id:'finland', name:'Finland', capital:'Helsinki', continent:'Europe'},
+    {id:'iceland', name:'Iceland', capital:'Reykjavik', continent:'Europe'},
+    {id:'switzerland', name:'Switzerland', capital:'Bern', continent:'Europe'},
+    {id:'greece', name:'Greece', capital:'Athens', continent:'Europe'},
+    {id:'uk', name:'United Kingdom', capital:'London', continent:'Europe', the:true},
+    {id:'england', name:'England', capital:'London', continent:'Europe'},
+    {id:'scotland', name:'Scotland', capital:'Edinburgh', continent:'Europe'},
+    {id:'czechia', name:'Czechia', capital:'Prague', continent:'Europe'},
+    {id:'lithuania', name:'Lithuania', capital:'Vilnius', continent:'Europe'},
+    {id:'estonia', name:'Estonia', capital:'Tallinn', continent:'Europe'},
+    {id:'luxembourg', name:'Luxembourg', capital:'Luxembourg City', continent:'Europe'},
+    {id:'latvia', name:'Latvia', capital:'Riga', continent:'Europe'},
+    // Asia
+    {id:'japan', name:'Japan', capital:'Tokyo', continent:'Asia'},
+    {id:'bangladesh', name:'Bangladesh', capital:'Dhaka', continent:'Asia'},
+    {id:'thailand', name:'Thailand', capital:'Bangkok', continent:'Asia'},
+    {id:'china', name:'China', capital:'Beijing', continent:'Asia'},
+    {id:'india', name:'India', capital:'New Delhi', continent:'Asia'},
+    {id:'pakistan', name:'Pakistan', capital:'Islamabad', continent:'Asia'},
+    {id:'vietnam', name:'Vietnam', capital:'Hanoi', continent:'Asia'},
+    {id:'laos', name:'Laos', capital:'Vientiane', continent:'Asia'},
+    {id:'uae', name:'United Arab Emirates', capital:'Abu Dhabi', continent:'Asia', the:true},
+    {id:'kuwait', name:'Kuwait', capital:'Kuwait City', continent:'Asia'},
+    // Africa
+    {id:'nigeria', name:'Nigeria', capital:'Abuja', continent:'Africa'},
+    {id:'mali', name:'Mali', capital:'Bamako', continent:'Africa'},
+    {id:'ghana', name:'Ghana', capital:'Accra', continent:'Africa'},
+    {id:'morocco', name:'Morocco', capital:'Rabat', continent:'Africa'},
+    {id:'gabon', name:'Gabon', capital:'Libreville', continent:'Africa'},
+    {id:'guinea', name:'Guinea', capital:'Conakry', continent:'Africa'},
+    {id:'senegal', name:'Senegal', capital:'Dakar', continent:'Africa'},
+    {id:'niger', name:'Niger', capital:'Niamey', continent:'Africa'},
+    {id:'cameroon', name:'Cameroon', capital:'Yaoundé', continent:'Africa'},
+    // North America
+    {id:'jamaica', name:'Jamaica', capital:'Kingston', continent:'North America'},
+    {id:'cuba', name:'Cuba', capital:'Havana', continent:'North America'},
+    {id:'bahamas', name:'Bahamas', capital:'Nassau', continent:'North America', the:true},
+    {id:'usa', name:'United States', capital:'Washington, D.C.', continent:'North America', the:true},
+    // South America
+    {id:'colombia', name:'Colombia', capital:'Bogotá', continent:'South America'},
+    {id:'peru', name:'Peru', capital:'Lima', continent:'South America'},
+    {id:'chile', name:'Chile', capital:'Santiago', continent:'South America'},
+    // Oceania
+    {id:'palau', name:'Palau', capital:'Ngerulmud', continent:'Oceania'}
+  ];
+
+  /* ================= flag drawing (viewBox 300 x 200 unless noted) ================= */
+  const DIMS = { uk:{w:300,h:150}, switzerland:{w:200,h:200} };
+  let flagCounter = 0;
+
+  function R(x,y,w,h,f){ return `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${f}"/>`; }
+  function C(cx,cy,r,f){ return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${f}"/>`; }
+  function P(pts,f){ return `<polygon points="${pts}" fill="${f}"/>`; }
+  function hb(cols,ws){ ws=ws||cols.map(()=>1); const t=ws.reduce((a,b)=>a+b,0); let y=0; return cols.map((c,i)=>{ const h=200*ws[i]/t; const s=R(0,y,300,h+0.6,c); y+=h; return s; }).join(''); }
+  function vb(cols,ws){ ws=ws||cols.map(()=>1); const t=ws.reduce((a,b)=>a+b,0); let x=0; return cols.map((c,i)=>{ const w=300*ws[i]/t; const s=R(x,0,w+0.6,200,c); x+=w; return s; }).join(''); }
+  function starPts(cx,cy,r,aim){ const p=[]; for(let k=0;k<10;k++){ const rr=(k%2===0)?r:r*0.381966; const a=(aim+k*36)*Math.PI/180; p.push((cx+rr*Math.cos(a)).toFixed(2)+','+(cy+rr*Math.sin(a)).toFixed(2)); } return p.join(' '); }
+  function star(cx,cy,r,aim,f){ return P(starPts(cx,cy,r,aim===undefined?-90:aim), f); }
+  function crescent(cx,cy,Ro,Ri,dx,f){
+    const a=(Ro*Ro-Ri*Ri+dx*dx)/(2*dx); const h=Math.sqrt(Ro*Ro-a*a);
+    const x=(cx+a).toFixed(2), y1=(cy-h).toFixed(2), y2=(cy+h).toFixed(2); const large=(a-dx)>0?1:0;
+    return `<path d="M${x} ${y1} A${Ro} ${Ro} 0 1 0 ${x} ${y2} A${Ri} ${Ri} 0 ${large} 1 ${x} ${y1} Z" fill="${f}"/>`;
+  }
+  function nordic(bg,outer,inner,x0,xw,y0,yh,ix0,ixw,iy0,iyh){
+    let s=R(0,0,300,200,bg)+R(x0,0,xw,200,outer)+R(0,y0,300,yh,outer);
+    if(inner) s+=R(ix0,0,ixw,200,inner)+R(0,iy0,300,iyh,inner);
+    return s;
+  }
+
+  function flagInner(id, uid){
+    switch(id){
+      // ---- Europe ----
+      case 'france': return vb(['#0055A4','#FFFFFF','#EF4135']);
+      case 'italy': return vb(['#009246','#FFFFFF','#CE2B37']);
+      case 'ireland': return vb(['#169B62','#FFFFFF','#FF883E']);
+      case 'belgium': return vb(['#000000','#FAE042','#ED2939']);
+      case 'germany': return hb(['#000000','#DD0000','#FFCE00']);
+      case 'netherlands': return hb(['#AE1C28','#FFFFFF','#21468B']);
+      case 'poland': return hb(['#FFFFFF','#DC143C']);
+      case 'ukraine': return hb(['#0057B7','#FFD700']);
+      case 'austria': return hb(['#ED2939','#FFFFFF','#ED2939']);
+      case 'hungary': return hb(['#CD2A3E','#FFFFFF','#436F4D']);
+      case 'bulgaria': return hb(['#FFFFFF','#00966E','#D62612']);
+      case 'romania': return vb(['#002B7F','#FCD116','#CE1126']);
+      case 'sweden': return nordic('#006AA7','#FECC02',null,93.75,37.5,80,40);
+      case 'norway': return nordic('#BA0C2F','#FFFFFF','#00205B',81.82,54.55,75,50,95.45,27.27,87.5,25);
+      case 'denmark': return nordic('#C8102E','#FFFFFF',null,97.3,32.4,85.7,28.6);
+      case 'finland': return nordic('#FFFFFF','#003580',null,83.3,50,72.7,54.6);
+      case 'iceland': return nordic('#02529C','#FFFFFF','#DC1E35',84,48,77.8,44.4,96,24,88.9,22.2);
+      case 'switzerland': return R(0,0,200,200,'#DA291C')+R(81.25,37.5,37.5,125,'#FFFFFF')+R(37.5,81.25,125,37.5,'#FFFFFF');
+      case 'greece': {
+        let s=''; const sh=200/9;
+        for(let i=0;i<9;i++) s+=R(0,i*sh,300,sh+0.6,i%2===0?'#0D5EAF':'#FFFFFF');
+        const c=5*sh, m=c/2;
+        s+=R(0,0,c,c,'#0D5EAF')+R(m-sh/2,0,sh,c,'#FFFFFF')+R(0,m-sh/2,c,sh,'#FFFFFF');
+        return s;
+      }
+      case 'uk': {
+        return `<svg x="0" y="0" width="300" height="150" viewBox="0 0 60 30">
+          <clipPath id="${uid}s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+          <clipPath id="${uid}t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+          <g clip-path="url(#${uid}s)">
+            <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+            <path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" stroke-width="6"/>
+            <path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#${uid}t)" stroke="#C8102E" stroke-width="4"/>
+            <path d="M30,0 v30 M0,15 h60" stroke="#FFFFFF" stroke-width="10"/>
+            <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/>
+          </g></svg>`;
+      }
+      case 'england': return R(0,0,300,200,'#FFFFFF')+R(130,0,40,200,'#CE1124')+R(0,80,300,40,'#CE1124');
+      case 'scotland': return R(0,0,300,200,'#005EB8')+`<path d="M0,0 L300,200 M300,0 L0,200" stroke="#FFFFFF" stroke-width="36"/>`;
+      case 'czechia': return R(0,0,300,100,'#FFFFFF')+R(0,100,300,100,'#D7141A')+P('0,0 150,100 0,200','#11457E');
+      case 'lithuania': return hb(['#FDB913','#006A44','#C1272D']);
+      case 'estonia': return hb(['#0072CE','#000000','#FFFFFF']);
+      case 'luxembourg': return hb(['#EF3340','#FFFFFF','#00A3E0']);
+      case 'latvia': return hb(['#9E3039','#FFFFFF','#9E3039'],[2,1,2]);
+      // ---- Asia ----
+      case 'japan': return R(0,0,300,200,'#FFFFFF')+C(150,100,60,'#BC002D');
+      case 'bangladesh': return R(0,0,300,200,'#006A4E')+C(135,100,60,'#F42A41');
+      case 'thailand': return hb(['#A51931','#F4F5F8','#2D2A4A','#F4F5F8','#A51931'],[1,1,2,1,1]);
+      case 'china': {
+        let s=R(0,0,300,200,'#DE2910')+star(50,50,30,-90,'#FFDE00');
+        [[100,20],[120,40],[120,70],[100,90]].forEach(p=>{
+          const aim=Math.atan2(50-p[1],50-p[0])*180/Math.PI;
+          s+=star(p[0],p[1],10,aim,'#FFDE00');
+        });
+        return s;
+      }
+      case 'india': {
+        let s=hb(['#FF9933','#FFFFFF','#138808']);
+        s+=`<circle cx="150" cy="100" r="24" fill="none" stroke="#000080" stroke-width="2.5"/>`+C(150,100,4,'#000080');
+        for(let k=0;k<24;k++){ const a=k*15*Math.PI/180; s+=`<line x1="150" y1="100" x2="${(150+24*Math.cos(a)).toFixed(2)}" y2="${(100+24*Math.sin(a)).toFixed(2)}" stroke="#000080" stroke-width="1.2"/>`; }
+        return s;
+      }
+      case 'pakistan': return R(0,0,300,200,'#01411C')+R(0,0,75,200,'#FFFFFF')+crescent(187.5,100,58,48,12,'#FFFFFF')+star(214,72,22,-50,'#FFFFFF');
+      case 'vietnam': return R(0,0,300,200,'#DA251D')+star(150,102,64,-90,'#FFFF00');
+      case 'laos': return hb(['#CE1126','#002868','#CE1126'],[1,2,1])+C(150,100,40,'#FFFFFF');
+      case 'uae': return R(75,0,225,67,'#00732F')+R(75,67,225,66,'#FFFFFF')+R(75,133,225,67,'#000000')+R(0,0,75,200,'#FF0000');
+      case 'kuwait': return hb(['#007A3D','#FFFFFF','#CE1126'])+P('0,0 75,66.7 75,133.3 0,200','#000000');
+      // ---- Africa ----
+      case 'nigeria': return vb(['#008751','#FFFFFF','#008751']);
+      case 'mali': return vb(['#14B53A','#FCD116','#CE1126']);
+      case 'ghana': return hb(['#CE1126','#FCD116','#006B3F'])+star(150,102,34,-90,'#000000');
+      case 'morocco': {
+        const pts=[0,1,2,3,4].map(k=>{ const a=(-90+72*k)*Math.PI/180; return [150+50*Math.cos(a),104+50*Math.sin(a)]; });
+        const o=[0,2,4,1,3].map(i=>pts[i][0].toFixed(2)+' '+pts[i][1].toFixed(2));
+        return R(0,0,300,200,'#C1272D')+`<path d="M${o[0]} L${o[1]} L${o[2]} L${o[3]} L${o[4]} Z" fill="none" stroke="#006233" stroke-width="7" stroke-linejoin="miter"/>`;
+      }
+      case 'gabon': return hb(['#009E60','#FCD116','#3A75C4']);
+      case 'guinea': return vb(['#CE1126','#FCD116','#009460']);
+      case 'senegal': return vb(['#00853F','#FDEF42','#E31B23'])+star(150,102,32,-90,'#00853F');
+      case 'niger': return hb(['#E05206','#FFFFFF','#0DB02B'])+C(150,100,22,'#E05206');
+      case 'cameroon': return vb(['#007A5E','#CE1126','#FCD116'])+star(150,102,32,-90,'#FCD116');
+      // ---- North America ----
+      case 'jamaica': return R(0,0,300,200,'#009B3A')+P('0,0 150,100 0,200','#000000')+P('300,0 150,100 300,200','#000000')+`<path d="M0,0 L300,200 M300,0 L0,200" stroke="#FED100" stroke-width="34"/>`;
+      case 'cuba': {
+        let s=''; for(let i=0;i<5;i++) s+=R(0,i*40,300,40.6,i%2===0?'#002A8F':'#FFFFFF');
+        return s+P('0,0 173.2,100 0,200','#CF142B')+star(57.7,103,30,-90,'#FFFFFF');
+      }
+      case 'bahamas': return hb(['#00778B','#FFC72C','#00778B'])+P('0,0 140,100 0,200','#000000');
+      case 'usa': {
+        let s=''; const sh=200/13;
+        for(let i=0;i<13;i++) s+=R(0,i*sh,300,sh+0.6,i%2===0?'#B22234':'#FFFFFF');
+        const ch=7*sh; s+=R(0,0,120,ch,'#3C3B6E');
+        for(let j=0;j<9;j++){
+          const y=(j+1)*ch/10;
+          if(j%2===0){ for(let i=0;i<6;i++) s+=star(10+20*i,y,3.6,-90,'#FFFFFF'); }
+          else { for(let i=0;i<5;i++) s+=star(20+20*i,y,3.6,-90,'#FFFFFF'); }
+        }
+        return s;
+      }
+      // ---- South America ----
+      case 'colombia': return R(0,0,300,100,'#FCD116')+R(0,100,300,50,'#003893')+R(0,150,300,50,'#CE1126');
+      case 'peru': return vb(['#D91023','#FFFFFF','#D91023']);
+      case 'chile': return R(0,0,300,100,'#FFFFFF')+R(0,100,300,100,'#D52B1E')+R(0,0,100,100,'#0039A6')+star(50,52,28,-90,'#FFFFFF');
+      // ---- Oceania ----
+      case 'palau': return R(0,0,300,200,'#4AADD6')+C(135,100,80,'#FFDE00');
+      default: return R(0,0,300,200,'#CCCCCC');
+    }
+  }
+
+  function flagSvg(c){
+    const uid='f'+(++flagCounter);
+    const d=DIMS[c.id]||{w:300,h:200};
+    return `<svg viewBox="0 0 ${d.w} ${d.h}" xmlns="http://www.w3.org/2000/svg">
+      <defs><clipPath id="${uid}"><rect width="${d.w}" height="${d.h}" rx="8"/></clipPath></defs>
+      <g clip-path="url(#${uid})">${flagInner(c.id, uid)}</g>
+      <rect x="1.5" y="1.5" width="${d.w-3}" height="${d.h-3}" rx="7" fill="none" stroke="#232538" stroke-width="3"/>
+    </svg>`;
+  }
+
+  /* ================= sound ================= */
+  let audioCtx = null;
+  function tone(freqs, dur){
+    if(state.muted) return;
+    try{
+      audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+      let t = audioCtx.currentTime;
+      freqs.forEach((f)=>{
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type='sine'; osc.frequency.value=f;
+        gain.gain.setValueAtTime(0.001,t);
+        gain.gain.exponentialRampToValueAtTime(0.18,t+0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t+dur+0.02);
+        t += dur*0.65;
+      });
+    }catch(e){}
+  }
+  function playCorrect(){ tone([523.25,659.25,783.99],0.16); }
+  function playWrong(){ tone([180],0.28); }
+
+  /* ================= questions ================= */
+  function withThe(c){ return (c.the ? 'the ' : '') + c.name; }
+
+  function makeNameQuestion(c){
+    const others = COUNTRIES.filter(x=>x.id!==c.id).map(x=>x.name);
+    const options = shuffle([c.name, ...pick(others,3)]);
+    return {kind:'name', shape:c, prompt:"Which country's flag is this?", options, correct:c.name};
+  }
+  function makeCapitalQuestion(c){
+    const caps = [...new Set(COUNTRIES.map(x=>x.capital))].filter(x=>x!==c.capital);
+    const options = shuffle([c.capital, ...pick(caps,3)]);
+    return {kind:'capital', shape:c, prompt:`What is the capital of ${withThe(c)}?`, options, correct:c.capital};
+  }
+  function makeContinentQuestion(c){
+    const others = CONTINENTS.filter(x=>x!==c.continent);
+    const options = shuffle([c.continent, ...pick(others,3)]);
+    return {kind:'continent', shape:c, prompt:`Which continent is ${withThe(c)} in?`, options, correct:c.continent};
+  }
+  function questionFor(kind, c){
+    if(kind==='name') return makeNameQuestion(c);
+    if(kind==='capital') return makeCapitalQuestion(c);
+    return makeContinentQuestion(c);
+  }
+  function buildRound(mode){
+    const N = 10; const qs = [];
+    if(mode==='mixed'){
+      const bag = shuffle(COUNTRIES);
+      for(let i=0;i<N;i++){
+        const kind = ['name','capital','continent'][Math.floor(Math.random()*3)];
+        qs.push(questionFor(kind, bag[i % bag.length]));
+      }
+    } else {
+      const bag = shuffle(COUNTRIES);
+      for(let i=0;i<N;i++) qs.push(questionFor(mode, bag[i % bag.length]));
+    }
+    return qs;
+  }
+
+  /* ================= state ================= */
+  const state = { screen:'menu', mode:null, round:[], qIndex:0, score:0, streak:0, bestStreak:0, locked:false, muted: safeGet('countries_muted')==='1' };
+
+  const MODE_META = {
+    name:{emoji:'🚩', label:'Name That Flag', sub:'Which country?'},
+    capital:{emoji:'🏙️', label:'Find the Capital', sub:'Which city?'},
+    continent:{emoji:'🌍', label:'Which Continent?', sub:'Where in the world?'},
+    mixed:{emoji:'🎲', label:'Mixed Challenge', sub:'A bit of everything'}
+  };
+
+  function bestFor(mode){ return safeGet('countries_best_'+mode) || '0'; }
+  function setBestFor(mode, score){ const cur = parseInt(bestFor(mode),10)||0; if(score>cur) safeSet('countries_best_'+mode, String(score)); }
+
+  /* ================= render: menu ================= */
+  function renderMenu(){
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="menu-hero">
+        <div class="drift d1">${flagSvg({id:'japan'})}</div>
+        <div class="drift d2">${flagSvg({id:'italy'})}</div>
+        <div class="drift d3">${flagSvg({id:'jamaica'})}</div>
+        <div class="drift d4">${flagSvg({id:'sweden'})}</div>
+      </div>
+      <div class="title-wrap">
+        <h1>Dexter's Countries Game</h1>
+        <p>Flags, capitals and continents — how many do you know?</p>
+      </div>
+      <div class="mode-grid">
+        ${['name','capital','continent'].map(m=>`
+          <button class="mode-card" data-mode="${m}">
+            <span class="emoji">${MODE_META[m].emoji}</span>
+            <span class="label">${MODE_META[m].label}</span>
+            <span class="sub">${MODE_META[m].sub}</span>
+          </button>`).join('')}
+        <button class="mode-card mixed" data-mode="mixed">
+          <span class="emoji">${MODE_META.mixed.emoji}</span>
+          <span class="txt">
+            <span class="label">${MODE_META.mixed.label}</span>
+            <span class="sub">${MODE_META.mixed.sub}</span>
+          </span>
+        </button>
+      </div>
+      <div class="best-row">
+        ${['name','capital','continent','mixed'].map(m=>`<span>${MODE_META[m].emoji} best: <b>${bestFor(m)}/10</b></span>`).join('')}
+      </div>
+    `;
+    app.querySelectorAll('.mode-card').forEach(btn=>btn.addEventListener('click', ()=>startMode(btn.dataset.mode)));
+  }
+
+  /* ================= render: game ================= */
+  function startMode(mode){
+    state.mode = mode; state.round = buildRound(mode); state.qIndex = 0; state.score = 0; state.streak = 0;
+    state.screen = 'game'; renderGame();
+  }
+  function currentQuestion(){ return state.round[state.qIndex]; }
+
+  function renderGame(){
+    const app = document.getElementById('app');
+    const q = currentQuestion();
+    const dots = state.round.map((_,i)=>{
+      let cls=''; if(i<state.qIndex) cls='done'; else if(i===state.qIndex) cls='current';
+      return `<span class="${cls}"></span>`;
+    }).join('');
+
+    app.innerHTML = `
+      <div class="topbar">
+        <button class="icon-btn" id="backBtn" aria-label="Back to menu">↩️</button>
+        <div class="stat">⭐ ${state.score}</div>
+        <div class="stat">🔥 ${state.streak}</div>
+        <button class="icon-btn" id="muteBtn" aria-label="Toggle sound">${state.muted?'🔇':'🔊'}</button>
+      </div>
+      <div class="progress-dots">${dots}</div>
+      <div class="shape-card" id="shapeCard">
+        ${flagSvg(q.shape)}
+        <div class="burst" id="burst"></div>
+      </div>
+      <div class="prompt">${q.prompt}</div>
+      <div class="options" id="options">
+        ${q.options.map((opt,i)=>`<button class="opt-btn c${i}" data-val="${opt}">${opt}</button>`).join('')}
+      </div>
+      <div class="next-wrap" id="nextWrap"></div>
+    `;
+
+    document.getElementById('backBtn').addEventListener('click', ()=>{ state.screen='menu'; renderMenu(); });
+    document.getElementById('muteBtn').addEventListener('click', ()=>{
+      state.muted = !state.muted; safeSet('countries_muted', state.muted?'1':'0'); renderGame();
+    });
+    state.locked = false;
+    document.querySelectorAll('.opt-btn').forEach(btn=>btn.addEventListener('click', ()=>selectAnswer(btn)));
+  }
+
+  function burstAt(container, emoji){
+    for(let i=0;i<8;i++){
+      const s = document.createElement('span'); s.textContent = emoji;
+      const angle = Math.random()*Math.PI*2; const dist = 60+Math.random()*40;
+      s.style.setProperty('--dx',(Math.cos(angle)*dist).toFixed(0)+'px');
+      s.style.setProperty('--dy',(Math.sin(angle)*dist).toFixed(0)+'px');
+      s.style.animationDelay=(Math.random()*0.1)+'s';
+      container.appendChild(s);
+    }
+    setTimeout(()=>{ container.innerHTML=''; },900);
+  }
+
+  function selectAnswer(btn){
+    if(state.locked) return; state.locked = true;
+    const q = currentQuestion(); const val = btn.dataset.val; const correct = val === q.correct;
+    document.querySelectorAll('.opt-btn').forEach(b=>{
+      b.classList.add('locked');
+      if(b.dataset.val === q.correct) b.classList.add('correct');
+      else if(b===btn) b.classList.add('incorrect');
+      else b.classList.add('dim');
+    });
+    if(correct){
+      state.score++; state.streak++; if(state.streak>state.bestStreak) state.bestStreak=state.streak;
+      playCorrect(); burstAt(document.getElementById('burst'), '✨');
+    } else {
+      state.streak = 0; playWrong();
+      const card = document.getElementById('shapeCard');
+      card.classList.add('wrong-shake'); setTimeout(()=>card.classList.remove('wrong-shake'),420);
+    }
+    const nextWrap = document.getElementById('nextWrap');
+    nextWrap.innerHTML = `<button class="next-btn" id="nextBtn">${state.qIndex < state.round.length-1 ? 'Next ➜' : 'See my score 🏆'}</button>`;
+    document.getElementById('nextBtn').addEventListener('click', advance);
+    const stats = document.querySelectorAll('.stat');
+    if(stats[0]) stats[0].textContent = `⭐ ${state.score}`;
+    if(stats[1]) stats[1].textContent = `🔥 ${state.streak}`;
+  }
+
+  function advance(){
+    if(state.qIndex < state.round.length-1){ state.qIndex++; renderGame(); }
+    else { state.screen='result'; renderResult(); }
+  }
+
+  /* ================= render: result ================= */
+  function renderResult(){
+    setBestFor(state.mode, state.score);
+    const pct = state.score/state.round.length;
+    let stars='⭐', msg='Nice try — let\u2019s explore some more countries!';
+    if(pct===1){ stars='⭐⭐⭐'; msg='Perfect score! You know your world!'; }
+    else if(pct>=0.7){ stars='⭐⭐⭐'; msg='Brilliant geography!'; }
+    else if(pct>=0.4){ stars='⭐⭐'; msg='Great effort — getting sharper!'; }
+
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="menu-hero" style="height:70px;">
+        <div class="drift d1">${flagSvg({id:'france'})}</div>
+        <div class="drift d3">${flagSvg({id:'india'})}</div>
+      </div>
+      <div class="result-card">
+        <div class="stars">${stars}</div>
+        <div class="score-big">${state.score}/${state.round.length}</div>
+        <div class="result-msg">${msg}</div>
+        <div class="result-msg">${MODE_META[state.mode].emoji} best for this game: ${bestFor(state.mode)}/10</div>
+        <div class="result-actions">
+          <button class="pill-btn" id="againBtn">Play again 🔁</button>
+          <button class="pill-btn" id="menuBtn">Choose another game 🧩</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('againBtn').addEventListener('click', ()=>startMode(state.mode));
+    document.getElementById('menuBtn').addEventListener('click', ()=>{ state.screen='menu'; renderMenu(); });
+    if(pct===1) burstConfetti();
+  }
+
+  function burstConfetti(){
+    const layer = document.createElement('div');
+    layer.className='burst'; layer.style.position='fixed'; layer.style.left='50%'; layer.style.top='30%';
+    document.body.appendChild(layer);
+    const emojis=['✨','🎉','⭐','🚩','🌍'];
+    for(let i=0;i<16;i++){
+      const s=document.createElement('span'); s.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+      const angle=Math.random()*Math.PI*2; const dist=80+Math.random()*140;
+      s.style.setProperty('--dx',(Math.cos(angle)*dist).toFixed(0)+'px');
+      s.style.setProperty('--dy',(Math.sin(angle)*dist).toFixed(0)+'px');
+      s.style.animationDuration='1.1s';
+      layer.appendChild(s);
+    }
+    setTimeout(()=>layer.remove(),1300);
+  }
+
+  /* ================= boot ================= */
+  renderMenu();
+})();
+</script>
+</body>
+</html>

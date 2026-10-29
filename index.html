@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Dexter's Games</title>
-<meta name="description" content="25 free learning games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
+<meta name="description" content="35 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
 <meta name="theme-color" content="#12234a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="img/logo-192.png">
@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dexter's Games">
 <meta property="og:title" content="Dexter's Games">
-<meta property="og:description" content="25 free learning games for ages 4 to 7. No adverts, no sign-up.">
+<meta property="og:description" content="35 free games for ages 4 to 7. No adverts, no sign-up.">
 <meta property="og:image" content="https://cawconsultancy-dev.github.io/dexters-games/img/share.png">
 <meta property="og:url" content="https://cawconsultancy-dev.github.io/dexters-games/">
 <meta name="twitter:card" content="summary_large_image">
@@ -208,7 +208,7 @@ footer a{color:var(--gold-2)}
 
  <section class="grown" id="grown" aria-labelledby="gh">
   <h2 id="gh">For grown-ups</h2>
-  <p>Every game here is free, with no adverts and no sign-up. Scores are saved on this device only. The games are built around early years and Key Stage 1 learning: phonics, number sense, patterns, time, shapes and the world.</p>
+  <p>Every game here is free, with no adverts and no sign-up. Scores are saved on this device only. Most of the games are built around early years and Key Stage 1 learning: phonics, number sense, patterns, time, shapes and the world. The Arcade games are just for fun.</p>
   <div class="gcols">
    <div class="gbox">
     <h3>Subscribe to Dexter's Learning Tube</h3>
@@ -336,7 +336,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&open)$('back').click();});
 $('toGrown').onclick=()=>$('grown').scrollIntoView({behavior:'smooth'});
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
 const URL_APP='https://cawconsultancy-dev.github.io/dexters-games/';
-$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"25 free learning games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
+$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"35 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
  try{if(navigator.share){await navigator.share(data);return;}await navigator.clipboard.writeText(URL_APP);toast('Link copied');}catch(e){if(e&&e.name!=='AbortError')toast(URL_APP);}};
 const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
 const isAndroid=/android/i.test(navigator.userAgent);

@@ -8,7 +8,7 @@
   if(/premium/.test(n))s+=40;else if(/enhanced|natural|neural/.test(n))s+=30;
   if(/emma/.test(n))s+=50;if(/martha|arthur|serena|kate|daniel|jamie|stephanie|oliver|libby|sonia|ryan|maisie|thomas|hazel|george|susan/.test(n))s+=8;
   if(/google uk english/.test(n))s+=12;if(/microsoft/.test(n)&&/online/.test(n))s+=25;
-  if(/compact|eloquence|grandma|grandpa|rocko|shelley|flo|reed|sandy|bad news|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|fred|junior|ralph|kathy|bahh/.test(n))s-=60;
+  if(/compact|eloquence|eddy|grandma|grandpa|rocko|shelley|flo|reed|sandy|bad news|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|fred|junior|ralph|kathy|bahh/.test(n))s-=60;
   if(v.localService)s+=2;return s;}
  function english(){return ss.getVoices().filter(function(v){return /^en[-_]/i.test(v.lang);});}
  function best(){var em=english().filter(function(v){return /emma/i.test(v.name);}).sort(function(a,b){return quality(b)-quality(a);});if(em.length)return em[0];var vs=english(),gb=vs.filter(function(v){return /en[-_]GB/i.test(v.lang);});var pool=gb.length?gb:vs;

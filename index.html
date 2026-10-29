@@ -48,11 +48,11 @@ button{font-family:inherit;cursor:pointer}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:center;gap:28px;margin:22px 0 10px}
 .port{position:relative;aspect-ratio:1;width:min(100%,430px);justify-self:center}
 .port .lens{position:absolute;inset:7%;border-radius:50%;overflow:hidden;
- background:radial-gradient(circle at 35% 30%,#3d5bd0 0,#1c2a6b 45%,#0b1233 100%);box-shadow:inset 0 0 0 10px var(--navy),inset 0 0 0 16px var(--gold),inset 0 -30px 60px #0009,0 30px 60px #0009}
+ background:url(img/dexter-planet.jpg) center/cover,#0b1233;box-shadow:inset 0 0 0 10px var(--navy),inset 0 0 0 16px var(--gold),inset 0 -30px 60px #0009,0 30px 60px #0009}
 .port .lens::after{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 30% 22%,#ffffff40 0,transparent 30%)}
 .port .orbit{position:absolute;inset:0;border-radius:50%;border:3px dashed #f2b33d70;animation:spin 2.4s cubic-bezier(.2,.8,.2,1) both}
 .port .moon{position:absolute;top:4%;left:50%;width:30px;height:30px;margin-left:-15px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe2a6,#f07a4a);box-shadow:0 0 18px #f07a4a99}
-.port .pick{position:absolute;inset:0;display:grid;place-items:center;font-size:clamp(110px,22vw,190px);line-height:1;filter:drop-shadow(0 16px 24px #000a);animation:bob 4s ease-in-out infinite}
+.port .pick{position:absolute;right:2%;bottom:6%;display:grid;place-items:center;width:28%;aspect-ratio:1;border-radius:50%;background:var(--navy);box-shadow:0 0 0 5px var(--gold),0 12px 24px #000a;font-size:clamp(40px,8vw,64px);line-height:1;animation:bob 4s ease-in-out infinite}
 @keyframes spin{from{transform:rotate(-140deg);opacity:0}to{transform:rotate(0);opacity:1}}
 @keyframes bob{50%{transform:translateY(-10px)}}
 .mission h1{margin:0 0 8px;font-size:clamp(40px,7vw,68px);line-height:.95;font-weight:700;letter-spacing:-.02em;color:var(--cream);text-wrap:balance}
@@ -160,7 +160,7 @@ footer a{color:var(--gold-2)}
  </header>
 
  <section class="hero" aria-label="Today's mission">
-  <div class="port" aria-hidden="true"><div class="lens"></div><div class="orbit"><div class="moon"></div></div><div class="pick" id="pickEm"></div></div>
+  <div class="port"><div class="lens" role="img" aria-label="Dexter as a ringed planet"></div><div class="orbit"><div class="moon"></div></div><div class="pick" id="pickEm" aria-hidden="true"></div></div>
   <div class="mission">
    <div class="tag">Today's mission</div>
    <h1 id="pickName"></h1>

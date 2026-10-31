@@ -229,11 +229,10 @@ function radiusFor(t){return Math.max(9,Math.min(W,H)*0.07*(BASE[t]||0.8)*1.2*[0
 function thumbR(k){return 32;}
 function labelY(t){return ['femur','spine','toothbrush','windpipe','neuron','dna','vessel'].includes(t)?1.12:1.08;}
 function NOROT(t){return ['skull','ribcage','spine','pelvis','lungs','kidneys','largeint','smallint','hand','foot','tooth'].includes(t);}
-const BGS=[['#8fdc8a','#3fae5a'],['#b7ec9d','#6cc56a'],['#4cae6a','#1f7a45']];
+const BGS=[['#5cc469'],['#9be08f'],['#2f8f4e']];
 let items=[],cat='organ',sel='heart',size=1,names=true,bgi=0,bgSeed=1,bgCanvas=null,built=false,saved=0,press=null,popT=[];
 function makeBg(){bgCanvas=document.createElement('canvas');bgCanvas.width=Math.round(W*DPR);bgCanvas.height=Math.round(H*DPR);const b=bgCanvas.getContext('2d');b.scale(DPR,DPR);const [c1,c2]=BGS[bgi];
- const g=b.createLinearGradient(0,0,0,H);g.addColorStop(0,c1);g.addColorStop(1,c2);b.fillStyle=g;b.fillRect(0,0,W,H);
- const R=seeded(bgSeed*13+5);for(let i=0;i<24;i++){b.fillStyle='rgba(255,255,255,'+(0.06+R()*0.1)+')';b.beginPath();b.arc(R()*W,R()*H,10+R()*40,0,7);b.fill();}}
+ b.fillStyle=c1;b.fillRect(0,0,W,H);}
 function P(c,pts,r,col){c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x*r,y*r):c.moveTo(x*r,y*r));c.closePath();if(col){c.fillStyle=col;c.fill();}}
 function F(c,x,y,fr,r,t,ink){c.save();c.translate(x*r,y*r);face(c,fr*r,t,ink);c.restore();}
 function gl(c,r,col,dark){const g=c.createRadialGradient(-0.35*r,-0.4*r,0.05*r,0,0,1.2*r);g.addColorStop(0,'#ffffff');g.addColorStop(0.12,col);g.addColorStop(1,dark||col);return g;}

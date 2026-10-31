@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Dexter's Games</title>
 <script src="voice.js"></script>
-<meta name="description" content="46 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
+<meta name="description" content="47 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
 <meta name="theme-color" content="#12234a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="img/logo-192.png">
@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dexter's Games">
 <meta property="og:title" content="Dexter's Games">
-<meta property="og:description" content="46 free games for ages 4 to 7. No adverts, no sign-up.">
+<meta property="og:description" content="47 free games for ages 4 to 7. No adverts, no sign-up.">
 <meta property="og:image" content="https://cawconsultancy-dev.github.io/dexters-games/img/share.png">
 <meta property="og:url" content="https://cawconsultancy-dev.github.io/dexters-games/">
 <meta name="twitter:card" content="summary_large_image">
@@ -296,6 +296,7 @@ const GAMES=[
  ['planet-drop','Planet Drop','🫧','space','Drop and merge space objects'],
  ['crazy-snake','Dexter\'s Crazy Snake Game','🐍','space','Eat planets, grow, run from big snakes'],
  ['planet-swap','Planet Swap','🪐','space','Swap planets to make lines of three',1],
+ ['marble-run','Planet Marble Run','🪐','space','Roll your planet down a 3D marble run and race to the finish',1],
  ['space-stamps','Space Stamps','🌌','space','Stamp over 100 planets, stars, galaxies and constellations, then send your picture',1],
  ['number-ball-run','Number Ball Run','🟦','numbers','Roll into the same number to double it'],
  ['number-bond-blast','Number Bond Blast','💥','numbers','Make 10, 20 and 100'],
@@ -364,7 +365,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&open)$('back').click();});
 $('toGrown').onclick=()=>$('grown').scrollIntoView({behavior:'smooth'});
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
 const URL_APP='https://cawconsultancy-dev.github.io/dexters-games/';
-$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"46 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
+$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"47 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
  try{if(navigator.share){await navigator.share(data);return;}await navigator.clipboard.writeText(URL_APP);toast('Link copied');}catch(e){if(e&&e.name!=='AbortError')toast(URL_APP);}};
 const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
 const isAndroid=/android/i.test(navigator.userAgent);

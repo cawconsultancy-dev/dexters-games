@@ -229,20 +229,11 @@ function radiusFor(t){return Math.max(9,Math.min(W,H)*0.07*(BASE[t]||0.8)*1.2*[0
 function thumbR(k){return 32;}
 function labelY(t){return ['femur','spine','toothbrush','windpipe','neuron','dna','vessel'].includes(t)?1.12:1.08;}
 function NOROT(t){return ['skull','ribcage','spine','pelvis','lungs','kidneys','largeint','smallint','hand','foot','tooth'].includes(t);}
-const BGS=[['#e3f4ff','#c9e8ff','#ffe1cc','#e8b48f'],['#fff4e0','#ffe3c2','#ffd6c2','#e3a587'],['#efe6ff','#ddd0ff','#ffe1cc','#cfa2b8']];
+const BGS=[['#8fdc8a','#3fae5a'],['#b7ec9d','#6cc56a'],['#4cae6a','#1f7a45']];
 let items=[],cat='organ',sel='heart',size=1,names=true,bgi=0,bgSeed=1,bgCanvas=null,built=false,saved=0,press=null,popT=[];
-function makeBg(){bgCanvas=document.createElement('canvas');bgCanvas.width=Math.round(W*DPR);bgCanvas.height=Math.round(H*DPR);const b=bgCanvas.getContext('2d');b.scale(DPR,DPR);const [c1,c2,skin,edge]=BGS[bgi];
+function makeBg(){bgCanvas=document.createElement('canvas');bgCanvas.width=Math.round(W*DPR);bgCanvas.height=Math.round(H*DPR);const b=bgCanvas.getContext('2d');b.scale(DPR,DPR);const [c1,c2]=BGS[bgi];
  const g=b.createLinearGradient(0,0,0,H);g.addColorStop(0,c1);g.addColorStop(1,c2);b.fillStyle=g;b.fillRect(0,0,W,H);
- const R=seeded(bgSeed*13+5);for(let i=0;i<30;i++){b.fillStyle='rgba(255,255,255,'+(0.25+R()*0.35)+')';b.beginPath();b.arc(R()*W,R()*H,3+R()*10,0,7);b.fill();}
- const s=Math.min(H*0.8/2.25,W*0.9/1.9),cx=W/2,top=12;const y=v=>top+v*s,x=v=>cx+v*s;
- b.save();b.fillStyle=skin;b.strokeStyle=edge;b.lineWidth=Math.max(3,s*0.025);b.lineJoin='round';b.lineCap='round';
- const cap=(x1,y1,x2,y2,w)=>{b.beginPath();b.moveTo(x(x1),y(y1));b.lineTo(x(x2),y(y2));b.lineWidth=w*s;b.stroke();};
- b.strokeStyle=edge;[[-0.42,0.62,-0.82,1.32],[0.42,0.62,0.82,1.32],[-0.2,1.35,-0.24,2.15],[0.2,1.35,0.24,2.15]].forEach(([a,b1,c,d])=>cap(a,b1,c,d,0.27));
- b.strokeStyle=skin;[[-0.42,0.62,-0.82,1.32],[0.42,0.62,0.82,1.32],[-0.2,1.35,-0.24,2.15],[0.2,1.35,0.24,2.15]].forEach(([a,b1,c,d])=>cap(a,b1,c,d,0.22));
- b.strokeStyle=edge;b.lineWidth=Math.max(3,s*0.025);
- b.beginPath();b.moveTo(x(-0.12),y(0.4));b.lineTo(x(-0.12),y(0.5));b.quadraticCurveTo(x(-0.5),y(0.52),x(-0.5),y(0.75));b.lineTo(x(-0.42),y(1.45));b.quadraticCurveTo(x(0),y(1.6),x(0.42),y(1.45));b.lineTo(x(0.5),y(0.75));b.quadraticCurveTo(x(0.5),y(0.52),x(0.12),y(0.5));b.lineTo(x(0.12),y(0.4));b.closePath();b.fill();b.stroke();
- b.beginPath();b.arc(x(0),y(0.22),0.25*s,0,7);b.fill();b.stroke();
- b.globalAlpha=0.5;b.strokeStyle=edge;b.lineWidth=2;b.setLineDash([6,6]);b.beginPath();b.moveTo(x(0),y(0.55));b.lineTo(x(0),y(1.45));b.stroke();b.setLineDash([]);b.globalAlpha=1;b.restore();}
+ const R=seeded(bgSeed*13+5);for(let i=0;i<24;i++){b.fillStyle='rgba(255,255,255,'+(0.06+R()*0.1)+')';b.beginPath();b.arc(R()*W,R()*H,10+R()*40,0,7);b.fill();}}
 function P(c,pts,r,col){c.beginPath();pts.forEach(([x,y],i)=>i?c.lineTo(x*r,y*r):c.moveTo(x*r,y*r));c.closePath();if(col){c.fillStyle=col;c.fill();}}
 function F(c,x,y,fr,r,t,ink){c.save();c.translate(x*r,y*r);face(c,fr*r,t,ink);c.restore();}
 function gl(c,r,col,dark){const g=c.createRadialGradient(-0.35*r,-0.4*r,0.05*r,0,0,1.2*r);g.addColorStop(0,'#ffffff');g.addColorStop(0.12,col);g.addColorStop(1,dark||col);return g;}
@@ -417,7 +408,7 @@ async function saveVid(){if(!lastBlob)return;const ext=lastBlob.type.includes('m
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&rec)stopRec();});
 let confirmClear=false;function armClear(){confirmClear=true;$('clear').textContent='🗑️ Sure?';setTimeout(()=>{confirmClear=false;$('clear').textContent='🗑️ New';},2500);}
 function renderCats(){$('cats').innerHTML=CATS.map(c=>'<button class="tb'+(c[0]===cat?' on':'')+'" data-c="'+c[0]+'">'+c[1]+'</button>').join('');}
-function renderOpts(){$('opts').innerHTML=[10,16,23].map((f,i)=>'<button class="tb'+(i===size?' on':'')+'" data-s="'+i+'" aria-label="'+['Small','Medium','Large'][i]+'"><span style="font-size:'+f+'px;line-height:1">●</span></button>').join('')+'<span class="sep"></span><button class="tb'+(names?' on':'')+'" id="names">🏷️ Names</button><button class="tb" id="bgb">🎨 New colours</button><button class="tb" id="micb">🎙️ Try my voice</button><button class="tb'+(allTalk?' on':'')+'" id="allb">👄 Everyone talks</button>';}
+function renderOpts(){$('opts').innerHTML=[10,16,23].map((f,i)=>'<button class="tb'+(i===size?' on':'')+'" data-s="'+i+'" aria-label="'+['Small','Medium','Large'][i]+'"><span style="font-size:'+f+'px;line-height:1">●</span></button>').join('')+'<span class="sep"></span><button class="tb'+(names?' on':'')+'" id="names">🏷️ Names</button><button class="tb" id="bgb">🎨 New green</button><button class="tb" id="micb">🎙️ Try my voice</button><button class="tb'+(allTalk?' on':'')+'" id="allb">👄 Everyone talks</button>';}
 function renderStamps(){animOn=false;const keys=Object.keys(OBJ).filter(k=>OBJ[k][1]===cat);if(!keys.includes(sel))sel=keys[0];
  $('stamps').innerHTML=keys.map(k=>'<button class="st'+(k===sel?' on':'')+'" data-t="'+k+'"><canvas width="104" height="104" data-i="'+k+'"></canvas>'+OBJ[k][0]+'</button>').join('');
  document.querySelectorAll('#stamps canvas').forEach(cv2=>{const c=cv2.getContext('2d');const k=cv2.dataset.i;const r=thumbR(k);drawObj(c,k,k.includes('comet')?34:52,k.includes('comet')?66:52,r,0,k.includes('comet')?-Math.PI*0.25:undefined);});}

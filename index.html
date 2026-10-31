@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Dexter's Games</title>
 <script src="voice.js"></script>
-<meta name="description" content="44 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
+<meta name="description" content="46 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
 <meta name="theme-color" content="#12234a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="img/logo-192.png">
@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dexter's Games">
 <meta property="og:title" content="Dexter's Games">
-<meta property="og:description" content="44 free games for ages 4 to 7. No adverts, no sign-up.">
+<meta property="og:description" content="46 free games for ages 4 to 7. No adverts, no sign-up.">
 <meta property="og:image" content="https://cawconsultancy-dev.github.io/dexters-games/img/share.png">
 <meta property="og:url" content="https://cawconsultancy-dev.github.io/dexters-games/">
 <meta name="twitter:card" content="summary_large_image">
@@ -273,6 +273,7 @@ const WORLDS=[
  {id:'uk',name:'United Kingdom',em:'🇬🇧',c:'#2b4ea2',d:'#012169'},
  {id:'animals',name:'Animals',em:'🐾',c:'#c98b3a',d:'#8a5a1c'},
  {id:'vehicles',name:'Vehicles',em:'🚒',c:'#d9443a',d:'#932219'},
+ {id:'studios',name:'Studios',em:'🎬',c:'#8e44ad',d:'#5b2373'},
  {id:'fun',name:'Just for fun',em:'🎉',c:'#ff5d8f',d:'#b02a5e'}];
 const GAMES=[
  ['rocket-race','Rocket Race','🛸','rockets','Spin the wheel and beat the alien to the finish'],
@@ -296,7 +297,6 @@ const GAMES=[
  ['crazy-snake','Dexter\'s Crazy Snake Game','🐍','space','Eat planets, grow, run from big snakes'],
  ['planet-swap','Planet Swap','🪐','space','Swap planets to make lines of three',1],
  ['space-stamps','Space Stamps','🌌','space','Stamp over 100 planets, stars, galaxies and constellations, then send your picture',1],
- ['space-studio','Space Studio','🎬','space','Make talking space videos with your own voice',1],
  ['number-ball-run','Number Ball Run','🟦','numbers','Roll into the same number to double it'],
  ['number-bond-blast','Number Bond Blast','💥','numbers','Make 10, 20 and 100'],
  ['clock-rocket','Clock Rocket','🕒','numbers','Tell the time to fuel your rocket'],
@@ -313,6 +313,9 @@ const GAMES=[
  ['vehicle-game','Vehicle Game','🚒','vehicles','Names, wheels and types'],
  ['vehicle-drop','Vehicle Drop','🚢','vehicles','Drop and merge from roller skate to cruise ship'],
  ['turbo-lanes','Turbo Lanes','🏎️','vehicles','Dodge the traffic and collect the coins',1],
+ ['space-studio','Space Studio','🪐','studios','Make talking space videos with your own voice',1],
+ ['world-studio','World Studio','🌍','studios','Make talking videos with countries and landmarks',1],
+ ['body-studio','Body Studio','🫀','studios','Make talking videos with organs, bones and cells',1],
  ['bubble-pop','Bubble Pop Party','🫧','fun','Pop bubbles, grab rainbows and freeze time',1],
  ['fruit-swipe','Fruit Swipe','🍉','fun','Slice the fruit, dodge the cactus',1],
  ['sky-hopper','Sky Hopper','🌤️','fun','Bounce Bobo up through the clouds to space',1],
@@ -327,7 +330,7 @@ function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;
 
 /* today's mission: same pick all day, changes each day */
 const day=Math.floor((Date.now()-new Date().getTimezoneOffset()*6e4)/864e5);
-const LEARN=GAMES.filter(g=>g.w!=='fun');const pick=LEARN[(day*7)%LEARN.length];
+const LEARN=GAMES.filter(g=>g.w!=='fun'&&g.w!=='studios');const pick=LEARN[(day*7)%LEARN.length];
 $('pickEm').textContent=pick.em;$('pickName').textContent=pick.name;$('pickDesc').textContent=pick.desc;$('pickPlay').onclick=()=>openGame(pick.id);
 
 /* worlds */
@@ -361,7 +364,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&open)$('back').click();});
 $('toGrown').onclick=()=>$('grown').scrollIntoView({behavior:'smooth'});
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
 const URL_APP='https://cawconsultancy-dev.github.io/dexters-games/';
-$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"44 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
+$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"46 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
  try{if(navigator.share){await navigator.share(data);return;}await navigator.clipboard.writeText(URL_APP);toast('Link copied');}catch(e){if(e&&e.name!=='AbortError')toast(URL_APP);}};
 const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
 const isAndroid=/android/i.test(navigator.userAgent);

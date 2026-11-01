@@ -175,7 +175,7 @@ const G={title:'Body Studio',icon:'🫀',sub:'Make your own body videos! Stamp o
 let allTalk=false,faceOpen=0,nowS=0,animOn=false,lvl=0,selected=null,talker=null,dragItem=null,dragOff=[0,0],micStream=null,analyser=null,abuf=null,rec=null,recT0=0,chunks=[],lastBlob=null,recStream=null;
 function hash(s){let h=7;for(const ch of s)h=(h*31+ch.charCodeAt(0))>>>0;return h;}
 function lum(hex){const n=parseInt(hex.slice(1),16);return 0.3*(n>>16)+0.59*((n>>8)&255)+0.11*(n&255);}
-function face(c,r,t,ink){if(r<6)return;const m=MOOD[t]||['smile','grin','o','tongue','wink','happy','smile'][hash(t)%7];ink=ink||'#2a1630';
+function face(c,r,t,ink){if(r<6)return;const m=MOOD[t]||['smile','grin','o','tongue','smile','happy','smile'][hash(t)%7];ink=ink||'#2a1630';
  const ey=-0.12*r,ex=0.3*r,er=0.15*r,lw=Math.max(1.2,0.055*r);c.save();c.lineCap='round';
  if(t!=='blackhole'){c.fillStyle='rgba(255,110,150,0.35)';[-1,1].forEach(s=>{c.beginPath();c.ellipse(s*0.52*r,0.12*r,0.12*r,0.08*r,0,0,7);c.fill();});}
  const blink=animOn&&((nowS+(hash(t)%97)*0.13)%3.7)<0.13;

@@ -53,8 +53,6 @@ canvas#c{z-index:1;background:transparent}
 .tb.on{background:#1d1b3a;color:#fff;border-color:#1d1b3a}
 .st{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;width:70px;border:none;background:#0b1240;border-radius:16px;padding:6px 4px 5px;cursor:pointer;color:#fff;font:600 11px Fredoka,sans-serif;box-shadow:0 0 0 2px transparent}
 .st canvas{width:52px;height:52px}
-#stamps .st{width:min(280px,62vw);font-size:20px;border-radius:26px;padding:10px 8px 10px;gap:6px;line-height:1.15}
-#stamps .st canvas{width:100%;height:auto;aspect-ratio:1}
 .st.on{box-shadow:0 0 0 3px #f2b33d;background:#22307a}
 .sep{flex:none;width:2px;height:30px;background:#1d1b3a15;border-radius:2px}
 .topbtns{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;display:flex;gap:8px;z-index:6}
@@ -76,7 +74,7 @@ canvas#c{z-index:1;background:transparent}
 .mbox{background:#fff;border-radius:26px;padding:14px;max-width:min(900px,100%);width:100%;display:flex;flex-direction:column;gap:12px;align-items:center}
 .mbox video{width:100%;max-height:60vh;border-radius:16px;background:#000}
 .mrow{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-@media (max-width:560px){.tb{height:38px;font-size:14px;padding:0 9px}}
+@media (max-width:560px){.st{width:60px}.st canvas{width:44px;height:44px}.tb{height:38px;font-size:14px;padding:0 9px}}
 
 </style>
 </head>
@@ -341,7 +339,7 @@ function rayPlane(x,y,anc){ray.setFromCamera(new THREE.Vector2(x/W*2-1,-(y/H)*2+
 function hitItem(x,y){let best=null,bd=1e9;items.forEach(b=>{const [sx,sy,sr]=screenR(b);if(Math.hypot(x-sx,y-sy)<Math.max(26,sr*1.1)){const d=camera.position.distanceTo(b.grp.position);if(d<bd){bd=d;best=b;}}});return best;}
 /* ---------- studio ---------- */
 let items=[],cat='planet',sel='earth',size=1,names=true,built=false,saved=0,press=null;
-function radiusFor(t){return (BASE[t]||0.6)*[0.65,1,1.5][size];}
+function radiusFor(t){return Math.min(4.6,(BASE[t]||0.6)*4*[0.65,1,1.5][size]);}
 function buildTools(){if(built)return;built=true;renderCats();renderOpts();renderStamps();
  $('cats').onclick=$('opts').onclick=e=>{const b=e.target.closest('[data-c]');if(b){cat=b.dataset.c;renderCats();renderStamps();sfx.tap();say(b.textContent.replace(/^\S+\s/,''));return;}
   const s=e.target.closest('[data-s]');if(s){size=+s.dataset.s;renderOpts();sfx.tap();}

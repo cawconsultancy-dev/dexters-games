@@ -20,7 +20,7 @@
   [/\b(HD|GJ|LHS|LTT|TOI|HR|YZ|BH|ISS)\b/g,function(m){return m.split('').join(' ');}],[/\bBH(\d)/g,'B H $1'],
   [/(\d)-?([a-h])(?=$|[\s,.!?])/g,function(m,d,l){return d+' '+l.toUpperCase();}],[/(\d) ([a-h])(?=$|[,.!?])/g,function(m,d,l){return d+' '+l.toUpperCase();}],
   [/([A-Za-z])-(\d)/g,'$1 $2'],[/([A-Za-z']) ([b-h])(?=$|[,.!?])/g,function(m,w,l){return w+' '+l.toUpperCase();}],
-  [/\bBetelgeuse\b/g,'Beetle juice'],[/\bQuaoar\b/g,'Kwah war'],[/\bHaumea\b/g,'How may ah'],[/\bMakemake\b/g,'Mah kay mah kay'],[/\bGonggong\b/g,'Gong gong'],
+  [/\bBetelgeuse\b/g,'Beetle juice'],[/\bQuaoar\b/g,'Kwa war'],[/\bHaumea\b/g,'How may ah'],[/\bMakemake\b/g,'Mah kay mah kay'],[/\bGonggong\b/g,'Gong gong'],
   [/\bCharon\b/g,'Kair on'],[/\bIo\b/g,'Eye oh'],[/\bGliese\b/g,'Glee zuh'],[/\bPsyche\b/g,'Sigh key'],[/\bRyugu\b/g,'Ree oo goo'],[/\bHygiea\b/g,'High jee ah'],
   [/\bDeimos\b/g,'Day moss'],[/\bPhobos\b/g,'Foe boss'],[/\bEnceladus\b/g,'En sell a dus'],[/\bDimorphos\b/g,'Die mor fuss'],[/\bApophis\b/g,'A poff iss'],
   [/\bMimas\b/g,'My mass'],[/\bCeres\b/g,'Seer eez'],[/\bEris\b/g,'Ee riss'],[/\bSalacia\b/g,'Sa lay sha'],[/\bVaruna\b/g,'Va roo na'],[/\bRigel\b/g,'Rye jel'],[/\bSpica\b/g,'Spy ka'],

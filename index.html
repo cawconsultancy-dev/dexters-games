@@ -358,7 +358,7 @@ renderRecent();
 
 /* player */
 let open=null;
-function openGame(id,fromHash){const g=G[id];if(!g)return;open=id;$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';Music.level(0.45);
+function openGame(id,fromHash){try{Welcome.stop();}catch(e){}const g=G[id];if(!g)return;open=id;$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';Music.level(0.45);
  const r=[id,...store.get('recent',[]).filter(x=>x!==id)].slice(0,6);store.set('recent',r);
  if(!fromHash)history.pushState({g:id},'','#play='+id);setTimeout(()=>$('back').focus(),50);}
 function closeGame(){if(!open)return;open=null;$('player').classList.remove('on');$('frame').src='about:blank';document.body.style.overflow='';renderRecent();Music.level(1);}
@@ -409,7 +409,13 @@ const Music=(()=>{let ac=null,out=null,lvl=1,on=true,timer=null,next=0,step=0;tr
  return{first(){if(on)start();ui();},toggle(){set(!on);},level(v){lvl=v;fade();},ui};})();
 document.getElementById('musicBtn').onclick=e=>{e.stopPropagation();Music.toggle();};
 Music.ui();
-{let begun=false;const once=e=>{if(begun)return;begun=true;removeEventListener('pointerdown',once,true);removeEventListener('keydown',once,true);if(e.target&&e.target.closest&&e.target.closest('#musicBtn'))return;Music.first();};addEventListener('pointerdown',once,true);addEventListener('keydown',once,true);}
+/* welcome message: plays once each time the app is opened (straight away if the device allows, otherwise on the first tap) */
+const Welcome=(()=>{let a=null,done=false;try{a=new Audio('audio/welcome.m4a');a.preload='auto';a.addEventListener('ended',()=>{if(!open)Music.level(1);});}catch(e){}
+ function play(){if(done||!a)return;try{const p=a.play();Music.level(0.25);if(p&&p.then)p.then(()=>{done=true;}).catch(()=>{if(!done)Music.level(1);});else done=true;}catch(e){}}
+ function stop(){if(a&&!a.paused){a.pause();}done=true;}
+ return{play,stop};})();
+Welcome.play();
+{let begun=false;const once=e=>{if(begun)return;begun=true;removeEventListener('pointerdown',once,true);removeEventListener('keydown',once,true);Welcome.play();if(e.target&&e.target.closest&&e.target.closest('#musicBtn'))return;Music.first();};addEventListener('pointerdown',once,true);addEventListener('keydown',once,true);}
 
 /* voice chooser */
 function niceVoice(v){let n=v.name.replace(/\s*\((enhanced|premium|natural)\)/i,'').replace(/^(Microsoft|Google)\s+/,'').replace(/\s+Online.*$/,'').replace(/ - English.*$/,'');const acc=/GB/i.test(v.lang)?'UK':/US/i.test(v.lang)?'US':/AU/i.test(v.lang)?'Australia':/IE/i.test(v.lang)?'Ireland':/IN/i.test(v.lang)?'India':/ZA/i.test(v.lang)?'South Africa':v.lang;const q=window.DGVoice?DGVoice.quality(v):0;return{n,acc,star:q>=30};}

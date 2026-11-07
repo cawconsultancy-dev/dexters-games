@@ -77,7 +77,7 @@ canvas#c{position:fixed;inset:0;display:block;touch-action:none}
 <div class="lab" id="lab" hidden>
  <div class="recrow"><button class="recb" id="recb" aria-label="Record"><span class="dot"></span></button><div class="rlab" id="rlab">Press to record</div></div>
  <div class="vg" id="vg"></div>
- <div class="vrow"><button class="tb" id="saveb" disabled>📤 Save or send</button></div>
+ <div class="vrow"><button class="tb" id="keepb" disabled>🪐 Use in Space Studio</button><button class="tb" id="saveb" disabled>📤 Save or send</button></div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -197,7 +197,7 @@ function finishRec(all,sr){const pk=peakOf(all);
  const th=Math.max(0.02,pk*0.08);let a0=0,a1=all.length-1;while(a0<all.length&&Math.abs(all[a0])<th)a0++;while(a1>a0&&Math.abs(all[a1])<th)a1--;a0=Math.max(0,a0-Math.floor(sr*0.12));a1=Math.min(all.length-1,a1+Math.floor(sr*0.25));
  const d=all.slice(a0,a1+1);const g=Math.min(12,0.98/pk);for(let i=0;i<d.length;i++)d[i]*=g;
  let b;try{b=new AudioBuffer({length:d.length,numberOfChannels:1,sampleRate:sr});}catch(e){const tmp=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,d.length,sr);b=tmp.createBuffer(1,d.length,sr);}b.getChannelData(0).set(d);
- buf=b;made++;setScore(made);$('rlab').textContent='Now tap a voice!';renderVoices();$('saveb').disabled=false;say('Now tap a voice!');sfx.good();}
+ buf=b;made++;setScore(made);$('rlab').textContent='Now tap a voice!';renderVoices();$('saveb').disabled=false;$('keepb').disabled=false;say('Now tap a voice!');sfx.good();}
 /* ---------- voices ---------- */
 let IRS={};
 function impulse(c,sec,decay,key){const k=key+c.sampleRate;if(IRS[k]&&IRS[k].ctx===c)return IRS[k].b;const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}IRS[k]={ctx:c,b};return b;}
@@ -274,18 +274,29 @@ async function play(v){if(!buf){say('Press the red button and record first');ret
 function wav(ab){const ch=ab.numberOfChannels,len=ab.length,sr=ab.sampleRate,bytes=44+len*ch*2,v=new DataView(new ArrayBuffer(bytes));const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
  ws(0,'RIFF');v.setUint32(4,bytes-8,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,sr,true);v.setUint32(28,sr*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,len*ch*2,true);
  const data=[];for(let c=0;c<ch;c++)data.push(ab.getChannelData(c));let o=44;for(let i=0;i<len;i++)for(let c=0;c<ch;c++){const s=Math.max(-1,Math.min(1,data[c][i]));v.setInt16(o,s<0?s*0x8000:s*0x7fff,true);o+=2;}return new Blob([v],{type:'audio/wav'});}
-async function saveIt(){if(!buf)return;const sr=buf.sampleRate,len=Math.ceil((buf.duration/slowOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return;}
- const oc=new OC(1,len,sr);IRS={};const src=build(oc,cur,oc.destination);src.start();let ab;try{ab=await oc.startRendering();}catch(e){toast('Could not save, try again');return;}
- let pk=0;const d=ab.getChannelData(0);for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.001)for(let i=0;i<d.length;i++)d[i]*=0.98/pk;
- const name="dexters-voice-"+VOICES.find(x=>x[0]===cur)[2].toLowerCase().replace(/\s+/g,'-')+'.wav';const file=new File([wav(ab)],name,{type:'audio/wav'});IRS={};
+/* voice clips shared between Voice Lab and Space Studio 3D (kept on this device only) */
+const VCLIPS={MAX:12,open(){return new Promise((res,rej)=>{const r=indexedDB.open('dexters-voice-clips',1);r.onupgradeneeded=()=>{r.result.createObjectStore('clips',{keyPath:'id',autoIncrement:true});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
+ async all(){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('clips','readonly').objectStore('clips').getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error);});},
+ async run(fn){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('clips','readwrite');fn(tx.objectStore('clips'));tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});},
+ async add(c){await this.run(s=>s.add(c));const all=await this.all();const extra=all.length-this.MAX;if(extra>0)await this.run(s=>all.slice(0,extra).forEach(x=>s.delete(x.id)));},
+ async del(id){await this.run(s=>s.delete(id));}};
+async function renderCur(){if(!buf)return null;const sr=buf.sampleRate,len=Math.ceil((buf.duration/slowOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return null;}
+ const oc=new OC(1,len,sr);IRS={};const src=build(oc,cur,oc.destination);src.start();let ab;try{ab=await oc.startRendering();}catch(e){toast('Could not save, try again');return null;}IRS={};
+ const d=ab.getChannelData(0);let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.001)for(let i=0;i<d.length;i++)d[i]*=0.98/pk;
+ let e=d.length-1;while(e>0&&Math.abs(d[e])<0.01)e--;return {ab,data:d.slice(0,Math.min(d.length,e+Math.floor(sr*0.1))),sr};}
+async function saveIt(){const r=await renderCur();if(!r)return;const ab=r.ab;
+ const name="dexters-voice-"+VOICES.find(x=>x[0]===cur)[2].toLowerCase().replace(/\s+/g,'-')+'.wav';const file=new File([wav(ab)],name,{type:'audio/wav'});
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"My voice"});toast('Sent!');return;}}catch(e){if(e.name==='AbortError')return;}
  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Saved!');}
+let keeping=false;async function keepIt(){if(keeping||!buf)return;if(!window.indexedDB){toast('This device cannot keep sounds');return;}keeping=true;$('keepb').disabled=true;
+ try{const r=await renderCur();if(r){const v=VOICES.find(x=>x[0]===cur);await VCLIPS.add({voice:cur,emoji:v[1],name:v[2],sr:r.sr,data:r.data,t:Date.now()});toast(v[1]+' Saved for Space Studio 3D!');say('Saved! Now you can use it in Space Studio 3D');sfx.good();}}
+ catch(e){toast('Could not save, try again');}keeping=false;$('keepb').disabled=!buf;}
 /* ---------- UI ---------- */
 function renderVoices(){$('vg').innerHTML=VOICES.map(v=>'<button class="vb'+(buf&&v[0]===cur?' on':'')+'" data-v="'+v[0]+'"'+(buf?'':' disabled')+'><i>'+v[1]+'</i>'+v[2]+'</button>').join('');}
 function buildUI(){if(built)return;built=true;renderVoices();
  $('recb').onclick=()=>{if(recording)stopRec();else startRec();};
  $('vg').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;if(busy)return;if(recording)stopRec();play(b.dataset.v);};
- $('saveb').onclick=saveIt;$('exit').onclick=()=>{if(recording)stopRec();stopPlay();state='title';shown(false);show('title');};}
+ $('saveb').onclick=saveIt;$('keepb').onclick=keepIt;$('exit').onclick=()=>{if(recording)stopRec();stopPlay();state='title';shown(false);show('title');};}
 function shown(on){$('lab').hidden=!on;$('topb').hidden=!on;}
 G.init=()=>{buildUI();};
 const _start=start;start=function(){_start();shown(true);setTimeout(()=>say("Welcome to Dexter's Voice Lab! Press the red button and say something."),300);};

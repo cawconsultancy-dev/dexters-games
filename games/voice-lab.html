@@ -51,7 +51,7 @@ canvas#c{position:fixed;inset:0;display:block;touch-action:none}
 .recb .dot{width:34px;height:34px;border-radius:50%;background:#fff}
 .recb.on .dot{border-radius:8px;width:30px;height:30px}
 .rlab{font:700 20px Fredoka,sans-serif;min-width:150px}
-.vg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;max-height:36vh;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 4px 2px 2px;overscroll-behavior:contain}
 .vb{border:3px solid transparent;background:#f3f0ff;border-radius:18px;padding:6px 2px 6px;font:600 14px Fredoka,sans-serif;color:#1d1b3a;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
 .vb i{font-style:normal;font-size:34px;line-height:1.1}
 .vb.on{border-color:#7a3ae0;background:#fff3c4}
@@ -62,7 +62,7 @@ canvas#c{position:fixed;inset:0;display:block;touch-action:none}
 .topb{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:6}
 .toast{position:fixed;left:50%;top:76px;transform:translateX(-50%);background:#fff;color:#1d1b3a;border-radius:999px;padding:10px 20px;font-weight:700;z-index:20;opacity:0;transition:opacity .2s;white-space:nowrap}
 .toast.on{opacity:1}
-@media (max-width:560px){.vg{grid-template-columns:repeat(3,1fr)}.vb i{font-size:28px}.recb{width:74px;height:74px}}
+@media (max-width:560px){.vg{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}.vb i{font-size:28px}.recb{width:74px;height:74px}}
 
 </style>
 </head>
@@ -158,7 +158,7 @@ function boot(){document.title=G.title;$('tIcon').textContent=G.icon;$('tTitle')
 
 
 const G={title:"Dexter's Voice Lab",icon:'🎙️',sub:'Record your voice, then hear it as a chipmunk, a giant, a robot and more!',hint:'Press the red button, talk, then tap a voice.',unit:'recordings',noPause:1};
-const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio']];
+const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio'],['baby','👶','Baby'],['mouse','🐭','Mouse'],['bear','🐻','Bear'],['slowmo','🐢','Slow motion'],['superfast','⚡','Super fast'],['astronaut','👨‍🚀','Astronaut'],['spacerobot','🛸','Space robot'],['stadium','🏟️','Stadium'],['telephone','☎️','Telephone'],['megaphone','📣','Megaphone'],['jelly','🍮','Wobbly jelly'],['dizzy','🌀','Dizzy'],['choir','🎶','Choir'],['twins','👯','Twins'],['monster','👹','Monster'],['dragon','🐉','Dragon'],['fairy','🧚','Fairy'],['backwards','⏪','Backwards'],['tunnel','🚇','Tunnel'],['squeaky','🐤','Squeaky']];
 const MAXS=30;
 let VC=null,mic=null,proc=null,recSrc=null,recBufs=[],recLen=0,recording=false,recT0=0,buf=null,cur='normal',playing=null,playT0=0,anIn=null,anOut=null,lvl=0,made=0,built=false,meterBuf=null;
 function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
@@ -189,10 +189,20 @@ function stopRec(){if(!recording)return;recording=false;appMusic(0.45);$('recb')
 /* ---------- voices ---------- */
 let IRS={};
 function impulse(c,sec,decay,key){const k=key+c.sampleRate;if(IRS[k]&&IRS[k].ctx===c)return IRS[k].b;const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}IRS[k]={ctx:c,b};return b;}
-function rateOf(v){return {chipmunk:1.65,giant:0.62,alien:1.15,underwater:0.92,ghost:0.82}[v]||1;}
-function tailOf(v){return {cave:2.5,ghost:3.5,alien:0.3,robot:0.2,underwater:0.5}[v]||0.2;}
-function build(c,v,out){const src=c.createBufferSource();src.buffer=buf;src.playbackRate.value=rateOf(v);const mix=c.createGain();mix.connect(out);let head=src;
+function rateOf(v){return {chipmunk:1.65,giant:0.62,alien:1.15,underwater:0.92,ghost:0.82,baby:1.35,mouse:2,bear:0.75,slowmo:0.5,superfast:2.4,monster:0.55,dragon:0.7,fairy:1.4,squeaky:1.8}[v]||1;}
+function slowOf(v){return {choir:0.94,dizzy:0.88}[v]||rateOf(v);}
+function tailOf(v){return {cave:2.5,ghost:3.5,alien:0.3,robot:0.2,underwater:0.5,astronaut:0.5,spacerobot:0.4,stadium:3.2,choir:2.6,twins:0.3,dragon:2.6,fairy:3,tunnel:1.6,jelly:0.3,dizzy:0.5,monster:0.4}[v]||0.2;}
+function revOf(c){const r=c.createBuffer(1,buf.length,buf.sampleRate),a=buf.getChannelData(0),b=r.getChannelData(0),n=a.length;for(let i=0;i<n;i++)b[i]=a[n-1-i];return r;}
+function build(c,v,out){const src=c.createBufferSource();src.buffer=v==='backwards'?revOf(c):buf;src.playbackRate.value=rateOf(v);const mix=c.createGain();mix.connect(out);let head=src;
  const chain=(...nodes)=>{nodes.forEach(n=>{head.connect(n);head=n;});};
+ const xs=[],T=c.currentTime;const gain=x=>{const g=c.createGain();g.gain.value=x;return g;};
+ const osc=(f,ty)=>{const o=c.createOscillator();o.type=ty||'sine';o.frequency.value=f;o.start();xs.push(o);return o;};
+ const lfo=(f,depth,param)=>{const g=gain(depth);osc(f).connect(g);g.connect(param);};
+ const filt=(ty,f,q,gn)=>{const b=c.createBiquadFilter();b.type=ty;b.frequency.value=f;if(q!=null)b.Q.value=q;if(gn!=null)b.gain.value=gn;return b;};
+ const dist=k=>{const w=c.createWaveShaper(),cu=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cu[i]=Math.tanh(x*k)/Math.tanh(k);}w.curve=cu;return w;};
+ const verb=(sec,dec,key,amt,from)=>{const cv=c.createConvolver();cv.buffer=impulse(c,sec,dec,key);const g=gain(amt);(from||head).connect(cv);cv.connect(g);g.connect(mix);};
+ const twin=(rate,dly)=>{const s=c.createBufferSource();s.buffer=src.buffer;s.playbackRate.value=rate;const d=c.createDelay(0.5);d.delayTime.value=dly;s.connect(d);s.start();xs.push(s);return d;};
+ const wob=(f,depth,base)=>{const d=c.createDelay(0.1);d.delayTime.value=base||0.01;lfo(f,depth,d.delayTime);return d;};
  switch(v){
  case 'giant':{const ls=c.createBiquadFilter();ls.type='lowshelf';ls.frequency.value=250;ls.gain.value=6;chain(ls);head.connect(mix);break;}
  case 'robot':{const rm=c.createGain();rm.gain.value=0;const o=c.createOscillator();o.type='sine';o.frequency.value=55;const og=c.createGain();og.gain.value=1;o.connect(og);og.connect(rm.gain);o.start();
@@ -207,19 +217,43 @@ function build(c,v,out){const src=c.createBufferSource();src.buffer=buf;src.play
   const tr=c.createGain();tr.gain.value=0.7;const l=c.createOscillator();l.frequency.value=5;const lg=c.createGain();lg.gain.value=0.3;l.connect(lg);lg.connect(tr.gain);l.start();dg.connect(tr);tr.connect(mix);src.onended=()=>{setTimeout(()=>{try{l.stop();}catch(e){}},3500);};break;}
  case 'radio':{const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=500;const bp=c.createBiquadFilter();bp.type='peaking';bp.frequency.value=1800;bp.gain.value=8;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;const ws=c.createWaveShaper();const cu=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cu[i]=Math.tanh(x*4);}ws.curve=cu;chain(hp,bp,ws,lp);const g=c.createGain();g.gain.value=0.6;head.connect(g);g.connect(mix);
   const n=c.createBufferSource();const nl=Math.floor(c.sampleRate*(buf.duration+0.3)),nb=c.createBuffer(1,nl,c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nl;i++)nd[i]=(Math.random()*2-1)*0.02+(Math.random()<0.0004?(Math.random()*2-1)*0.5:0);n.buffer=nb;n.connect(mix);n.start();break;}
+ case 'baby':{chain(wob(6,0.0016),filt('highshelf',3000,null,4));head.connect(mix);break;}
+ case 'mouse':{chain(filt('highpass',420,0.9));head.connect(mix);break;}
+ case 'bear':{chain(filt('lowshelf',220,null,7),filt('lowpass',2400,0.8),dist(1.6));head.connect(mix);break;}
+ case 'slowmo':{chain(filt('lowshelf',200,null,3));head.connect(mix);break;}
+ case 'superfast':{head.connect(mix);break;}
+ case 'astronaut':{chain(filt('highpass',350,0.8),filt('peaking',1500,1,6),dist(2.5),filt('lowpass',3400,0.8));head.connect(mix);
+  const beep=(t0)=>{const o=c.createOscillator();o.frequency.value=1250;const g=gain(0);g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(0.35,t0+0.01);g.gain.setValueAtTime(0.35,t0+0.14);g.gain.linearRampToValueAtTime(0,t0+0.16);o.connect(g);g.connect(mix);o.start(t0);o.stop(t0+0.2);};
+  const dur=src.buffer.duration;beep(T);beep(T+dur+0.08);
+  const n=c.createBufferSource();const nl=Math.floor(c.sampleRate*(dur+0.3)),nb=c.createBuffer(1,nl,c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nl;i++)nd[i]=(Math.random()*2-1)*0.025;n.buffer=nb;const nf=filt('bandpass',2500,0.7);n.connect(nf);nf.connect(mix);n.start();xs.push(n);break;}
+ case 'spacerobot':{const rm=gain(0);lfo(30,1,rm.gain);const hp=filt('highpass',250,0.7);chain(hp,rm);const dl=c.createDelay(0.1);dl.delayTime.value=0.006;const fb=gain(0.7);rm.connect(dl);dl.connect(fb);fb.connect(dl);const g2=gain(0.75);rm.connect(g2);dl.connect(g2);g2.connect(mix);break;}
+ case 'stadium':{head.connect(mix);const sl=c.createDelay(1);sl.delayTime.value=0.19;const fb=gain(0.3);head.connect(sl);sl.connect(fb);fb.connect(sl);const sg=gain(0.55);sl.connect(sg);sg.connect(mix);verb(3,3,'stadium',0.9);break;}
+ case 'telephone':{chain(filt('highpass',320,0.7),filt('highpass',320,0.7),filt('peaking',1600,1,7),filt('lowpass',3200,0.7),filt('lowpass',3200,0.7),dist(1.8));head.connect(mix);break;}
+ case 'megaphone':{chain(filt('highpass',650,0.9),filt('peaking',2100,1.2,10),dist(6),filt('lowpass',4800,0.7));const g=gain(0.7);head.connect(g);g.connect(mix);break;}
+ case 'jelly':{const tr=gain(0.75);lfo(9,0.25,tr.gain);chain(wob(9,0.0042,0.012),tr);head.connect(mix);break;}
+ case 'dizzy':{lfo(0.7,0.32,src.playbackRate);const tr=gain(0.85);lfo(1.4,0.15,tr.gain);chain(tr);head.connect(mix);break;}
+ case 'choir':{const g0=gain(0.55);head.connect(g0);g0.connect(mix);const bus=gain(1);g0.connect(bus);[[0.94,0.025],[1.12,0.04],[1.19,0.055]].forEach(([r,d])=>{const t=twin(r,d),g=gain(0.42);t.connect(g);g.connect(mix);g.connect(bus);});verb(2.4,2.2,'choir',0.5,bus);break;}
+ case 'twins':{const g0=gain(0.75);head.connect(g0);g0.connect(mix);const t=twin(1.5,0.03),hp=filt('highpass',300,0.7),g=gain(0.6);t.connect(hp);hp.connect(g);g.connect(mix);break;}
+ case 'monster':{const am=gain(0.65);lfo(24,0.35,am.gain);chain(filt('lowshelf',180,null,8),dist(3),am,filt('lowpass',3000,0.7));head.connect(mix);break;}
+ case 'dragon':{chain(filt('lowshelf',200,null,6),dist(3.5),filt('lowpass',3500,0.7));head.connect(mix);verb(2.5,2.4,'dragon',0.7);break;}
+ case 'fairy':{chain(filt('highshelf',3500,null,6));head.connect(mix);const sh=twin(2,0.06),sg=gain(0.25);sh.connect(sg);verb(3,2.6,'fairy',1.1,sg);verb(2.6,2.6,'fairy',0.45);break;}
+ case 'backwards':{head.connect(mix);break;}
+ case 'tunnel':{head.connect(mix);const d=c.createDelay(0.2);d.delayTime.value=0.03;const fb=gain(0.68),lp=filt('lowpass',3000,0.7);head.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);const eg=gain(0.55);lp.connect(eg);eg.connect(mix);verb(1.3,2.5,'tunnel',0.35);break;}
+ case 'squeaky':{chain(filt('highpass',1100,6),filt('peaking',3000,1.5,6));head.connect(mix);break;}
  default:head.connect(mix);}
+ src._x=xs;if(!src.onended&&xs.length)src.onended=()=>setTimeout(()=>xs.forEach(n=>{try{n.stop();}catch(e){}}),(tailOf(v)+1)*1000);
  return src;}
-function stopPlay(){if(playing){try{playing.stop();}catch(e){}playing=null;}}
+let lastX=[];function stopPlay(){lastX.forEach(n=>{try{n.stop();}catch(e){}});lastX=[];if(playing){try{playing.stop();}catch(e){}playing=null;}}
 async function play(v){if(!buf){say('Press the red button and record first');return;}unlockOut();session('playback');stopPlay();cur=v;renderVoices();const c=await playCtx();
  const out=c.createGain();out.gain.value=1;const comp=c.createDynamicsCompressor();comp.threshold.value=-28;comp.knee.value=12;comp.ratio.value=6;comp.attack.value=0.003;comp.release.value=0.25;
  const make=c.createGain();make.gain.value=2.6;const lim=c.createDynamicsCompressor();lim.threshold.value=-1.5;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=0.001;lim.release.value=0.1;
  anOut=c.createAnalyser();anOut.fftSize=1024;meterBuf=new Uint8Array(anOut.fftSize);out.connect(comp);comp.connect(make);make.connect(lim);lim.connect(anOut);anOut.connect(c.destination);
- const src=build(c,v,out);src.start();playing=src;playT0=performance.now();src.onended=(f=>()=>{f&&f();if(playing===src)playing=null;})(src.onended);}
+ const src=build(c,v,out);src.start();playing=src;lastX=src._x||[];playT0=performance.now();src.onended=(f=>()=>{f&&f();if(playing===src)playing=null;})(src.onended);}
 /* ---------- save / share as a WAV file ---------- */
 function wav(ab){const ch=ab.numberOfChannels,len=ab.length,sr=ab.sampleRate,bytes=44+len*ch*2,v=new DataView(new ArrayBuffer(bytes));const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
  ws(0,'RIFF');v.setUint32(4,bytes-8,true);ws(8,'WAVE');ws(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);v.setUint32(24,sr,true);v.setUint32(28,sr*ch*2,true);v.setUint16(32,ch*2,true);v.setUint16(34,16,true);ws(36,'data');v.setUint32(40,len*ch*2,true);
  const data=[];for(let c=0;c<ch;c++)data.push(ab.getChannelData(c));let o=44;for(let i=0;i<len;i++)for(let c=0;c<ch;c++){const s=Math.max(-1,Math.min(1,data[c][i]));v.setInt16(o,s<0?s*0x8000:s*0x7fff,true);o+=2;}return new Blob([v],{type:'audio/wav'});}
-async function saveIt(){if(!buf)return;const sr=buf.sampleRate,len=Math.ceil((buf.duration/rateOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return;}
+async function saveIt(){if(!buf)return;const sr=buf.sampleRate,len=Math.ceil((buf.duration/slowOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return;}
  const oc=new OC(1,len,sr);IRS={};const src=build(oc,cur,oc.destination);src.start();let ab;try{ab=await oc.startRendering();}catch(e){toast('Could not save, try again');return;}
  let pk=0;const d=ab.getChannelData(0);for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.001)for(let i=0;i<d.length;i++)d[i]*=0.98/pk;
  const name="dexters-voice-"+VOICES.find(x=>x[0]===cur)[2].toLowerCase().replace(/\s+/g,'-')+'.wav';const file=new File([wav(ab)],name,{type:'audio/wav'});IRS={};

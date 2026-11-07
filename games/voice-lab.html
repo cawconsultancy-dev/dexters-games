@@ -163,20 +163,28 @@ const MAXS=30;
 let VC=null,mic=null,proc=null,recSrc=null,recBufs=[],recLen=0,recording=false,recT0=0,buf=null,cur='normal',playing=null,playT0=0,anIn=null,anOut=null,lvl=0,made=0,built=false,meterBuf=null;
 function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1800);}
-function ctx0(){if(!VC){VC=new(window.AudioContext||window.webkitAudioContext)();}if(VC.state!=='running')VC.resume();return VC;}
+let RC=null,PC=null,unlocked=false;
+function session(t){try{if(navigator.audioSession)navigator.audioSession.type=t;}catch(e){}}
+function unlockOut(){if(unlocked)return;unlocked=true;try{const a=new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');a.setAttribute('playsinline','');a.play().catch(()=>{});}catch(e){}}
+async function playCtx(){if(!PC||PC.state==='closed')PC=new(window.AudioContext||window.webkitAudioContext)();if(PC.state!=='running'){try{await PC.resume();}catch(e){}}return PC;}
 /* ---------- recording (raw samples, works on iPad) ---------- */
-async function startRec(){const c=ctx0();stopPlay();
- if(!mic){if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('No microphone on this device');return;}
-  try{mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:true,autoGainControl:true}});}catch(e){toast('Microphone not allowed');say('Ask a grown-up to let me use the microphone');return;}}
+async function startRec(){stopPlay();if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('No microphone on this device');return;}
+ session('play-and-record');
+ try{mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}});}catch(e){session('playback');toast('Microphone not allowed');say('Ask a grown-up to let me use the microphone');return;}
+ RC=new(window.AudioContext||window.webkitAudioContext)();try{await RC.resume();}catch(e){}const c=RC;
  recSrc=c.createMediaStreamSource(mic);proc=c.createScriptProcessor(4096,1,1);anIn=c.createAnalyser();anIn.fftSize=1024;meterBuf=new Uint8Array(anIn.fftSize);
  const z=c.createGain();z.gain.value=0;recBufs=[];recLen=0;
  proc.onaudioprocess=e=>{if(!recording)return;const d=e.inputBuffer.getChannelData(0);recBufs.push(new Float32Array(d));recLen+=d.length;if(recLen>c.sampleRate*MAXS)stopRec();};
  recSrc.connect(anIn);recSrc.connect(proc);proc.connect(z);z.connect(c.destination);
- recording=true;appMusic(0);recT0=performance.now();$('recb').classList.add('on');$('rlab').textContent='Recording… press to stop';tone(880,0.08,'sine',0.08);}
+ recording=true;appMusic(0);recT0=performance.now();$('recb').classList.add('on');$('rlab').textContent='Recording… press to stop';}
 function stopRec(){if(!recording)return;recording=false;appMusic(0.45);$('recb').classList.remove('on');try{recSrc.disconnect();proc.disconnect();}catch(e){}
- const c=VC;if(recLen<c.sampleRate*0.3){$('rlab').textContent='Too short, try again';say('Try again, and say something longer');return;}
- const b=c.createBuffer(1,recLen,c.sampleRate),d=b.getChannelData(0);let o=0;recBufs.forEach(a=>{d.set(a,o);o+=a.length;});
- let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.01){const g=Math.min(4,0.9/pk);for(let i=0;i<d.length;i++)d[i]*=g;}
+ const sr=RC.sampleRate;try{mic.getTracks().forEach(t=>t.stop());}catch(e){}mic=null;try{RC.close();}catch(e){}RC=null;anIn=null;session('playback');
+ const all=new Float32Array(recLen);let o=0;recBufs.forEach(a=>{all.set(a,o);o+=a.length;});recBufs=[];
+ let pk=0;for(let i=0;i<all.length;i++)pk=Math.max(pk,Math.abs(all[i]));
+ if(recLen<sr*0.3||pk<0.004){$('rlab').textContent=pk<0.004&&recLen>=sr*0.3?'I could not hear you, try again':'Too short, try again';say(pk<0.004?'I could not hear you. Try again, a bit closer to the tablet':'Try again, and say something longer');return;}
+ const th=Math.max(0.02,pk*0.08);let a0=0,a1=all.length-1;while(a0<all.length&&Math.abs(all[a0])<th)a0++;while(a1>a0&&Math.abs(all[a1])<th)a1--;a0=Math.max(0,a0-Math.floor(sr*0.12));a1=Math.min(all.length-1,a1+Math.floor(sr*0.25));
+ const d=all.slice(a0,a1+1);const g=Math.min(12,0.98/pk);for(let i=0;i<d.length;i++)d[i]*=g;
+ let b;try{b=new AudioBuffer({length:d.length,numberOfChannels:1,sampleRate:sr});}catch(e){const tmp=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,d.length,sr);b=tmp.createBuffer(1,d.length,sr);}b.getChannelData(0).set(d);
  buf=b;made++;setScore(made);$('rlab').textContent='Now tap a voice!';renderVoices();$('saveb').disabled=false;say('Now tap a voice!');sfx.good();}
 /* ---------- voices ---------- */
 let IRS={};
@@ -195,15 +203,17 @@ function build(c,v,out){const src=c.createBufferSource();src.buffer=buf;src.play
   const cv=c.createConvolver();cv.buffer=impulse(c,2.2,2.5,'cave');const wg=c.createGain();wg.gain.value=0.35;head.connect(cv);cv.connect(wg);wg.connect(mix);break;}
  case 'underwater':{const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=650;lp.Q.value=4;const dl=c.createDelay(0.1);dl.delayTime.value=0.01;const l=c.createOscillator();l.frequency.value=3;const lg=c.createGain();lg.gain.value=0.004;l.connect(lg);lg.connect(dl.delayTime);l.start();chain(dl,lp);const g=c.createGain();g.gain.value=1.1;head.connect(g);g.connect(mix);
   const bub=c.createBufferSource();const bl=Math.floor(c.sampleRate*(buf.duration/0.92+0.5)),bb=c.createBuffer(1,bl,c.sampleRate),bd=bb.getChannelData(0);for(let k=0;k<Math.floor(bl/c.sampleRate*4);k++){const s0=Math.floor(Math.random()*bl),f=300+Math.random()*500;for(let i=0;i<1500&&s0+i<bl;i++){bd[s0+i]+=Math.sin(i/c.sampleRate*Math.PI*2*f*(1+i/1500))*0.12*(1-i/1500);}}bub.buffer=bb;bub.connect(mix);bub.start();src.onended=()=>{try{l.stop();}catch(e){}};break;}
- case 'ghost':{const cv=c.createConvolver();cv.buffer=impulse(c,3.4,1.8,'ghost');const wg=c.createGain();wg.gain.value=1.8;head.connect(cv);cv.connect(wg);wg.connect(mix);const dg=c.createGain();dg.gain.value=0.8;head.connect(dg);
+ case 'ghost':{const cv=c.createConvolver();cv.buffer=impulse(c,3.4,1.8,'ghost');const wg=c.createGain();wg.gain.value=1.8;head.connect(cv);cv.connect(wg);wg.connect(mix);const dg=c.createGain();dg.gain.value=1.3;head.connect(dg);
   const tr=c.createGain();tr.gain.value=0.7;const l=c.createOscillator();l.frequency.value=5;const lg=c.createGain();lg.gain.value=0.3;l.connect(lg);lg.connect(tr.gain);l.start();dg.connect(tr);tr.connect(mix);src.onended=()=>{setTimeout(()=>{try{l.stop();}catch(e){}},3500);};break;}
  case 'radio':{const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=500;const bp=c.createBiquadFilter();bp.type='peaking';bp.frequency.value=1800;bp.gain.value=8;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=3200;const ws=c.createWaveShaper();const cu=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/511.5-1;cu[i]=Math.tanh(x*4);}ws.curve=cu;chain(hp,bp,ws,lp);const g=c.createGain();g.gain.value=0.6;head.connect(g);g.connect(mix);
   const n=c.createBufferSource();const nl=Math.floor(c.sampleRate*(buf.duration+0.3)),nb=c.createBuffer(1,nl,c.sampleRate),nd=nb.getChannelData(0);for(let i=0;i<nl;i++)nd[i]=(Math.random()*2-1)*0.02+(Math.random()<0.0004?(Math.random()*2-1)*0.5:0);n.buffer=nb;n.connect(mix);n.start();break;}
  default:head.connect(mix);}
  return src;}
 function stopPlay(){if(playing){try{playing.stop();}catch(e){}playing=null;}}
-function play(v){if(!buf){say('Press the red button and record first');return;}const c=ctx0();stopPlay();cur=v;renderVoices();
- const out=c.createGain();out.gain.value=soundOn?1:0;const comp=c.createDynamicsCompressor();comp.threshold.value=-10;comp.ratio.value=8;anOut=c.createAnalyser();anOut.fftSize=1024;meterBuf=new Uint8Array(anOut.fftSize);out.connect(comp);comp.connect(anOut);anOut.connect(c.destination);
+async function play(v){if(!buf){say('Press the red button and record first');return;}unlockOut();session('playback');stopPlay();cur=v;renderVoices();const c=await playCtx();
+ const out=c.createGain();out.gain.value=1;const comp=c.createDynamicsCompressor();comp.threshold.value=-28;comp.knee.value=12;comp.ratio.value=6;comp.attack.value=0.003;comp.release.value=0.25;
+ const make=c.createGain();make.gain.value=2.6;const lim=c.createDynamicsCompressor();lim.threshold.value=-1.5;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=0.001;lim.release.value=0.1;
+ anOut=c.createAnalyser();anOut.fftSize=1024;meterBuf=new Uint8Array(anOut.fftSize);out.connect(comp);comp.connect(make);make.connect(lim);lim.connect(anOut);anOut.connect(c.destination);
  const src=build(c,v,out);src.start();playing=src;playT0=performance.now();src.onended=(f=>()=>{f&&f();if(playing===src)playing=null;})(src.onended);}
 /* ---------- save / share as a WAV file ---------- */
 function wav(ab){const ch=ab.numberOfChannels,len=ab.length,sr=ab.sampleRate,bytes=44+len*ch*2,v=new DataView(new ArrayBuffer(bytes));const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
@@ -211,7 +221,7 @@ function wav(ab){const ch=ab.numberOfChannels,len=ab.length,sr=ab.sampleRate,byt
  const data=[];for(let c=0;c<ch;c++)data.push(ab.getChannelData(c));let o=44;for(let i=0;i<len;i++)for(let c=0;c<ch;c++){const s=Math.max(-1,Math.min(1,data[c][i]));v.setInt16(o,s<0?s*0x8000:s*0x7fff,true);o+=2;}return new Blob([v],{type:'audio/wav'});}
 async function saveIt(){if(!buf)return;const sr=buf.sampleRate,len=Math.ceil((buf.duration/rateOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return;}
  const oc=new OC(1,len,sr);IRS={};const src=build(oc,cur,oc.destination);src.start();let ab;try{ab=await oc.startRendering();}catch(e){toast('Could not save, try again');return;}
- let pk=0;const d=ab.getChannelData(0);for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.98)for(let i=0;i<d.length;i++)d[i]*=0.98/pk;
+ let pk=0;const d=ab.getChannelData(0);for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.001)for(let i=0;i<d.length;i++)d[i]*=0.98/pk;
  const name="dexters-voice-"+VOICES.find(x=>x[0]===cur)[2].toLowerCase().replace(/\s+/g,'-')+'.wav';const file=new File([wav(ab)],name,{type:'audio/wav'});IRS={};
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"My voice"});toast('Sent!');return;}}catch(e){if(e.name==='AbortError')return;}
  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Saved!');}

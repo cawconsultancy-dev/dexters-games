@@ -158,7 +158,7 @@ function boot(){document.title=G.title;$('tIcon').textContent=G.icon;$('tTitle')
 
 
 const G={title:"Dexter's Voice Lab",icon:'🎙️',sub:'Record your voice, then hear it as a chipmunk, a giant, a robot and more!',hint:'Press the red button, talk, then tap a voice.',unit:'recordings',noPause:1};
-const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio'],['baby','👶','Baby'],['mouse','🐭','Mouse'],['bear','🐻','Bear'],['slowmo','🐢','Slow motion'],['superfast','⚡','Super fast'],['astronaut','👨‍🚀','Astronaut'],['spacerobot','🛸','Space robot'],['stadium','🏟️','Stadium'],['telephone','☎️','Telephone'],['megaphone','📣','Megaphone'],['jelly','🍮','Wobbly jelly'],['dizzy','🌀','Dizzy'],['choir','🎶','Choir'],['twins','👯','Twins'],['monster','👹','Monster'],['dragon','🐉','Dragon'],['fairy','🧚','Fairy'],['backwards','⏪','Backwards'],['tunnel','🚇','Tunnel'],['squeaky','🐤','Squeaky']];
+const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio'],['baby','👶','Baby'],['mouse','🐭','Mouse'],['bear','🐻','Bear'],['slowmo','🐢','Slow motion'],['superfast','⚡','Super fast'],['fasttalk','🐇','Fast talking'],['slowtalk','🐌','Slow talking'],['astronaut','👨‍🚀','Astronaut'],['spacerobot','🛸','Space robot'],['stadium','🏟️','Stadium'],['telephone','☎️','Telephone'],['megaphone','📣','Megaphone'],['jelly','🍮','Wobbly jelly'],['dizzy','🌀','Dizzy'],['choir','🎶','Choir'],['twins','👯','Twins'],['monster','👹','Monster'],['dragon','🐉','Dragon'],['fairy','🧚','Fairy'],['backwards','⏪','Backwards'],['tunnel','🚇','Tunnel'],['squeaky','🐤','Squeaky']];
 const MAXS=30;
 let VC=null,mic=null,proc=null,recSrc=null,recBufs=[],recLen=0,recording=false,recT0=0,buf=null,cur='normal',playing=null,playT0=0,anIn=null,anOut=null,lvl=0,made=0,built=false,meterBuf=null;
 function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
@@ -168,32 +168,32 @@ function session(t){try{if(navigator.audioSession)navigator.audioSession.type=t;
 function unlockOut(){if(unlocked)return;unlocked=true;try{const a=new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');a.setAttribute('playsinline','');a.play().catch(()=>{});}catch(e){}}
 async function playCtx(){if(!PC||PC.state==='closed')PC=new(window.AudioContext||window.webkitAudioContext)();if(PC.state!=='running'){try{await PC.resume();}catch(e){}}return PC;}
 /* ---------- recording (raw samples, works on iPad) ---------- */
-let MR=null,mrChunks=[],busy=false;const RAC=window.AudioContext||window.webkitAudioContext;
+let MR=null,mrChunks=[],busy=false,diag='';const RAC=window.AudioContext||window.webkitAudioContext;
 async function startRec(){if(busy||recording)return;stopPlay();if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('No microphone on this device');return;}
  busy=true;if(PC){try{PC.close();}catch(e){}PC=null;}
  session('play-and-record');
  RC=new RAC();try{RC.resume();}catch(e){}
- try{mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}});}catch(e){try{RC.close();}catch(x){}RC=null;session('playback');busy=false;toast('Microphone not allowed');say('Ask a grown-up to let me use the microphone');return;}
+ try{mic=await navigator.mediaDevices.getUserMedia({audio:true});}catch(e){try{RC.close();}catch(x){}RC=null;session('playback');busy=false;toast('Microphone not allowed');say('Ask a grown-up to let me use the microphone');return;}
  const c=RC;if(c.state!=='running'){try{await c.resume();}catch(e){}}
  recSrc=c.createMediaStreamSource(mic);proc=c.createScriptProcessor(4096,1,1);anIn=c.createAnalyser();anIn.fftSize=1024;meterBuf=new Uint8Array(anIn.fftSize);
  const z=c.createGain();z.gain.value=0;recBufs=[];recLen=0;
  proc.onaudioprocess=e=>{if(!recording)return;const d=e.inputBuffer.getChannelData(0);recBufs.push(new Float32Array(d));recLen+=d.length;};
  recSrc.connect(anIn);recSrc.connect(proc);proc.connect(z);z.connect(c.destination);
- mrChunks=[];MR=null;try{if(window.MediaRecorder){MR=new MediaRecorder(mic);MR.ondataavailable=e=>{if(e.data&&e.data.size)mrChunks.push(e.data);};MR.start(250);}}catch(e){MR=null;}
+ mrChunks=[];MR=null;try{if(window.MediaRecorder){MR=new MediaRecorder(mic);MR.ondataavailable=e=>{if(e.data&&e.data.size)mrChunks.push(e.data);};MR.start();}}catch(e){MR=null;}
  recording=true;busy=false;appMusic(0);recT0=performance.now();$('recb').classList.add('on');$('rlab').textContent='Recording… press to stop';}
 function peakOf(a){let pk=0;for(let i=0;i<a.length;i++){const x=Math.abs(a[i]);if(x>pk)pk=x;}return pk;}
 function stopMic(){try{mic.getTracks().forEach(t=>t.stop());}catch(e){}mic=null;try{RC.close();}catch(e){}RC=null;anIn=null;session('playback');}
-function decodeBlob(ab){return new Promise((res,rej)=>{const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;const dc=OC?new OC(1,1,44100):new RAC();const p=dc.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);});}
+function decodeBlob(ab){return new Promise((res,rej)=>{const dc=new RAC();let fin=false;const done=f=>x=>{if(fin)return;fin=true;try{const q=dc.close();if(q&&q.catch)q.catch(()=>{});}catch(e){}f(x);};const p=dc.decodeAudioData(ab,done(res),done(rej));if(p&&p.then)p.then(done(res),done(rej));});}
 function stopRec(){if(!recording)return;recording=false;appMusic(0.45);$('recb').classList.remove('on');try{recSrc.disconnect();proc.disconnect();}catch(e){}
  const sr=RC?RC.sampleRate:44100;const all=new Float32Array(recLen);let o=0;recBufs.forEach(a=>{all.set(a,o);o+=a.length;});recBufs=[];
- const ok=recLen>=sr*0.3&&peakOf(all)>=0.004;
+ const ok=recLen>=sr*0.3&&peakOf(all)>=0.004;diag='S'+Math.round(recLen/sr*10)+'/'+Math.round(peakOf(all)*1000)+(MR?' M'+MR.state:' M-');
  if(ok||!MR||MR.state==='inactive'){if(MR&&MR.state!=='inactive'){MR.onstop=null;try{MR.stop();}catch(e){}}MR=null;stopMic();finishRec(all,sr);return;}
  /* the first recorder heard nothing (this happens on some iPads), so use the second recorder's copy */
  busy=true;$('rlab').textContent='Just a moment…';const mr=MR;MR=null;
- mr.onstop=async()=>{stopMic();try{const blob=new Blob(mrChunks,{type:mr.mimeType||'audio/mp4'});mrChunks=[];const b=await decodeBlob(await blob.arrayBuffer());busy=false;finishRec(new Float32Array(b.getChannelData(0)),b.sampleRate);}catch(e){busy=false;finishRec(all,sr);}};
+ mr.onstop=async()=>{stopMic();try{const blob=new Blob(mrChunks,{type:mr.mimeType||'audio/mp4'});mrChunks=[];diag+=' B'+blob.size;const b=await decodeBlob(await blob.arrayBuffer());diag+=' D'+Math.round(b.duration*10)+'/'+Math.round(peakOf(b.getChannelData(0))*1000);busy=false;finishRec(new Float32Array(b.getChannelData(0)),b.sampleRate);}catch(e){diag+=' E'+(e&&e.name||'');busy=false;finishRec(all,sr);}};
  try{mr.requestData();}catch(e){}try{mr.stop();}catch(e){busy=false;stopMic();finishRec(all,sr);}}
 function finishRec(all,sr){const pk=peakOf(all);
- if(all.length<sr*0.3||pk<0.004){$('rlab').textContent=pk<0.004&&all.length>=sr*0.3?'I could not hear you, try again':'Too short, try again';say(pk<0.004?'I could not hear you. Try again, a bit closer to the tablet':'Try again, and say something longer');return;}
+ if(all.length<sr*0.3||pk<0.004){$('rlab').textContent=pk<0.004&&all.length>=sr*0.3?'I could not hear you, try again ('+diag+')':'Too short, try again';say(pk<0.004?'I could not hear you. Try again, a bit closer to the tablet':'Try again, and say something longer');return;}
  const th=Math.max(0.02,pk*0.08);let a0=0,a1=all.length-1;while(a0<all.length&&Math.abs(all[a0])<th)a0++;while(a1>a0&&Math.abs(all[a1])<th)a1--;a0=Math.max(0,a0-Math.floor(sr*0.12));a1=Math.min(all.length-1,a1+Math.floor(sr*0.25));
  const d=all.slice(a0,a1+1);const g=Math.min(12,0.98/pk);for(let i=0;i<d.length;i++)d[i]*=g;
  let b;try{b=new AudioBuffer({length:d.length,numberOfChannels:1,sampleRate:sr});}catch(e){const tmp=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,d.length,sr);b=tmp.createBuffer(1,d.length,sr);}b.getChannelData(0).set(d);
@@ -202,10 +202,19 @@ function finishRec(all,sr){const pk=peakOf(all);
 let IRS={};
 function impulse(c,sec,decay,key){const k=key+c.sampleRate;if(IRS[k]&&IRS[k].ctx===c)return IRS[k].b;const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}IRS[k]={ctx:c,b};return b;}
 function rateOf(v){return {chipmunk:1.65,giant:0.62,alien:1.15,underwater:0.92,ghost:0.82,baby:1.35,mouse:2,bear:0.75,slowmo:0.5,superfast:2.4,monster:0.55,dragon:0.7,fairy:1.4,squeaky:1.8}[v]||1;}
-function slowOf(v){return {choir:0.94,dizzy:0.88}[v]||rateOf(v);}
+function slowOf(v){return {choir:0.94,dizzy:0.88,fasttalk:1.6,slowtalk:0.6}[v]||rateOf(v);}
+/* change the speed but keep the voice at the same pitch (WSOLA time stretch) */
+let STR={};function stretch(sp){if(STR.buf===buf&&STR[sp])return STR[sp];if(STR.buf!==buf)STR={buf};
+ const x=buf.getChannelData(0),sr=buf.sampleRate,N=Math.round(sr*0.046)&~1,H=N/2,T=Math.round(sr*0.012),L=Math.round(sr*0.012),outLen=Math.floor(x.length/sp)+N,y=new Float32Array(outLen),ws=new Float32Array(outLen),w=new Float32Array(N);
+ for(let i=0;i<N;i++)w[i]=0.5-0.5*Math.cos(2*Math.PI*i/N);let prev=-1;
+ for(let k=0;;k++){const op=k*H;if(op+N>outLen)break;let best=Math.min(Math.round(op*sp),x.length-N);if(best<0)break;
+  if(prev>=0){const nat=prev+H;if(nat+L<x.length){let bc=-Infinity;for(let d=-T;d<=T;d+=2){const p=Math.round(op*sp)+d;if(p<0||p+N>x.length)continue;let cc=0;for(let i=0;i<L;i+=2)cc+=x[nat+i]*x[p+i];if(cc>bc){bc=cc;best=p;}}}}
+  for(let i=0;i<N;i++){y[op+i]+=x[best+i]*w[i];ws[op+i]+=w[i];}prev=best;}
+ let pk=0;for(let i=0;i<outLen;i++){if(ws[i]>0.05)y[i]/=Math.max(ws[i],0.5);pk=Math.max(pk,Math.abs(y[i]));}if(pk>0)for(let i=0;i<outLen;i++)y[i]*=0.98/pk;
+ let b;try{b=new AudioBuffer({length:outLen,numberOfChannels:1,sampleRate:sr});}catch(e){b=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,outLen,sr).createBuffer(1,outLen,sr);}b.getChannelData(0).set(y);STR[sp]=b;return b;}
 function tailOf(v){return {cave:2.5,ghost:3.5,alien:0.3,robot:0.2,underwater:0.5,astronaut:0.5,spacerobot:0.4,stadium:3.2,choir:2.6,twins:0.3,dragon:2.6,fairy:3,tunnel:1.6,jelly:0.3,dizzy:0.5,monster:0.4}[v]||0.2;}
 function revOf(c){const r=c.createBuffer(1,buf.length,buf.sampleRate),a=buf.getChannelData(0),b=r.getChannelData(0),n=a.length;for(let i=0;i<n;i++)b[i]=a[n-1-i];return r;}
-function build(c,v,out){const src=c.createBufferSource();src.buffer=v==='backwards'?revOf(c):buf;src.playbackRate.value=rateOf(v);const mix=c.createGain();mix.connect(out);let head=src;
+function build(c,v,out){const src=c.createBufferSource();src.buffer=v==='backwards'?revOf(c):v==='fasttalk'?stretch(1.6):v==='slowtalk'?stretch(0.6):buf;src.playbackRate.value=rateOf(v);const mix=c.createGain();mix.connect(out);let head=src;
  const chain=(...nodes)=>{nodes.forEach(n=>{head.connect(n);head=n;});};
  const xs=[],T=c.currentTime;const gain=x=>{const g=c.createGain();g.gain.value=x;return g;};
  const osc=(f,ty)=>{const o=c.createOscillator();o.type=ty||'sine';o.frequency.value=f;o.start();xs.push(o);return o;};

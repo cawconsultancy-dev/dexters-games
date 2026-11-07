@@ -168,20 +168,32 @@ function session(t){try{if(navigator.audioSession)navigator.audioSession.type=t;
 function unlockOut(){if(unlocked)return;unlocked=true;try{const a=new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=');a.setAttribute('playsinline','');a.play().catch(()=>{});}catch(e){}}
 async function playCtx(){if(!PC||PC.state==='closed')PC=new(window.AudioContext||window.webkitAudioContext)();if(PC.state!=='running'){try{await PC.resume();}catch(e){}}return PC;}
 /* ---------- recording (raw samples, works on iPad) ---------- */
-async function startRec(){stopPlay();if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('No microphone on this device');return;}
+let MR=null,mrChunks=[],busy=false;const RAC=window.AudioContext||window.webkitAudioContext;
+async function startRec(){if(busy||recording)return;stopPlay();if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('No microphone on this device');return;}
+ busy=true;if(PC){try{PC.close();}catch(e){}PC=null;}
  session('play-and-record');
- try{mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}});}catch(e){session('playback');toast('Microphone not allowed');say('Ask a grown-up to let me use the microphone');return;}
- RC=new(window.AudioContext||window.webkitAudioContext)();try{await RC.resume();}catch(e){}const c=RC;
+ RC=new RAC();try{RC.resume();}catch(e){}
+ try{mic=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}});}catch(e){try{RC.close();}catch(x){}RC=null;session('playback');busy=false;toast('Microphone not allowed');say('Ask a grown-up to let me use the microphone');return;}
+ const c=RC;if(c.state!=='running'){try{await c.resume();}catch(e){}}
  recSrc=c.createMediaStreamSource(mic);proc=c.createScriptProcessor(4096,1,1);anIn=c.createAnalyser();anIn.fftSize=1024;meterBuf=new Uint8Array(anIn.fftSize);
  const z=c.createGain();z.gain.value=0;recBufs=[];recLen=0;
- proc.onaudioprocess=e=>{if(!recording)return;const d=e.inputBuffer.getChannelData(0);recBufs.push(new Float32Array(d));recLen+=d.length;if(recLen>c.sampleRate*MAXS)stopRec();};
+ proc.onaudioprocess=e=>{if(!recording)return;const d=e.inputBuffer.getChannelData(0);recBufs.push(new Float32Array(d));recLen+=d.length;};
  recSrc.connect(anIn);recSrc.connect(proc);proc.connect(z);z.connect(c.destination);
- recording=true;appMusic(0);recT0=performance.now();$('recb').classList.add('on');$('rlab').textContent='Recording… press to stop';}
+ mrChunks=[];MR=null;try{if(window.MediaRecorder){MR=new MediaRecorder(mic);MR.ondataavailable=e=>{if(e.data&&e.data.size)mrChunks.push(e.data);};MR.start(250);}}catch(e){MR=null;}
+ recording=true;busy=false;appMusic(0);recT0=performance.now();$('recb').classList.add('on');$('rlab').textContent='Recording… press to stop';}
+function peakOf(a){let pk=0;for(let i=0;i<a.length;i++){const x=Math.abs(a[i]);if(x>pk)pk=x;}return pk;}
+function stopMic(){try{mic.getTracks().forEach(t=>t.stop());}catch(e){}mic=null;try{RC.close();}catch(e){}RC=null;anIn=null;session('playback');}
+function decodeBlob(ab){return new Promise((res,rej)=>{const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;const dc=OC?new OC(1,1,44100):new RAC();const p=dc.decodeAudioData(ab,res,rej);if(p&&p.then)p.then(res,rej);});}
 function stopRec(){if(!recording)return;recording=false;appMusic(0.45);$('recb').classList.remove('on');try{recSrc.disconnect();proc.disconnect();}catch(e){}
- const sr=RC.sampleRate;try{mic.getTracks().forEach(t=>t.stop());}catch(e){}mic=null;try{RC.close();}catch(e){}RC=null;anIn=null;session('playback');
- const all=new Float32Array(recLen);let o=0;recBufs.forEach(a=>{all.set(a,o);o+=a.length;});recBufs=[];
- let pk=0;for(let i=0;i<all.length;i++)pk=Math.max(pk,Math.abs(all[i]));
- if(recLen<sr*0.3||pk<0.004){$('rlab').textContent=pk<0.004&&recLen>=sr*0.3?'I could not hear you, try again':'Too short, try again';say(pk<0.004?'I could not hear you. Try again, a bit closer to the tablet':'Try again, and say something longer');return;}
+ const sr=RC?RC.sampleRate:44100;const all=new Float32Array(recLen);let o=0;recBufs.forEach(a=>{all.set(a,o);o+=a.length;});recBufs=[];
+ const ok=recLen>=sr*0.3&&peakOf(all)>=0.004;
+ if(ok||!MR||MR.state==='inactive'){if(MR&&MR.state!=='inactive'){MR.onstop=null;try{MR.stop();}catch(e){}}MR=null;stopMic();finishRec(all,sr);return;}
+ /* the first recorder heard nothing (this happens on some iPads), so use the second recorder's copy */
+ busy=true;$('rlab').textContent='Just a moment…';const mr=MR;MR=null;
+ mr.onstop=async()=>{stopMic();try{const blob=new Blob(mrChunks,{type:mr.mimeType||'audio/mp4'});mrChunks=[];const b=await decodeBlob(await blob.arrayBuffer());busy=false;finishRec(new Float32Array(b.getChannelData(0)),b.sampleRate);}catch(e){busy=false;finishRec(all,sr);}};
+ try{mr.requestData();}catch(e){}try{mr.stop();}catch(e){busy=false;stopMic();finishRec(all,sr);}}
+function finishRec(all,sr){const pk=peakOf(all);
+ if(all.length<sr*0.3||pk<0.004){$('rlab').textContent=pk<0.004&&all.length>=sr*0.3?'I could not hear you, try again':'Too short, try again';say(pk<0.004?'I could not hear you. Try again, a bit closer to the tablet':'Try again, and say something longer');return;}
  const th=Math.max(0.02,pk*0.08);let a0=0,a1=all.length-1;while(a0<all.length&&Math.abs(all[a0])<th)a0++;while(a1>a0&&Math.abs(all[a1])<th)a1--;a0=Math.max(0,a0-Math.floor(sr*0.12));a1=Math.min(all.length-1,a1+Math.floor(sr*0.25));
  const d=all.slice(a0,a1+1);const g=Math.min(12,0.98/pk);for(let i=0;i<d.length;i++)d[i]*=g;
  let b;try{b=new AudioBuffer({length:d.length,numberOfChannels:1,sampleRate:sr});}catch(e){const tmp=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,d.length,sr);b=tmp.createBuffer(1,d.length,sr);}b.getChannelData(0).set(d);
@@ -263,7 +275,7 @@ async function saveIt(){if(!buf)return;const sr=buf.sampleRate,len=Math.ceil((bu
 function renderVoices(){$('vg').innerHTML=VOICES.map(v=>'<button class="vb'+(buf&&v[0]===cur?' on':'')+'" data-v="'+v[0]+'"'+(buf?'':' disabled')+'><i>'+v[1]+'</i>'+v[2]+'</button>').join('');}
 function buildUI(){if(built)return;built=true;renderVoices();
  $('recb').onclick=()=>{if(recording)stopRec();else startRec();};
- $('vg').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;if(recording)stopRec();play(b.dataset.v);};
+ $('vg').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;if(busy)return;if(recording)stopRec();play(b.dataset.v);};
  $('saveb').onclick=saveIt;$('exit').onclick=()=>{if(recording)stopRec();stopPlay();state='title';shown(false);show('title');};}
 function shown(on){$('lab').hidden=!on;$('topb').hidden=!on;}
 G.init=()=>{buildUI();};
@@ -271,7 +283,7 @@ const _start=start;start=function(){_start();shown(true);setTimeout(()=>say("Wel
 pause=function(){};
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(recording)stopRec();stopPlay();}});
 G.update=dt=>{const an=recording?anIn:playing?anOut:null;if(an){an.getByteTimeDomainData(meterBuf);let s=0;for(let i=0;i<meterBuf.length;i++){const x=(meterBuf[i]-128)/128;s+=x*x;}const r=Math.sqrt(s/meterBuf.length);lvl=lvl*0.6+Math.min(1,r*5)*0.4;}else lvl*=0.85;
- if(recording){const el=(performance.now()-recT0)/1000;$('rlab').textContent='Recording… '+Math.max(0,Math.ceil(MAXS-el))+'s';}};
+ if(recording){const el=(performance.now()-recT0)/1000;if(el>=MAXS){stopRec();return;}$('rlab').textContent='Recording… '+Math.max(0,Math.ceil(MAXS-el))+'s';}};
 G.draw=()=>{const t=performance.now()/1000;const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2a1660');g.addColorStop(1,'#7a3ae0');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
  for(let i=0;i<40;i++){const x=(i*97%W),y=((i*53+t*12*(1+i%3))%H);ctx.globalAlpha=0.25;circ(x,y,2+i%3,'#fff');}ctx.globalAlpha=1;
  if(state!=='play')return;const panelTop=$('lab').getBoundingClientRect().top||H*0.6;const cy=Math.max(90,panelTop*0.5),cx=W/2,R=Math.min(W*0.3,panelTop*0.32,170);

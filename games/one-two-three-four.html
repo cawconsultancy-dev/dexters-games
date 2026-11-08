@@ -214,10 +214,23 @@ function buildWorld(){initGL();if(!renderer)return false;while(scene.children.le
  const crown=numSprite('🏆',1.6);crown.position.set(0,0.8*10+2.2,LV.finish-4-9*2.4);scene.add(crown);
  const fl=new THREE.Mesh(new THREE.PlaneGeometry(ROADW,1.2),new THREE.MeshBasicMaterial({map:(()=>{const c=document.createElement('canvas');c.width=64;c.height=8;const x=c.getContext('2d');for(let i=0;i<16;i++)for(let j=0;j<2;j++){x.fillStyle=(i+j)%2?'#222':'#fff';x.fillRect(i*4,j*4,4,4);}const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;return t;})()}));fl.rotation.x=-Math.PI/2;fl.position.set(0,0.02,LV.finish);scene.add(fl);
  me=new THREE.Mesh(ballGeo,new THREE.MeshLambertMaterial({map:ballTex('#ffcf3a')}));scene.add(me);meLab=numSprite('1',1.4);scene.add(meLab);
- val=1;rad=radFor(1);px=0;pz=0;camZ=0;debris=[];hop=null;climb=0;bumpT=0;return true;}
+ val=1;dbl=null;rad=radFor(1);px=0;pz=0;camZ=0;debris=[];hop=null;climb=0;bumpT=0;return true;}
 /* ---------- gameplay ---------- */
 const NOTES=[523.25,587.33,659.25,698.46,783.99,880,987.77,1046.5,1174.66,1318.51];
-function setVal(v){val=Math.max(1,v);setSpriteText(meLab,String(val),1.3+Math.min(0.9,Math.sqrt(val)*0.09));}
+const CAP=1073741824;function fmt(v){return v.toLocaleString('en-GB');}
+function setVal(v){val=Math.max(1,Math.min(CAP,v));setSpriteText(meLab,fmt(val),1.3+Math.min(0.9,Math.sqrt(val)*0.09));if(meLab.scale.x>6.5){const k=6.5/meLab.scale.x;meLab.scale.multiplyScalar(k);meLab.userData.h*=k;}}
+/* ---------- doubling run: after the steps, keep rolling and double with every x2 ball, up to 1,073,741,824 ---------- */
+let dbl=null;
+function startDouble(){const top=steps[steps.length-1];const by=top.y,z0=top.z-1.2;const need=Math.max(4,Math.ceil(Math.log2(CAP/val)));const rows=need+4;const len=rows*ROWGAP+40;
+ const T=THEMES[theme];const st=stripeTex(T.road[0],T.road[1]);st.repeat.set(1,len/16);const road=new THREE.Mesh(new THREE.BoxGeometry(ROADW,1,len),new THREE.MeshLambertMaterial({map:st}));road.position.set(0,by-0.5,z0-len/2);scene.add(road);
+ const edge=new THREE.MeshLambertMaterial({color:T.edge});[-1,1].forEach(sd=>{const e=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.6,len),edge);e.position.set(sd*(ROADW/2+0.2),by-0.2,z0-len/2);scene.add(e);});
+ const items=[];const R=Math.random;let z=z0-12;for(let r=0;r<rows;r++){const lanes=[0,1,2].sort(()=>R()-0.5);const nb=R()<0.55?1:2;
+  for(let i=0;i<nb;i++){const rr2=0.75;const m=new THREE.Mesh(ballGeo,new THREE.MeshLambertMaterial({map:ballTex('#ff4fa8')}));m.scale.set(rr2,rr2,rr2);m.position.set(LANES[lanes[i]],by+rr2,z);scene.add(m);
+   const lab=numSprite('×2',1.3);lab.position.set(LANES[lanes[i]],by+rr2*2+0.6,z);scene.add(lab);items.push({type:'ball',x:LANES[lanes[i]],z,r:rr2,m,lab,done:false});}
+  if(r>=2&&nb===1&&R()<0.7){const li=lanes[1+Math.floor(R()*2)];const g=new THREE.Group();const cs=T.obs;for(let i=0;i<2;i++)for(let j=0;j<2;j++){const b=new THREE.Mesh(boxGeo,new THREE.MeshLambertMaterial({color:cs[(i+j)%cs.length]}));b.scale.set(1.05,1.05,1.05);b.position.set(-0.55+i*1.1,0.55+j*1.1,0);g.add(b);}g.position.set(LANES[li],by,z);scene.add(g);items.push({type:'block',x:LANES[li],z,g,done:false});}
+  z-=ROWGAP;}
+ dbl={by,items,end:z-10,ms:0};pz=top.z;px=0;phase='dbl';floatText('Doubling run! ×2',W/2,H*0.3,'#ff4fa8',50);say('Doubling run! Catch the times two balls to double your number. Miss the blocks!');}
+function endDouble(t){if(phase!=='dbl')return;phase='done';setTimeout(()=>{LV=null;gameOver({title:t,delay:0});},1700);}
 function screenOf(x,y,z){const v=new THREE.Vector3(x,y,z).project(camera);return [(v.x+1)/2*W,(1-v.y)/2*H];}
 function shatter(o){o.g.children.slice().forEach(b=>{const p=new THREE.Vector3();b.getWorldPosition(p);o.g.remove(b);b.position.copy(p);scene.add(b);debris.push({m:b,v:new THREE.Vector3((Math.random()-0.5)*8,4+Math.random()*5,-3-Math.random()*5),r:new THREE.Vector3(Math.random()*6,Math.random()*6,0),t:2});});scene.remove(o.g);}
 function update(dt){
@@ -229,24 +242,34 @@ function update(dt){
    if(o.type==='block'&&Math.abs(pz-o.z)<rad+0.6&&Math.abs(px-o.x)<rad+1.0){o.done=true;shatter(o);const a=val,d=a>1?Math.min(a-1,Math.max(1,Math.round(a*0.15))):0;if(d)setVal(a-d);rad=radFor(val);bumpT=0.35;shake(9,0.3);sfx.hit();
     const [sx,sy]=screenOf(px,rad*2,pz);if(d){floatText('−'+d,sx,sy,'#ff6a6a',50);say('Bump! '+a+' take away '+d+' is '+val);}else say('Bump!');}}
   if(pz<=LV.finish){phase='climb';climb=0;finishT=0.3;px=px;say('Bounce up the steps!');}}
+ else if(phase==='dbl'){const steer=(keyL?-1:0)+(keyR?1:0);if(steer)px+=steer*9*dt;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));pz-=speed*1.1*dt;roll+=speed*dt/rad;
+  for(const o of dbl.items){if(o.done)continue;
+   if(o.type==='ball'&&Math.abs(pz-o.z)<rad+o.r*0.8&&Math.abs(px-o.x)<rad+o.r*0.85){o.done=true;scene.remove(o.m);scene.remove(o.lab);const a=val;setVal(a*2);rad=radFor(val);const [sx,sy]=screenOf(px,dbl.by+rad*2,pz);
+    floatText('×2',sx,sy,'#ff4fa8',50);tone(Math.min(1800,400*Math.pow(1.06,Math.log2(val))),0.14,'triangle',0.11);burst(sx,sy,['#ff4fa8','#ffd27a','#fff'],12,240,4,0);
+    const ms=val>=1e9?3:val>=1e6?2:val>=1e3?1:0,newMs=ms>dbl.ms;if(newMs){dbl.ms=ms;floatText(['','Over a thousand!','Over a million!','Over a billion!'][ms],W/2,H*0.32,'#fff',44);}
+    if(val>=CAP){sfx.win();for(let i=0;i<8;i++)setTimeout(()=>burst(rnd(W*0.15,W*0.85),rnd(H*0.15,H*0.55),['#ffd27a','#ff6b9a','#7ad7ff','#9bff8a','#fff'],30,420,7,300),i*150);say('Wow! You made '+fmt(val)+'! That is over a billion!');endDouble('You made '+fmt(val)+'!');break;}
+    say((newMs?['','Over a thousand! ','Over a million! ','Over a billion! '][ms]:'')+fmt(val));}
+   if(o.type==='block'&&Math.abs(pz-o.z)<rad+0.6&&Math.abs(px-o.x)<rad+1.0){o.done=true;shatter(o);shake(9,0.3);sfx.hit();say('Bump! You made '+fmt(val));endDouble('You made '+fmt(val)+'!');break;}}
+  if(phase==='dbl'&&pz<=dbl.end){say('The end of the road! You made '+fmt(val));endDouble('You made '+fmt(val)+'!');}}
  else if(phase==='climb'){
   if(hop){hop.t+=dt/0.42;const k=Math.min(1,hop.t);pz=hop.z0+(hop.z1-hop.z0)*k;px=hop.x0*(1-k);me.position.y=hop.y0+(hop.y1-hop.y0)*k+Math.sin(k*Math.PI)*1.4;
    if(k>=1){hop=null;climb++;const n=NOTES[climb-1];tone(n,0.32,'triangle',0.13);tone(n*2,0.22,'sine',0.05);const [sx,sy]=screenOf(px,me.position.y+rad,pz);floatText('♪',sx+rnd(-30,30),sy-20,['#ff5a5a','#3aa0ff','#4fc95e','#ff6bd0','#ffcf2a'][climb%5],48);finishT=0.08;}}
   else{finishT-=dt;if(finishT<=0){const nxt=steps[climb];if(nxt&&val>=nxt.v){const cy=climb>0?steps[climb-1].y:0;hop={t:0,z0:pz,z1:nxt.z,y0:cy+rad,y1:nxt.y+rad,x0:px};}else{phase='done';finishLevel();}}}}
  objs.forEach(o=>{if(o.type==='ball'&&!o.done){o.m.rotation.y+=dt*1.5;}});
  debris.forEach(d=>{d.t-=dt;d.v.y-=20*dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=d.r.x*dt;d.m.rotation.y+=d.r.y*dt;if(d.t<=0)scene.remove(d.m);});debris=debris.filter(d=>d.t>0);
- const s=rad;me.scale.set(s,s,s);me.position.x=px;me.position.z=pz;if(phase==='run'||phase==='ready')me.position.y=s+(bumpT>0?Math.sin(bumpT*9)*0.3:0);me.rotation.x=-roll;
+ const s=rad;me.scale.set(s,s,s);me.position.x=px;me.position.z=pz;if(phase==='run'||phase==='ready')me.position.y=s+(bumpT>0?Math.sin(bumpT*9)*0.3:0);if(phase==='dbl'||(phase==='done'&&dbl))me.position.y=dbl.by+s;me.rotation.x=-roll;
  meLab.position.set(px,me.position.y+s+0.5+meLab.userData.h*0.3,pz);
- const ch=phase==='climb'||phase==='done'?Math.max(0,me.position.y-s):0;camZ+=(pz-camZ)*Math.min(1,dt*8);camera.position.set(px*0.35+(ch?3:0),6.4+s+ch*0.8,camZ+10+s*1.5);camera.lookAt(px*0.35,0.6+ch,camZ-9);}
+ const ch=phase==='climb'||phase==='done'||phase==='dbl'?Math.max(0,me.position.y-s):0;camZ+=(pz-camZ)*Math.min(1,dt*8);camera.position.set(px*0.35+(ch&&!dbl?3:0),6.4+s+ch*0.8,camZ+10+s*1.5);camera.lookAt(px*0.35,0.6+ch,camZ-9);}
 function finishLevel(){const n=climb;const stars=n>=10?3:n>=6?2:1;setScore(stars);sfx.win();
  for(let i=0;i<5;i++)setTimeout(()=>burst(rnd(W*0.2,W*0.8),rnd(H*0.2,H*0.5),['#ffd27a','#ff6b9a','#7ad7ff','#9bff8a','#fff'],26,380,7,300),i*180);
  say(n>=10?'You reached the top with '+val+'! Brilliant!':'You made '+val+' and bounced up '+n+' steps! '+(stars===2?'Great job!':'Well done!'));
  if(level>=maxLevel&&level<10){maxLevel=level+1;store.set('maxlvl',maxLevel);}const done=level;if(level<10)level++;store.set('lvl',level);
- setTimeout(()=>{LV=null;gameOver({title:'Level '+done+': you made '+val+'!',delay:0});},1800);}
+ setTimeout(()=>{if(state!=='play'||!LV)return;startDouble();},2000);}
 /* ---------- HUD ---------- */
 function drawHUD(){ctx.clearRect(0,0,W,H);if(state!=='play'||!LV)return;
  rr(12,14,46,46,23);ctx.fillStyle='#0b123acc';ctx.fill();text('❚❚',35,37,18,'#fff');
- rr(70,14,150,46,23);ctx.fillStyle='#0b123acc';ctx.fill();text('Level '+level,145,37,24,'#fff');
+ rr(70,14,150,46,23);ctx.fillStyle='#0b123acc';ctx.fill();text(dbl?'×2 run':'Level '+level,145,37,24,'#fff');
+ if(dbl){const nar=W<640;const bx=nar?20:W*0.25,bw=nar?W-40:W*0.5,by=nar?76:30;const f=Math.min(1,Math.log2(val)/30);rr(bx,by,bw,16,8);ctx.fillStyle='#ffffffcc';ctx.fill();rr(bx,by,bw*f,16,8);ctx.fillStyle='#ff4fa8';ctx.fill();text('×2 to 1,073,741,824',bx+bw/2,by+36,20,'#fff','center','#0008');text(fmt(val),W/2,H-50,Math.min(54,W*0.09),'#fff','center','#000a');return;}
  const f=Math.min(1,Math.max(0,-pz/(-LV.finish)));const nar=W<640;const bx=nar?20:W*0.3,bw=nar?W-80:W*0.5,by=nar?76:30;rr(bx,by,bw,14,7);ctx.fillStyle='#ffffffcc';ctx.fill();rr(bx,by,bw*f,14,7);ctx.fillStyle='#ff7a3a';ctx.fill();text('🏁',bx+bw+20,by+7,22,'#fff');
  if(phase==='ready')text('Drag to steer!',W/2,H*0.35,Math.min(W,H)*0.07,'#fff','center','#0008');}
 /* ---------- hooks ---------- */
@@ -258,7 +281,7 @@ G.update=dt=>{if(phase==='ready'){readyT-=dt;if(readyT<=0)phase='run';}update(dt
 G.idle=dt=>{if(state==='pause')return;if((!LV||builtTheme!==theme)&&renderer){buildWorld();phase='title';}if(!LV)return;const t=performance.now()/1000;camera.position.set(Math.sin(t*0.2)*3,7,10);camera.lookAt(0,0.6,-10);me.scale.set(rad,rad,rad);me.position.set(0,rad+Math.abs(Math.sin(t*3))*0.4,0);me.rotation.x=-t*2;meLab.position.set(0,me.position.y+rad+0.9,0);};
 G.draw=()=>{if(renderer&&LV)renderer.render(scene,camera);drawHUD();};
 G.down=(x,y)=>{if(x<64&&y<70){pause();return;}dragX=x;dragPX=px;};
-G.move=(x)=>{if(dragX===null||(phase!=='run'&&phase!=='ready'))return;px=dragPX+(x-dragX)/Math.min(W,700)*ROADW*1.4;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));};
+G.move=(x)=>{if(dragX===null||(phase!=='run'&&phase!=='ready'&&phase!=='dbl'))return;px=dragPX+(x-dragX)/Math.min(W,700)*ROADW*1.4;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));};
 G.up=()=>{dragX=null;};
 G.key=(k,down)=>{if(k==='ArrowLeft'||k==='a')keyL=down;if(k==='ArrowRight'||k==='d')keyR=down;};
 function buildPicker(){if($('picker'))return renderPicker();const box=document.createElement('div');box.id='picker';

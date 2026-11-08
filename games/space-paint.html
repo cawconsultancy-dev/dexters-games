@@ -317,6 +317,7 @@ function buildKey(){const kb=$('key');kb.innerHTML='';P.pal.forEach((p,j)=>{cons
   const dark=lum(p[0])<0.55;b.style.color=dark?'#fff':'#1d1b3a';b.textContent=n;b.dataset.n=n;b.onclick=()=>{sel=n;sfx.tap();say(n+', '+p[1]);help=0;P.dirty=true;markKey();};kb.appendChild(b);});markKey();}
 function markKey(){document.querySelectorAll('.sw').forEach(b=>{const n=+b.dataset.n;b.classList.toggle('on',n===sel);b.classList.toggle('fin',!leftOf(n));});}
 function lum(h){const v=parseInt(h.slice(1),16);return (0.299*(v>>16)+0.587*(v>>8&255)+0.114*(v&255))/255;}
+function pale(h){const v=parseInt(h.slice(1),16),m=x=>Math.round(x+(255-x)*0.62);return 'rgb('+m(v>>16)+','+m(v>>8&255)+','+m(v&255)+')';}
 function grey(h,a){const L=lum(h);const g=Math.round(255-(1-L)*90*a);return 'rgb('+g+','+g+','+Math.min(255,g+6)+')';}
 /* ---------- painting ---------- */
 let pr={x:0,y:0,s:1};
@@ -331,7 +332,7 @@ function tapAt(x,y,drag){if(!P||scr!=='paint')return;
  else{const cx=Math.floor((x-pr.x)/pr.s),cy=Math.floor((y-pr.y)/pr.s);if(cx<0||cy<0||cx>=P.X.w||cy>=P.X.h)return;const j=cy*P.X.w+cx;if(drag&&j===lastCell)return;lastCell=j;
   if(!P.X.c[j]||P.done[j])return;if(P.X.c[j]===sel){P.done[j]=1;afterPaint(x,y,true);}else if(!drag)wrong(j,P.X.c[j],x,y);}}
 function afterPaint(x,y,small){P.dirty=true;saveProg();tone(520+sel*40+Math.random()*30,small?0.05:0.12,'triangle',small?0.07:0.12);if(!small)burst(x,y,[P.pal[sel-1][0],'#fff'],14,220,5,0);markKey();
- if(!leftOf(sel)){const nx=firstLeft();if(nx){setTimeout(()=>{if(!P||isComplete())return;sfx.good();say('All the '+sel+'s are done! Now number '+nx+', '+P.pal[nx-1][1]+'.');sel=nx;help=0;P.dirty=true;markKey();},350);}}
+ if(!leftOf(sel)){const nx=firstLeft(),was=sel;if(nx){setTimeout(()=>{if(!P||isComplete()||sel!==was)return;sfx.good();say('All the '+sel+'s are done! Now number '+nx+', '+P.pal[nx-1][1]+'.');sel=nx;help=0;P.dirty=true;markKey();},350);}}
  if(isComplete())finish();}
 function wrong(j,k,x,y){shakeId=j;shakeT2=0.35;tone(200,0.08,'sine',0.06);if(P.kind==='area'||Math.random()<0.3)say('That one is number '+k+'.');}
 function finish(){if(doneShown)return;doneShown=true;P.dirty=true;sfx.win();addScore(1);for(let i=0;i<5;i++)setTimeout(()=>burst(rnd(W*0.2,W*0.8),rnd(H*0.2,H*0.6),['#ffd27a','#ff6b9a','#7ad7ff','#9bff8a','#fff'],26,380,7,300),i*170);
@@ -348,7 +349,7 @@ function renderArea(){const B=P.B,R=AREA_RES,cv2=B.cv;cv2.width=cv2.height=R;con
 function drawPix(){const X=P.X,s=pr.s,hl=help>0;for(let y=0;y<X.h;y++)for(let x=0;x<X.w;x++){const j=y*X.w+x,k=X.c[j];if(!k)continue;let px=pr.x+x*s,py=pr.y+y*s;
   if(j===shakeId&&shakeT2>0)px+=Math.sin(shakeT2*60)*s*0.12;
   if(P.done[j]){ctx.fillStyle=P.pal[k-1][0];ctx.fillRect(px,py,s+0.5,s+0.5);}
-  else{ctx.fillStyle=k===sel?(hl?'#ffe58a':'#c9d0ff'):grey(P.pal[k-1][0],1);ctx.fillRect(px,py,s+0.5,s+0.5);ctx.strokeStyle='#00000018';ctx.lineWidth=1;ctx.strokeRect(px+0.5,py+0.5,s-1,s-1);
+  else{const ph=P.kind==='photo';ctx.fillStyle=k===sel&&(hl||!ph)?(hl?'#ffe58a':'#c9d0ff'):(ph?pale(P.pal[k-1][0]):grey(P.pal[k-1][0],1));ctx.fillRect(px,py,s+0.5,s+0.5);if(ph&&k===sel&&!hl){ctx.strokeStyle='#1d1b3a';ctx.lineWidth=2;ctx.strokeRect(px+1.5,py+1.5,s-3,s-3);}else{ctx.strokeStyle='#00000018';ctx.lineWidth=1;ctx.strokeRect(px+0.5,py+0.5,s-1,s-1);}
    if(s>=13){ctx.font='700 '+Math.floor(s*0.52)+'px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle=k===sel?'#1d1b3a':'#6a6890';ctx.fillText(k,px+s/2,py+s/2+1);}}}}
 G.update=dt=>{shakeT2=Math.max(0,shakeT2-dt);if(help>0){help-=dt;if(help<=0)P.dirty=true;}};
 G.idle=G.update;
@@ -363,7 +364,7 @@ function thumb(k,i,cv2){const c=cv2.getContext('2d');cv2.width=cv2.height=200;c.
  if(k==='area'){const pic=AREA[i];const done=loadProg(k,i,pic.s.length+1);c.save();c.scale(2,2);pic.s.forEach((s,j)=>{c.fillStyle=done[j+1]?pic.pal[s[1]-1][0]:grey(pic.pal[s[1]-1][0],0.8);drawShape(c,s);});
   c.strokeStyle='#0002';pic.d.forEach(d=>drawDet(c,d));c.restore();}
  else{const X=buildPix(k,i),done=loadProg(k,i,X.w*X.h),cs=Math.floor(190/Math.max(X.w,X.h)),ox2=(200-cs*X.w)/2,oy2=(200-cs*X.h)/2;
-  for(let j=0;j<X.c.length;j++){const v=X.c[j];if(!v)continue;c.fillStyle=done[j]?X.pal[v-1][0]:grey(X.pal[v-1][0],1);c.fillRect(ox2+(j%X.w)*cs,oy2+Math.floor(j/X.w)*cs,cs,cs);}}}
+  for(let j=0;j<X.c.length;j++){const v=X.c[j];if(!v)continue;c.fillStyle=done[j]?X.pal[v-1][0]:(k==='photo'?pale(X.pal[v-1][0]):grey(X.pal[v-1][0],1));c.fillRect(ox2+(j%X.w)*cs,oy2+Math.floor(j/X.w)*cs,cs,cs);}}}
 function showGal(k){scr='gal';kind=k||kind;P=null;$('gal').hidden=false;$('ptop').hidden=true;$('key').hidden=true;$('donec').hidden=true;
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.k===kind));const gr=$('ggrid');gr.innerHTML='';const list=pics(kind);
  if(kind==='photo'){const a=document.createElement('button');a.className='addp';a.innerHTML='<b>📷</b>Take or pick a photo';a.onclick=()=>{$('pfile').value='';$('pfile').click();};gr.appendChild(a);}

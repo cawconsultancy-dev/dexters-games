@@ -66,6 +66,8 @@ canvas#c{position:fixed;inset:0;display:block;touch-action:none}
 .sw{flex:none;width:62px;height:62px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 2px #1d1b3a33;font:700 26px Fredoka,sans-serif;cursor:pointer;display:grid;place-items:center;position:relative}
 .sw.on{box-shadow:0 0 0 4px #1d1b3a;transform:scale(1.08)}
 .sw.fin::after{content:'✓';position:absolute;right:-6px;top:-8px;width:26px;height:26px;border-radius:50%;background:#2bb673;color:#fff;font-size:17px;display:grid;place-items:center}
+.dets{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}.dets .go{margin:0;display:flex;flex-direction:column;align-items:center;line-height:1.1;padding-top:8px;padding-bottom:8px;height:auto}.dets small{font-size:14px;font-weight:600;opacity:.8}
+.key.many{flex-wrap:wrap;justify-content:center;width:min(600px,calc(100% - 12px))}.key.many .sw{width:50px;height:50px;font-size:21px}
 .donec{position:fixed;inset:0;display:grid;place-items:end center;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px));z-index:8;pointer-events:none}
 .donec .card{pointer-events:auto;width:min(440px,100%);padding:20px 20px 18px}
 .donec h2{margin:0 0 12px;font-size:28px}
@@ -88,6 +90,7 @@ canvas#c{position:fixed;inset:0;display:block;touch-action:none}
  <div class="gnote" id="gnote"></div>
 </div>
 <input type="file" id="pfile" accept="image/*" hidden>
+<div class="ov" id="pdet" hidden style="z-index:12"><div class="card"><h2 style="margin:0 0 6px">How many squares?</h2><p>More squares look more like your photo, but take longer to paint.</p><div class="dets"><button class="go" data-l="0">🟩 Easy<small>24 squares across, up to 8 colours</small></button><button class="go" data-l="1">🟨 More detail<small>34 squares across, up to 12 colours</small></button><button class="go" data-l="2">🟥 Most detail<small>46 squares across, up to 16 colours</small></button></div><button class="ghost" id="pdetx">Cancel</button></div></div>
 <div class="ptop" id="ptop" hidden><button class="tb" id="pback">🖼️ Pictures</button><span class="sp"></span><button class="tb" id="phelp">💡 Help</button></div>
 <div class="key" id="key" hidden></div>
 <div class="donec" id="donec" hidden><div class="card"><h2 id="dtitle">Finished!</h2><div class="row2"><button class="go" id="dnext">Next picture ➡</button><button class="ghost" id="dgal">🖼️ Pictures</button></div></div></div>
@@ -313,7 +316,7 @@ function itemsOf(n){const o=[];if(P.kind==='area'){for(let j=1;j<=P.B.n;j++)if(P
 function leftOf(n){return itemsOf(n).filter(j=>!P.done[j]).length;}
 function firstLeft(){for(let n=1;n<=P.pal.length;n++)if(leftOf(n))return n;return 0;}
 function isComplete(){for(let j=0;j<P.done.length;j++)if(!P.done[j])return false;return true;}
-function buildKey(){const kb=$('key');kb.innerHTML='';P.pal.forEach((p,j)=>{const n=j+1;if(!itemsOf(n).length)return;const b=document.createElement('button');b.className='sw';b.style.background=p[0];
+function buildKey(){const kb=$('key');kb.innerHTML='';kb.classList.toggle('many',P.pal.length>9);P.pal.forEach((p,j)=>{const n=j+1;if(!itemsOf(n).length)return;const b=document.createElement('button');b.className='sw';b.style.background=p[0];
   const dark=lum(p[0])<0.55;b.style.color=dark?'#fff':'#1d1b3a';b.textContent=n;b.dataset.n=n;b.onclick=()=>{sel=n;sfx.tap();say(n+', '+p[1]);help=0;P.dirty=true;markKey();};kb.appendChild(b);});markKey();}
 function markKey(){document.querySelectorAll('.sw').forEach(b=>{const n=+b.dataset.n;b.classList.toggle('on',n===sel);b.classList.toggle('fin',!leftOf(n));});}
 function lum(h){const v=parseInt(h.slice(1),16);return (0.299*(v>>16)+0.587*(v>>8&255)+0.114*(v&255))/255;}
@@ -321,7 +324,7 @@ function pale(h){const v=parseInt(h.slice(1),16),m=x=>Math.round(x+(255-x)*0.62)
 function grey(h,a){const L=lum(h);const g=Math.round(255-(1-L)*90*a);return 'rgb('+g+','+g+','+Math.min(255,g+6)+')';}
 /* ---------- painting ---------- */
 let pr={x:0,y:0,s:1};
-function layoutP(){if(!P)return;const top=W<560?70:76,bot=W<560?84:96,aw=W-24,ah=H-top-bot;
+function layoutP(){if(!P)return;const kh=$('key').offsetHeight||70,top=W<560?70:76,bot=Math.max(W<560?84:96,kh+26),aw=W-24,ah=H-top-bot;
  if(P.kind==='area'){const s=Math.min(aw,ah);pr={x:(W-s)/2,y:top+(ah-s)/2,s};}
  else{const cs=Math.floor(Math.min(aw/P.X.w,ah/P.X.h));pr={x:(W-cs*P.X.w)/2,y:top+(ah-cs*P.X.h)/2,s:cs};}P.dirty=true;}
 G.resize=()=>{layoutP();};
@@ -381,28 +384,37 @@ $('phelp').onclick=()=>{if(!P)return;help=2.2;P.dirty=true;sfx.coin();const n=le
 $('dgal').onclick=()=>{sfx.tap();showGal(P.kind);};
 $('dnext').onclick=()=>{sfx.tap();const k=P.kind,l=pics(k).length;if(!l)return showGal(k);openPic(k,(P.i+1)%l);};
 /* ---------- photos ---------- */
-$('pfile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),img=new Image();img.onload=()=>{try{makePhoto(img);}catch(err){toastMsg('Sorry, that photo did not work.');}URL.revokeObjectURL(url);};img.onerror=()=>{toastMsg('Sorry, that photo did not work.');URL.revokeObjectURL(url);};img.src=url;};
+let pendImg=null;
+$('pfile').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f)return;const url=URL.createObjectURL(f),img=new Image();img.onload=()=>{pendImg=img;$('pdet').hidden=false;say('How many squares?');};img.onerror=()=>{toastMsg('Sorry, that photo did not work.');URL.revokeObjectURL(url);};img.src=url;};
+const DET=[[24,8],[34,12],[46,16]];
+document.querySelectorAll('#pdet [data-l]').forEach(b=>b.onclick=()=>{$('pdet').hidden=true;const img=pendImg;pendImg=null;if(!img)return;sfx.tap();setTimeout(()=>{try{makePhoto(img,+b.dataset.l);}catch(err){toastMsg('Sorry, that photo did not work.');}try{URL.revokeObjectURL(img.src);}catch(e){}},30);});
+$('pdetx').onclick=()=>{$('pdet').hidden=true;pendImg=null;};
 function toastMsg(t){say(t);floatText(t,W/2,H/2,'#fff',26);}
-function makePhoto(img){const long=24,ar=img.width/img.height;let w=long,h=long;if(ar>1.15)h=Math.max(14,Math.round(long/Math.min(ar,1.7)));else if(ar<0.87)w=Math.max(14,Math.round(long*Math.max(ar,0.6)));
- const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingQuality='high';
- // centre-crop to the grid shape
- const ta=w/h;let sw=img.width,sh=img.height;if(sw/sh>ta)sw=sh*ta;else sh=sw/ta;x.drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,w,h);
- const d=x.getImageData(0,0,w,h).data,px=[];for(let i=0;i<w*h;i++)px.push([d[i*4],d[i*4+1],d[i*4+2]]);
- // k-means into 8 colours
- const K2=8;let cen=[];const sorted=px.slice().sort((a,b)=>(a[0]+a[1]+a[2])-(b[0]+b[1]+b[2]));for(let k=0;k<K2;k++)cen.push(sorted[Math.floor((k+0.5)/K2*sorted.length)].slice());
- let asg=new Array(px.length).fill(0);for(let it=0;it<12;it++){for(let i=0;i<px.length;i++){let bd=1e9,bk=0;for(let k=0;k<K2;k++){const e=(px[i][0]-cen[k][0])**2+(px[i][1]-cen[k][1])**2+(px[i][2]-cen[k][2])**2;if(e<bd){bd=e;bk=k;}}asg[i]=bk;}
-  const s=cen.map(()=>[0,0,0,0]);for(let i=0;i<px.length;i++){const q=s[asg[i]];q[0]+=px[i][0];q[1]+=px[i][1];q[2]+=px[i][2];q[3]++;}cen=cen.map((cc,k)=>s[k][3]?[s[k][0]/s[k][3],s[k][1]/s[k][3],s[k][2]/s[k][3]]:cc);}
- // merge near-identical colours, drop empty ones, order dark to light
- for(let guard=0;guard<10;guard++){let best=null;for(let a1=0;a1<cen.length;a1++)for(let b1=a1+1;b1<cen.length;b1++){const e=Math.hypot(cen[a1][0]-cen[b1][0],cen[a1][1]-cen[b1][1],cen[a1][2]-cen[b1][2]);if(e<42&&(!best||e<best[2]))best=[a1,b1,e];}
-  if(!best)break;const [a1,b1]=best;const na=asg.filter(v=>v===a1).length,nb=asg.filter(v=>v===b1).length,t=na+nb||1;cen[a1]=cen[a1].map((v,q)=>(v*na+cen[b1][q]*nb)/t);cen.splice(b1,1);
-  for(let i=0;i<asg.length;i++){if(asg[i]===b1)asg[i]=a1;else if(asg[i]>b1)asg[i]--;}}
- for(let guard=0;guard<8&&cen.length>2;guard++){const cnt=cen.map((_,k)=>asg.filter(v=>v===k).length);let mi=-1;for(let k=0;k<cen.length;k++)if(cnt[k]<Math.max(4,px.length*0.012)&&(mi<0||cnt[k]<cnt[mi]))mi=k;if(mi<0)break;
-  cen.splice(mi,1);for(let i=0;i<px.length;i++){let bd=1e9,bk=0;for(let k=0;k<cen.length;k++){const e=(px[i][0]-cen[k][0])**2+(px[i][1]-cen[k][1])**2+(px[i][2]-cen[k][2])**2;if(e<bd){bd=e;bk=k;}}asg[i]=bk;}}
- for(let i=0;i<px.length;i++){let bd=1e9,bk=0;for(let k=0;k<cen.length;k++){const e=(px[i][0]-cen[k][0])**2+(px[i][1]-cen[k][1])**2+(px[i][2]-cen[k][2])**2;if(e<bd){bd=e;bk=k;}}asg[i]=bk;}
+function makePhoto(img,lv){const [long,K2]=DET[lv||0],ar=img.width/img.height;let w=long,h=long;if(ar>1.15)h=Math.max(Math.round(long*0.58),Math.round(long/Math.min(ar,1.7)));else if(ar<0.87)w=Math.max(Math.round(long*0.6),Math.round(long*Math.max(ar,0.6)));
+ // centre-crop, then shrink in halving steps so each square is a fair average of the photo
+ const ta=w/h;let sw=img.width,sh=img.height;if(sw/sh>ta)sw=sh*ta;else sh=sw/ta;let src=document.createElement('canvas');src.width=Math.round(sw);src.height=Math.round(sh);
+ src.getContext('2d').drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,src.width,src.height);
+ while(src.width/2>w*2){const n=document.createElement('canvas');n.width=Math.round(src.width/2);n.height=Math.round(src.height/2);const nx=n.getContext('2d');nx.imageSmoothingQuality='high';nx.drawImage(src,0,0,n.width,n.height);src=n;}
+ const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(src,0,0,w,h);
+ const d=x.getImageData(0,0,w,h).data,px=[];let mean=0;for(let i=0;i<w*h;i++){mean+=(d[i*4]+d[i*4+1]+d[i*4+2])/3;}mean/=w*h;
+ // a little extra colour and contrast so the picture pops
+ for(let i=0;i<w*h;i++){let r=d[i*4],g=d[i*4+1],b=d[i*4+2];const l=(r+g+b)/3;r=l+(r-l)*1.25;g=l+(g-l)*1.25;b=l+(b-l)*1.25;r=mean+(r-mean)*1.1;g=mean+(g-mean)*1.1;b=mean+(b-mean)*1.1;px.push([clamp(r,0,255),clamp(g,0,255),clamp(b,0,255)]);}
+ const D=(a,b)=>2*(a[0]-b[0])**2+4*(a[1]-b[1])**2+3*(a[2]-b[2])**2;
+ // farthest-point start, then k-means
+ let cen=[px.reduce((a,b)=>[a[0]+b[0]/px.length,a[1]+b[1]/px.length,a[2]+b[2]/px.length],[0,0,0])];const md=px.map(q=>D(q,cen[0]));
+ while(cen.length<K2){let bi=0;for(let i=1;i<px.length;i++)if(md[i]>md[bi])bi=i;if(md[bi]<1)break;cen.push(px[bi].slice());for(let i=0;i<px.length;i++)md[i]=Math.min(md[i],D(px[i],px[bi]));}
+ const near=q=>{let bd=1e12,bk=0;for(let k=0;k<cen.length;k++){const e=D(q,cen[k]);if(e<bd){bd=e;bk=k;}}return bk;};
+ let asg=px.map(near);for(let it=0;it<16;it++){const s=cen.map(()=>[0,0,0,0]);for(let i=0;i<px.length;i++){const q=s[asg[i]];q[0]+=px[i][0];q[1]+=px[i][1];q[2]+=px[i][2];q[3]++;}
+  cen=cen.map((cc,k)=>s[k][3]?[s[k][0]/s[k][3],s[k][1]/s[k][3],s[k][2]/s[k][3]]:cc);asg=px.map(near);}
+ // merge colours that look the same, fold in colours used by only a square or two
+ for(let guard=0;guard<20&&cen.length>2;guard++){const cnt=cen.map(()=>0);asg.forEach(v=>cnt[v]++);let best=null;
+  for(let a1=0;a1<cen.length;a1++)for(let b1=a1+1;b1<cen.length;b1++){const e=Math.sqrt(D(cen[a1],cen[b1])/3);if(e<16&&(!best||e<best[2]))best=[a1,b1,e];}
+  if(!best){let mi=-1;for(let k=0;k<cen.length;k++)if(cnt[k]<Math.max(2,px.length*0.004)&&(mi<0||cnt[k]<cnt[mi]))mi=k;if(mi<0)break;best=[mi,mi];}
+  const [a1,b1]=best;if(a1===b1){cen.splice(a1,1);}else{const t=cnt[a1]+cnt[b1]||1;cen[a1]=cen[a1].map((v,q)=>(v*cnt[a1]+cen[b1][q]*cnt[b1])/t);cen.splice(b1,1);}asg=px.map(near);}
  const used=[];for(let k=0;k<cen.length;k++)if(asg.includes(k))used.push(k);
  const order=used.sort((a,b)=>(cen[a][0]*0.3+cen[a][1]*0.59+cen[a][2]*0.11)-(cen[b][0]*0.3+cen[b][1]*0.59+cen[b][2]*0.11));const map={};order.forEach((k,j)=>map[k]=j+1);
  const hex=v=>'#'+v.map(n=>Math.round(clamp(n,0,255)).toString(16).padStart(2,'0')).join('');
- const pal=order.map((k,j)=>[hex(cen[k]),colourName(cen[k])]);const cells=asg.map(k=>map[k]);
+ const pal=order.map(k=>[hex(cen[k]),colourName(cen[k])]);const cells=asg.map(k=>map[k]);
  const list=photos();const no=list.length+1;list.unshift({id:Date.now().toString(36),n:'photo '+no,w,h,pal,c:cells});while(list.length>8)list.pop();
  try{store.set('photos',list);}catch(e){}sfx.good();say('Your photo is ready to paint!');showGal('photo');}
 function delPhoto(i){const l=photos(),it=l[i];if(!it)return;l.splice(i,1);store.set('photos',l);try{localStorage.removeItem('fun_'+GAME_KEY+'_ph_'+it.id);}catch(e){}sfx.whoosh();showGal('photo');}

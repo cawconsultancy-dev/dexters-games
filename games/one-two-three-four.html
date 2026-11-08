@@ -146,7 +146,6 @@ function boot(){document.title=G.title;$('tIcon').textContent=G.icon;$('tTitle')
 
 
 
-say=function(){};/* no voice-over in this game (Craig, 08/11/2026) */
 const G={title:'1,2,3,4',icon:'🔴',sub:'Roll your ball, collect number balls to make it bigger, and steer round the blocks. Then bounce up the rainbow steps!',hint:'Drag left and right to steer.',unit:'stars',scoreIcon:'⭐'};
 let maxLevel=Math.max(1,+store.get('maxlvl',1)||1),level=Math.min(maxLevel,+store.get('lvl',1)||1),theme=store.get('theme','snow');
 const THEMES={
@@ -197,7 +196,7 @@ function makeLevel(n){const R=seededR(n*7919+31);const items=[];let z=-14,best=1
  const finish=z-4;const top=Math.min(100,Math.max(10,Math.round(best*0.7)));const stepVals=[];for(let i=1;i<=10;i++)stepVals.push(Math.max(i,Math.round(top*i/10)));
  return {items,finish,best,top,stepVals,len:-finish+40};}
 /* ---------- world ---------- */
-let LV=null,me=null,meLab=null,objs=[],val=1,px=0,pz=0,speed=6.2,phase='title',finishT=0,climb=0,steps=[],debris=[],dragX=null,dragPX=0,keyL=false,keyR=false,camZ=0,rad=0.6,hop=null,bumpT=0,roll=0,builtTheme=null;
+let LV=null,me=null,meLab=null,objs=[],val=1,px=0,pz=0,speed=9.3,phase='title',finishT=0,climb=0,steps=[],debris=[],dragX=null,dragPX=0,keyL=false,keyR=false,camZ=0,rad=0.6,hop=null,bumpT=0,roll=0,builtTheme=null;
 function radFor(v){return 0.55+Math.min(0.8,Math.sqrt(v)*0.075);}
 function buildWorld(){initGL();if(!renderer)return false;while(scene.children.length){const o=scene.children[0];scene.remove(o);}
  const T=THEMES[theme];builtTheme=theme;scene.background=skyTex(T.sky[0],T.sky[1]);scene.fog=new THREE.Fog(T.fog,55,150);scene.add(new THREE.HemisphereLight(0xffffff,0xc8c0d8,0.9));const sun=new THREE.DirectionalLight(0xffffff,0.55);sun.position.set(-10,20,10);scene.add(sun);
@@ -248,7 +247,7 @@ function endDouble(t){if(phase!=='dbl')return;phase='done';setTimeout(()=>{LV=nu
 function screenOf(x,y,z){const v=new THREE.Vector3(x,y,z).project(camera);return [(v.x+1)/2*W,(1-v.y)/2*H];}
 function shatter(o){o.g.children.slice().forEach(b=>{const p=new THREE.Vector3();b.getWorldPosition(p);o.g.remove(b);b.position.copy(p);scene.add(b);debris.push({m:b,v:new THREE.Vector3((Math.random()-0.5)*8,4+Math.random()*5,-3-Math.random()*5),r:new THREE.Vector3(Math.random()*6,Math.random()*6,0),t:2});});scene.remove(o.g);}
 function update(dt){
- if(phase==='run'){const steer=(keyL?-1:0)+(keyR?1:0);if(steer)px+=steer*9*dt;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));
+ if(phase==='run'){const steer=(keyL?-1:0)+(keyR?1:0);if(steer)px+=steer*13.5*dt;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));
   if(bumpT>0){bumpT-=dt;pz+=4*dt;}else pz-=speed*dt;roll+=speed*dt/rad*(bumpT>0?-0.6:1);
   for(const o of objs){if(o.done)continue;
    if(o.type==='ball'&&Math.abs(pz-o.z)<rad+o.r*0.8&&Math.abs(px-o.x)<rad+o.r*0.85){o.done=true;scene.remove(o.m);scene.remove(o.lab);const a=val;setVal(a+o.v);rad=radFor(val);const [sx,sy]=screenOf(px,rad*2,pz);
@@ -256,7 +255,7 @@ function update(dt){
    if(o.type==='block'&&Math.abs(pz-o.z)<rad+0.6&&Math.abs(px-o.x)<rad+1.0){o.done=true;shatter(o);const a=val,d=a>1?Math.min(a-1,Math.max(1,Math.round(a*0.15))):0;if(d)setVal(a-d);rad=radFor(val);bumpT=0.35;shake(9,0.3);sfx.hit();
     const [sx,sy]=screenOf(px,rad*2,pz);if(d){floatText('−'+d,sx,sy,'#ff6a6a',50);say('Bump! '+a+' take away '+d+' is '+val);}else say('Bump!');}}
   if(pz<=LV.finish){phase='climb';climb=0;finishT=0.3;px=px;say('Bounce up the steps!');}}
- else if(phase==='dbl'){const steer=(keyL?-1:0)+(keyR?1:0);if(steer)px+=steer*9*dt;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));pz-=speed*1.1*dt;roll+=speed*dt/rad;
+ else if(phase==='dbl'){const steer=(keyL?-1:0)+(keyR?1:0);if(steer)px+=steer*13.5*dt;px=Math.max(-ROADW/2+rad,Math.min(ROADW/2-rad,px));pz-=speed*1.1*dt;roll+=speed*dt/rad;
   for(const o of dbl.items){if(o.done)continue;
    if(o.type==='ball'&&Math.abs(pz-o.z)<rad+o.r*0.8&&Math.abs(px-o.x)<rad+o.r*0.85){o.done=true;scene.remove(o.m);scene.remove(o.lab);const a=val;setVal(a*2);rad=radFor(val);const [sx,sy]=screenOf(px,dbl.by+rad*2,pz);
     floatText('×2',sx,sy,'#ff4fa8',50);tone(Math.min(1800,400*Math.pow(1.06,Math.log2(val))),0.14,'triangle',0.11);burst(sx,sy,['#ff4fa8','#ffd27a','#fff'],12,240,4,0);
@@ -269,7 +268,7 @@ function update(dt){
   dbl.inv=Math.max(0,dbl.inv-dt);dbl.items.forEach(o=>{if(o.type==='slider'&&!o.done){const x=Math.sin(performance.now()/1000*o.sp+o.ph)*LANES[2];o.g.position.x=x;o.lab.position.x=x;}if((o.type==='ball'||o.type==='half')&&!o.done)o.m.rotation.y+=dt*1.5;});
   if(phase==='dbl'&&pz<=dbl.end){say('The end of the road! You made '+fmt(val));endDouble('You made '+fmt(val)+'!');}}
  else if(phase==='climb'){
-  if(hop){hop.t+=dt/0.42;const k=Math.min(1,hop.t);pz=hop.z0+(hop.z1-hop.z0)*k;px=hop.x0*(1-k);me.position.y=hop.y0+(hop.y1-hop.y0)*k+Math.sin(k*Math.PI)*1.4;
+  if(hop){hop.t+=dt/0.28;const k=Math.min(1,hop.t);pz=hop.z0+(hop.z1-hop.z0)*k;px=hop.x0*(1-k);me.position.y=hop.y0+(hop.y1-hop.y0)*k+Math.sin(k*Math.PI)*1.4;
    if(k>=1){hop=null;climb++;const n=NOTES[climb-1];tone(n,0.45,'triangle',0.6);tone(n*2,0.3,'sine',0.3);tone(n/2,0.35,'square',0.12);const [sx,sy]=screenOf(px,me.position.y+rad,pz);floatText('♪',sx+rnd(-30,30),sy-20,['#ff5a5a','#3aa0ff','#4fc95e','#ff6bd0','#ffcf2a'][climb%5],48);finishT=0.08;}}
   else{finishT-=dt;if(finishT<=0){const nxt=steps[climb];if(nxt&&val>=nxt.v){const cy=climb>0?steps[climb-1].y:0;hop={t:0,z0:pz,z1:nxt.z,y0:cy+rad,y1:nxt.y+rad,x0:px};}else{phase='done';finishLevel();}}}}
  objs.forEach(o=>{if(o.type==='ball'&&!o.done){o.m.rotation.y+=dt*1.5;}});

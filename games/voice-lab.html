@@ -158,7 +158,7 @@ function boot(){document.title=G.title;$('tIcon').textContent=G.icon;$('tTitle')
 
 
 const G={title:"Dexter's Voice Lab",icon:'🎙️',sub:'Record your voice, then hear it as a chipmunk, a giant, a robot and more!',hint:'Press the red button, talk, then tap a voice.',unit:'recordings',noPause:1};
-const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio'],['baby','👶','Baby'],['mouse','🐭','Mouse'],['bear','🐻','Bear'],['slowmo','🐢','Slow motion'],['superfast','⚡','Super fast'],['fasttalk','🐇','Fast talking'],['slowtalk','🐌','Slow talking'],['astronaut','👨‍🚀','Astronaut'],['spacerobot','🛸','Space robot'],['stadium','🏟️','Stadium'],['telephone','☎️','Telephone'],['megaphone','📣','Megaphone'],['jelly','🍮','Wobbly jelly'],['dizzy','🌀','Dizzy'],['choir','🎶','Choir'],['twins','👯','Twins'],['monster','👹','Monster'],['dragon','🐉','Dragon'],['fairy','🧚','Fairy'],['backwards','⏪','Backwards'],['tunnel','🚇','Tunnel'],['squeaky','🐤','Squeaky']];
+const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio'],['baby','👶','Baby'],['mouse','🐭','Mouse'],['bear','🐻','Bear'],['slowmo','🐢','Slow motion'],['superfast','⚡','Super fast'],['fasttalk','🐇','Fast talking'],['slowtalk','🐌','Slow talking'],['spanish','🇪🇸','Spanish'],['dog','🐶','Dog'],['astronaut','👨‍🚀','Astronaut'],['spacerobot','🛸','Space robot'],['stadium','🏟️','Stadium'],['telephone','☎️','Telephone'],['megaphone','📣','Megaphone'],['jelly','🍮','Wobbly jelly'],['dizzy','🌀','Dizzy'],['choir','🎶','Choir'],['twins','👯','Twins'],['monster','👹','Monster'],['dragon','🐉','Dragon'],['fairy','🧚','Fairy'],['backwards','⏪','Backwards'],['tunnel','🚇','Tunnel'],['squeaky','🐤','Squeaky']];
 const MAXS=30;
 let VC=null,mic=null,proc=null,recSrc=null,recBufs=[],recLen=0,recording=false,recT0=0,buf=null,cur='normal',playing=null,playT0=0,anIn=null,anOut=null,lvl=0,made=0,built=false,meterBuf=null;
 function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
@@ -202,7 +202,7 @@ function finishRec(all,sr){const pk=peakOf(all);
 let IRS={};
 function impulse(c,sec,decay,key){const k=key+c.sampleRate;if(IRS[k]&&IRS[k].ctx===c)return IRS[k].b;const len=Math.floor(c.sampleRate*sec),b=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay);}IRS[k]={ctx:c,b};return b;}
 function rateOf(v){return {chipmunk:1.65,giant:0.62,alien:1.15,underwater:0.92,ghost:0.82,baby:1.35,mouse:2,bear:0.75,slowmo:0.5,superfast:2.4,monster:0.55,dragon:0.7,fairy:1.4,squeaky:1.8}[v]||1;}
-function slowOf(v){return {choir:0.94,dizzy:0.88,fasttalk:1.6,slowtalk:0.6}[v]||rateOf(v);}
+function slowOf(v){return {choir:0.94,dizzy:0.88,spanish:0.85,dog:0.9,fasttalk:1.6,slowtalk:0.6}[v]||rateOf(v);}
 /* change the speed but keep the voice at the same pitch (WSOLA time stretch) */
 let STR={};function stretch(sp){if(STR.buf===buf&&STR[sp])return STR[sp];if(STR.buf!==buf)STR={buf};
  const x=buf.getChannelData(0),sr=buf.sampleRate,N=Math.round(sr*0.046)&~1,H=N/2,T=Math.round(sr*0.012),L=Math.round(sr*0.012),outLen=Math.floor(x.length/sp)+N,y=new Float32Array(outLen),ws=new Float32Array(outLen),w=new Float32Array(N);
@@ -213,8 +213,45 @@ let STR={};function stretch(sp){if(STR.buf===buf&&STR[sp])return STR[sp];if(STR.
  let pk=0;for(let i=0;i<outLen;i++){if(ws[i]>0.05)y[i]/=Math.max(ws[i],0.5);pk=Math.max(pk,Math.abs(y[i]));}if(pk>0)for(let i=0;i<outLen;i++)y[i]*=0.98/pk;
  let b;try{b=new AudioBuffer({length:outLen,numberOfChannels:1,sampleRate:sr});}catch(e){b=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,outLen,sr).createBuffer(1,outLen,sr);}b.getChannelData(0).set(y);STR[sp]=b;return b;}
 function tailOf(v){return {cave:2.5,ghost:3.5,alien:0.3,robot:0.2,underwater:0.5,astronaut:0.5,spacerobot:0.4,stadium:3.2,choir:2.6,twins:0.3,dragon:2.6,fairy:3,tunnel:1.6,jelly:0.3,dizzy:0.5,monster:0.4}[v]||0.2;}
+/* ---------- syllable tools for the Spanish and Dog voices ---------- */
+function newBuf(d,sr){let b;try{b=new AudioBuffer({length:d.length,numberOfChannels:1,sampleRate:sr});}catch(e){b=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,d.length,sr).createBuffer(1,d.length,sr);}b.getChannelData(0).set(d);return b;}
+function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+function sylls(x,sr){const F=Math.round(sr*0.01),n=Math.floor(x.length/F),env=new Float32Array(n);
+ for(let i=0;i<n;i++){let q=0;for(let j=i*F;j<(i+1)*F;j++)q+=x[j]*x[j];env[i]=Math.sqrt(q/F);}
+ const sm=new Float32Array(n);for(let i=0;i<n;i++)sm[i]=(env[Math.max(0,i-1)]+env[i]+env[Math.min(n-1,i+1)])/3;
+ let mx=0;for(let i=0;i<n;i++)mx=Math.max(mx,sm[i]);const th=mx*0.12,segs=[];let i=0;
+ while(i<n){if(sm[i]<=th){i++;continue;}let a=i;while(i<n&&sm[i]>th)i++;const b=i;
+  /* split a loud run at dips between bumps */
+  let cut=[a];for(let k=a+3;k<b-3;k++){if(sm[k]<sm[k-1]&&sm[k]<=sm[k+1]){let l=0,r=0;for(let q=Math.max(a,k-15);q<k;q++)l=Math.max(l,sm[q]);for(let q=k+1;q<Math.min(b,k+16);q++)r=Math.max(r,sm[q]);if(sm[k]<0.6*Math.min(l,r)&&k-cut[cut.length-1]>=7)cut.push(k);}}cut.push(b);
+  for(let c=0;c<cut.length-1;c++){if(cut[c+1]-cut[c]>=4){let pk=0;for(let q=cut[c];q<cut[c+1];q++)pk=Math.max(pk,sm[q]);segs.push({s:cut[c]*F,e:Math.min(x.length,cut[c+1]*F),pk:pk/mx});}}}
+ if(segs.length<2){segs.length=0;const L=Math.round(sr*0.16);for(let p=0;p+L<=x.length;p+=L)segs.push({s:p,e:p+L,pk:1});}
+ return segs;}
+function pitchOf(x,s,e,sr){const mid=Math.floor((s+e)/2),W=Math.min(Math.round(sr*0.04),Math.floor((e-s)/2));if(W<sr*0.015)return 0;const a=mid-Math.floor(W/2);
+ let best=0,bl=0;for(let lag=Math.floor(sr/600);lag<=Math.floor(sr/90);lag++){let c=0,n1=0,n2=0;for(let i=0;i<W;i++){const p=x[a+i],q=x[a+i+lag]||0;c+=p*q;n1+=p*p;n2+=q*q;}const r=c/Math.sqrt(n1*n2+1e-9);if(r>best){best=r;bl=lag;}}return best>0.45?sr/bl:0;}
+/* Spanish: his own syllables shuffled into the same rhythm, with a sing-song Spanish lilt and the odd rolled r */
+let SPA=null,SPAOF=null;function spanishOf(){if(SPAOF===buf)return SPA;const x=buf.getChannelData(0),sr=buf.sampleRate,segs=sylls(x,sr),R=rng(buf.length*7+13);
+ const perm=segs.map((_,i)=>i);for(let i=perm.length-1;i>0;i--){const j=Math.floor(R()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]];}if(perm.every((v,i)=>v===i))perm.push(perm.shift());
+ const y=new Float32Array(x.length+Math.round(sr*0.6)),fade=Math.round(sr*0.008);
+ segs.forEach((slot,i)=>{const src=segs[perm[i]],sl=src.e-src.s,dl=slot.e-slot.s,next=segs[i+1],end=!next||next.s-slot.e>sr*0.25;
+  const lilt=end?(R()<0.3?1.12:0.9):1+0.07*Math.sin(i*1.9)+(R()-0.5)*0.06;const ratio=Math.min(1.25,Math.max(0.8,sl/dl))*lilt,ol=Math.floor(sl/ratio),roll=R()<0.25;
+  for(let k=0;k<ol;k++){const p=src.s+k*ratio,p0=Math.floor(p),f=p-p0;let v=(x[p0]||0)*(1-f)+(x[p0+1]||0)*f;
+   const g=Math.min(1,k/fade,(ol-k)/fade);if(roll&&k<sr*0.07)v*=0.55+0.45*Math.sin(2*Math.PI*28*k/sr);const at=slot.s+k;if(at<y.length)y[at]+=v*g;}});
+ let pk=0;for(let i=0;i<y.length;i++)pk=Math.max(pk,Math.abs(y[i]));if(pk>0)for(let i=0;i<y.length;i++)y[i]*=0.98/pk;
+ SPA=newBuf(y,sr);SPAOF=buf;return SPA;}
+/* Dog: a bark on every syllable he says, following his rhythm, loudness and how high his voice is */
+function bq(x,type,f,Q,sr){const w=2*Math.PI*f/sr,al=Math.sin(w)/(2*Q),cs=Math.cos(w);let b0,b1,b2,a0=1+al,a1=-2*cs,a2=1-al;
+ if(type==='bp'){b0=al;b1=0;b2=-al;}else{b0=(1-cs)/2;b1=1-cs;b2=(1-cs)/2;}const y=new Float32Array(x.length);let x1=0,x2=0,y1=0,y2=0;
+ for(let i=0;i<x.length;i++){const v=(b0*x[i]+b1*x1+b2*x2-a1*y1-a2*y2)/a0;x2=x1;x1=x[i];y2=y1;y1=v;y[i]=v;}return y;}
+let DOG=null,DOGOF=null;function dogOf(){if(DOGOF===buf)return DOG;const x=buf.getChannelData(0),sr=buf.sampleRate,segs=sylls(x,sr),R=rng(buf.length*3+5);
+ const raw=new Float32Array(x.length+Math.round(sr*0.5));
+ segs.forEach(sg=>{const f=pitchOf(x,sg.s,sg.e,sr),f0=f?Math.min(620,Math.max(260,f*1.15)):380+R()*80,dur=Math.min(0.26,Math.max(0.12,(sg.e-sg.s)/sr)),N=Math.floor(dur*sr),amp=0.35+0.65*sg.pk;
+  let ph=0;for(let k=0;k<N&&sg.s+k<raw.length;k++){const t=k/sr,u=t/dur,fr=f0*(1+0.35*Math.sin(Math.PI*Math.min(1,u*1.6)))*(1-0.3*u);ph+=2*Math.PI*fr/sr;
+   const tone=Math.tanh(2.2*(Math.sin(ph)+0.55*Math.sin(2*ph)+0.3*Math.sin(3*ph))),env=Math.min(1,t/0.006)*Math.exp(-u*3.2);raw[sg.s+k]+=amp*env*(tone*0.8+(R()*2-1)*0.35*Math.exp(-u*6));}});
+ const a=bq(raw,'bp',850,1.1,sr),b=bq(raw,'bp',1700,1.6,sr),c=bq(raw,'lp',3500,0.7,sr),y=new Float32Array(raw.length);let pk=0;
+ for(let i=0;i<y.length;i++){y[i]=a[i]*1.4+b[i]*0.9+c[i]*0.35;pk=Math.max(pk,Math.abs(y[i]));}if(pk>0)for(let i=0;i<y.length;i++)y[i]*=0.98/pk;
+ DOG=newBuf(y,sr);DOGOF=buf;return DOG;}
 function revOf(c){const r=c.createBuffer(1,buf.length,buf.sampleRate),a=buf.getChannelData(0),b=r.getChannelData(0),n=a.length;for(let i=0;i<n;i++)b[i]=a[n-1-i];return r;}
-function build(c,v,out){const src=c.createBufferSource();src.buffer=v==='backwards'?revOf(c):v==='fasttalk'?stretch(1.6):v==='slowtalk'?stretch(0.6):buf;src.playbackRate.value=rateOf(v);const mix=c.createGain();mix.connect(out);let head=src;
+function build(c,v,out){const src=c.createBufferSource();src.buffer=v==='spanish'?spanishOf():v==='dog'?dogOf():v==='backwards'?revOf(c):v==='fasttalk'?stretch(1.6):v==='slowtalk'?stretch(0.6):buf;src.playbackRate.value=rateOf(v);const mix=c.createGain();mix.connect(out);let head=src;
  const chain=(...nodes)=>{nodes.forEach(n=>{head.connect(n);head=n;});};
  const xs=[],T=c.currentTime;const gain=x=>{const g=c.createGain();g.gain.value=x;return g;};
  const osc=(f,ty)=>{const o=c.createOscillator();o.type=ty||'sine';o.frequency.value=f;o.start();xs.push(o);return o;};

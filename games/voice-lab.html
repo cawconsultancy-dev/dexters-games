@@ -159,7 +159,7 @@ function boot(){document.title=G.title;$('tIcon').textContent=G.icon;$('tTitle')
 
 const G={title:"Dexter's Voice Lab",icon:'🎙️',sub:'Record your voice, then hear it as a chipmunk, a giant, a robot and more!',hint:'Press the red button, talk, then tap a voice.',unit:'recordings',noPause:1};
 const VOICES=[['normal','🙂','My voice'],['chipmunk','🐿️','Chipmunk'],['giant','🦖','Giant'],['robot','🤖','Robot'],['alien','👽','Alien'],['cave','⛰️','Echo cave'],['underwater','🐠','Underwater'],['ghost','👻','Ghost'],['radio','📻','Old radio'],['baby','👶','Baby'],['mouse','🐭','Mouse'],['bear','🐻','Bear'],['slowmo','🐢','Slow motion'],['superfast','⚡','Super fast'],['fasttalk','🐇','Fast talking'],['slowtalk','🐌','Slow talking'],['spanish','🇪🇸','Spanish'],['dog','🐶','Dog'],['astronaut','👨‍🚀','Astronaut'],['spacerobot','🛸','Space robot'],['stadium','🏟️','Stadium'],['telephone','☎️','Telephone'],['megaphone','📣','Megaphone'],['jelly','🍮','Wobbly jelly'],['dizzy','🌀','Dizzy'],['choir','🎶','Choir'],['twins','👯','Twins'],['monster','👹','Monster'],['dragon','🐉','Dragon'],['fairy','🧚','Fairy'],['backwards','⏪','Backwards'],['tunnel','🚇','Tunnel'],['squeaky','🐤','Squeaky']];
-const MAXS=30;
+const MAXS=180;
 let VC=null,mic=null,proc=null,recSrc=null,recBufs=[],recLen=0,recording=false,recT0=0,buf=null,cur='normal',playing=null,playT0=0,anIn=null,anOut=null,lvl=0,made=0,built=false,meterBuf=null;
 function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1800);}
@@ -317,7 +317,7 @@ const VCLIPS={MAX:12,open(){return new Promise((res,rej)=>{const r=indexedDB.ope
  async run(fn){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('clips','readwrite');fn(tx.objectStore('clips'));tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});},
  async add(c){await this.run(s=>s.add(c));const all=await this.all();const extra=all.length-this.MAX;if(extra>0)await this.run(s=>all.slice(0,extra).forEach(x=>s.delete(x.id)));},
  async del(id){await this.run(s=>s.delete(id));}};
-async function renderCur(){if(!buf)return null;const sr=buf.sampleRate,len=Math.ceil((buf.duration/slowOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return null;}
+async function renderCur(){if(!buf)return null;if(buf.duration>20)toast('Getting your sound ready…');const sr=buf.sampleRate,len=Math.ceil((buf.duration/slowOf(cur)+tailOf(cur))*sr);const OC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OC){toast('This device cannot save sounds');return null;}
  const oc=new OC(1,len,sr);IRS={};const src=build(oc,cur,oc.destination);src.start();let ab;try{ab=await oc.startRendering();}catch(e){toast('Could not save, try again');return null;}IRS={};
  const d=ab.getChannelData(0);let pk=0;for(let i=0;i<d.length;i++)pk=Math.max(pk,Math.abs(d[i]));if(pk>0.001)for(let i=0;i<d.length;i++)d[i]*=0.98/pk;
  let e=d.length-1;while(e>0&&Math.abs(d[e])<0.01)e--;return {ab,data:d.slice(0,Math.min(d.length,e+Math.floor(sr*0.1))),sr};}
@@ -325,8 +325,10 @@ async function saveIt(){const r=await renderCur();if(!r)return;const ab=r.ab;
  const name="dexters-voice-"+VOICES.find(x=>x[0]===cur)[2].toLowerCase().replace(/\s+/g,'-')+'.wav';const file=new File([wav(ab)],name,{type:'audio/wav'});
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:"My voice"});toast('Sent!');return;}}catch(e){if(e.name==='AbortError')return;}
  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);toast('Saved!');}
+/* keep clips small on the iPad: half the sample rate above 24 kHz and 16-bit numbers (up to 3 minutes each) */
+function compact(d,sr){let x=d,s=sr;if(sr>24000){const h=Math.floor(d.length/2);x=new Float32Array(h);for(let i=0;i<h;i++)x[i]=(d[2*i]+d[2*i+1])/2;s=sr/2;}const o=new Int16Array(x.length);for(let i=0;i<x.length;i++)o[i]=Math.max(-32767,Math.min(32767,Math.round(x[i]*32767)));return {sr:s,data:o};}
 let keeping=false;async function keepIt(){if(keeping||!buf)return;if(!window.indexedDB){toast('This device cannot keep sounds');return;}keeping=true;$('keepb').disabled=true;
- try{const r=await renderCur();if(r){const v=VOICES.find(x=>x[0]===cur);await VCLIPS.add({voice:cur,emoji:v[1],name:v[2],sr:r.sr,data:r.data,t:Date.now()});toast(v[1]+' Saved for Space Studio 3D!');say('Saved! Now you can use it in Space Studio 3D');sfx.good();}}
+ try{const r=await renderCur();if(r){const v=VOICES.find(x=>x[0]===cur);const cp=compact(r.data,r.sr);await VCLIPS.add({voice:cur,emoji:v[1],name:v[2],sr:cp.sr,data:cp.data,t:Date.now()});toast(v[1]+' Saved for Space Studio 3D!');say('Saved! Now you can use it in Space Studio 3D');sfx.good();}}
  catch(e){toast('Could not save, try again');}keeping=false;$('keepb').disabled=!buf;}
 /* ---------- UI ---------- */
 function renderVoices(){$('vg').innerHTML=VOICES.map(v=>'<button class="vb'+(buf&&v[0]===cur?' on':'')+'" data-v="'+v[0]+'"'+(buf?'':' disabled')+'><i>'+v[1]+'</i>'+v[2]+'</button>').join('');}
@@ -340,7 +342,7 @@ const _start=start;start=function(){_start();shown(true);setTimeout(()=>say("Wel
 pause=function(){};
 document.addEventListener('visibilitychange',()=>{if(document.hidden){if(recording)stopRec();stopPlay();}});
 G.update=dt=>{const an=recording?anIn:playing?anOut:null;if(an){an.getByteTimeDomainData(meterBuf);let s=0;for(let i=0;i<meterBuf.length;i++){const x=(meterBuf[i]-128)/128;s+=x*x;}const r=Math.sqrt(s/meterBuf.length);lvl=lvl*0.6+Math.min(1,r*5)*0.4;}else lvl*=0.85;
- if(recording){const el=(performance.now()-recT0)/1000;if(el>=MAXS){stopRec();return;}$('rlab').textContent='Recording… '+Math.max(0,Math.ceil(MAXS-el))+'s';}};
+ if(recording){const el=(performance.now()-recT0)/1000;if(el>=MAXS){stopRec();return;}{const left=Math.max(0,Math.ceil(MAXS-el));$('rlab').textContent='Recording… '+Math.floor(left/60)+':'+String(left%60).padStart(2,'0');}}};
 G.draw=()=>{const t=performance.now()/1000;const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2a1660');g.addColorStop(1,'#7a3ae0');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
  for(let i=0;i<40;i++){const x=(i*97%W),y=((i*53+t*12*(1+i%3))%H);ctx.globalAlpha=0.25;circ(x,y,2+i%3,'#fff');}ctx.globalAlpha=1;
  if(state!=='play')return;const panelTop=$('lab').getBoundingClientRect().top||H*0.6;const cy=Math.max(90,panelTop*0.5),cx=W/2,R=Math.min(W*0.3,panelTop*0.32,170);

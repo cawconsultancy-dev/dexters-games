@@ -436,7 +436,7 @@ function renderClips(){const btn=(c,i,del)=>'<button class="vc'+(clipPlaying&&cl
 function clipCtx(){if(!MAC||MAC.state==='closed')MAC=new(window.AudioContext||window.webkitAudioContext)();if(MAC.state!=='running'){try{MAC.resume();}catch(e){}}return MAC;}
 function stopClip(){if(clipPlaying){const s=clipPlaying.s;clipPlaying=null;try{s.onended=null;s.stop();}catch(e){}}if(micMixG&&MAC){try{micMixG.gain.setTargetAtTime(1,MAC.currentTime,0.03);}catch(e){}}clipLv=0;}
 function playClip(id){const c=CL.find(x=>x.id===id);if(!c)return;const ctx=clipCtx();stopClip();
- if(!clipBufs[id]||clipBufs[id].sampleRate!==c.sr){const b=ctx.createBuffer(1,c.data.length,c.sr);b.getChannelData(0).set(c.data);clipBufs[id]=b;}
+ if(!clipBufs[id]||clipBufs[id].sampleRate!==c.sr){const fd=c.data instanceof Int16Array?Float32Array.from(c.data,v=>v/32768):c.data;const b=ctx.createBuffer(1,fd.length,c.sr);b.getChannelData(0).set(fd);clipBufs[id]=b;}
  if(!clipAn||clipAn.context!==ctx){clipAn=ctx.createAnalyser();clipAn.fftSize=1024;clipAn.smoothingTimeConstant=0.2;clipA=new Float32Array(clipAn.fftSize);}
  const s=ctx.createBufferSource();s.buffer=clipBufs[id];const g=ctx.createGain();g.gain.value=1;s.connect(g);g.connect(ctx.destination);g.connect(clipAn);if(recDst)g.connect(recDst);
  if(micMixG){try{micMixG.gain.setTargetAtTime(0,ctx.currentTime,0.02);}catch(e){}}

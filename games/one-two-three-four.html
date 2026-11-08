@@ -161,8 +161,8 @@ function numSprite(txt,h){const c=numCanvas(txt);const s=new THREE.Sprite(new TH
 function setSpriteText(s,txt,h){const c=numCanvas(txt);s.material.map.dispose();s.material.map=new THREE.CanvasTexture(c);s.material.needsUpdate=true;s.userData.h=h;s.scale.set(h*c.width/c.height,h,1);}
 function ballTex(col){const c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d');x.fillStyle=col;x.fillRect(0,0,128,64);x.fillStyle='rgba(255,255,255,0.35)';x.fillRect(0,26,128,12);x.fillStyle='rgba(0,0,0,0.12)';for(let i=0;i<4;i++){x.beginPath();x.arc(16+i*32,14,5,0,7);x.fill();x.beginPath();x.arc(32+i*32,50,5,0,7);x.fill();}return new THREE.CanvasTexture(c);}
 /* ---------- three ---------- */
-let renderer=null,scene,camera,ballGeo,boxGeo;
-function initGL(){if(renderer||!window.THREE)return;try{renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,320);ballGeo=new THREE.SphereGeometry(1,32,22);boxGeo=new THREE.BoxGeometry(1,1,1);resizeGL();}catch(e){renderer=null;}}
+let renderer=null,scene,camera,ballGeo,boxGeo,spikeGeo;
+function initGL(){if(renderer||!window.THREE)return;try{renderer=new THREE.WebGLRenderer({canvas:$('gl'),antialias:true,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,0.1,320);ballGeo=new THREE.SphereGeometry(1,32,22);boxGeo=new THREE.BoxGeometry(1,1,1);spikeGeo=new THREE.ConeGeometry(0.24,0.7,10);resizeGL();}catch(e){renderer=null;}}
 function resizeGL(){if(!renderer)return;renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
 function skyTex(a,b){const c=document.createElement('canvas');c.width=4;c.height=256;const x=c.getContext('2d');const g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,a);g.addColorStop(1,b);x.fillStyle=g;x.fillRect(0,0,4,256);return new THREE.CanvasTexture(c);}
 function stripeTex(a,b){const c=document.createElement('canvas');c.width=64;c.height=256;const x=c.getContext('2d');x.fillStyle=a;x.fillRect(0,0,64,256);x.fillStyle=b;x.fillRect(0,0,64,128);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;}
@@ -221,15 +221,28 @@ const CAP=1073741824;function fmt(v){return v.toLocaleString('en-GB');}
 function setVal(v){val=Math.max(1,Math.min(CAP,v));setSpriteText(meLab,fmt(val),1.3+Math.min(0.9,Math.sqrt(val)*0.09));if(meLab.scale.x>6.5){const k=6.5/meLab.scale.x;meLab.scale.multiplyScalar(k);meLab.userData.h*=k;}}
 /* ---------- doubling run: after the steps, keep rolling and double with every x2 ball, up to 1,073,741,824 ---------- */
 let dbl=null;
-function startDouble(){const top=steps[steps.length-1];const by=top.y,z0=top.z-1.2;const need=Math.max(4,Math.ceil(Math.log2(CAP/val)));const rows=need+4;const len=rows*ROWGAP+40;
+function startDouble(){const top=steps[steps.length-1];const by=top.y,z0=top.z-1.2;const need=Math.max(4,Math.ceil(Math.log2(CAP/val)));const rows=need*2+14;const len=rows*ROWGAP+40;
  const T=THEMES[theme];const st=stripeTex(T.road[0],T.road[1]);st.repeat.set(1,len/16);const road=new THREE.Mesh(new THREE.BoxGeometry(ROADW,1,len),new THREE.MeshLambertMaterial({map:st}));road.position.set(0,by-0.5,z0-len/2);scene.add(road);
  const edge=new THREE.MeshLambertMaterial({color:T.edge});[-1,1].forEach(sd=>{const e=new THREE.Mesh(new THREE.BoxGeometry(0.4,0.6,len),edge);e.position.set(sd*(ROADW/2+0.2),by-0.2,z0-len/2);scene.add(e);});
- const items=[];const R=Math.random;let z=z0-12;for(let r=0;r<rows;r++){const lanes=[0,1,2].sort(()=>R()-0.5);const nb=R()<0.55?1:2;
-  for(let i=0;i<nb;i++){const rr2=0.75;const m=new THREE.Mesh(ballGeo,new THREE.MeshLambertMaterial({map:ballTex('#ff4fa8')}));m.scale.set(rr2,rr2,rr2);m.position.set(LANES[lanes[i]],by+rr2,z);scene.add(m);
-   const lab=numSprite('×2',1.3);lab.position.set(LANES[lanes[i]],by+rr2*2+0.6,z);scene.add(lab);items.push({type:'ball',x:LANES[lanes[i]],z,r:rr2,m,lab,done:false});}
-  if(r>=2&&nb===1&&R()<0.7){const li=lanes[1+Math.floor(R()*2)];const g=new THREE.Group();const cs=T.obs;for(let i=0;i<2;i++)for(let j=0;j<2;j++){const b=new THREE.Mesh(boxGeo,new THREE.MeshLambertMaterial({color:cs[(i+j)%cs.length]}));b.scale.set(1.05,1.05,1.05);b.position.set(-0.55+i*1.1,0.55+j*1.1,0);g.add(b);}g.position.set(LANES[li],by,z);scene.add(g);items.push({type:'block',x:LANES[li],z,g,done:false});}
-  z-=ROWGAP;}
- dbl={by,items,end:z-10,ms:0};pz=top.z;px=0;phase='dbl';floatText('Doubling run! ×2',W/2,H*0.3,'#ff4fa8',50);say('Doubling run! Catch the times two balls to double your number. Miss the blocks!');}
+ const items=[];const R=Math.random;let z=z0-12;
+ const mkBall=(li,z,half)=>{const rr2=0.75;const m=new THREE.Mesh(ballGeo,new THREE.MeshLambertMaterial({map:ballTex(half?'#3a8bff':'#ff4fa8')}));m.scale.set(rr2,rr2,rr2);m.position.set(LANES[li],by+rr2,z);scene.add(m);
+  const lab=numSprite(half?'÷2':'×2',1.3);lab.position.set(LANES[li],by+rr2*2+0.6,z);scene.add(lab);items.push({type:half?'half':'ball',x:LANES[li],z,r:rr2,m,lab,done:false});};
+ const mkBlock=(x,z,slide)=>{const g=new THREE.Group();const cs=T.obs;for(let i=0;i<2;i++)for(let j=0;j<2;j++){const b=new THREE.Mesh(boxGeo,new THREE.MeshLambertMaterial({color:cs[(i+j)%cs.length]}));b.scale.set(1.05,1.05,1.05);b.position.set(-0.55+i*1.1,0.55+j*1.1,0);g.add(b);}
+  g.position.set(x,by,z);scene.add(g);const o={type:slide?'slider':'block',x,z,g,done:false,ph:R()*6.3,sp:1.4+R()*0.8};if(slide){const lab=numSprite('÷2',1.1);lab.position.set(x,by+3,z);scene.add(lab);o.lab=lab;}items.push(o);};
+ const mkSpikes=(li,z)=>{const g=new THREE.Group();const plate=new THREE.Mesh(new THREE.BoxGeometry(2.3,0.12,1.6),new THREE.MeshLambertMaterial({color:0xe8304a}));plate.position.y=0.06;g.add(plate);
+  const cm=new THREE.MeshLambertMaterial({color:0x6b7488});for(let i=0;i<4;i++)for(let j=0;j<2;j++){const c=new THREE.Mesh(spikeGeo,cm);c.position.set(-0.84+i*0.56,0.42,-0.36+j*0.72);g.add(c);}
+  g.position.set(LANES[li],by,z);scene.add(g);const lab=numSprite('÷2',1.1);lab.position.set(LANES[li],by+1.6,z);scene.add(lab);items.push({type:'spikes',x:LANES[li],z,g,lab,done:false});};
+ for(let r=0;r<rows;r++){const lanes=[0,1,2].sort(()=>R()-0.5);
+  if(r<2){mkBall(lanes[0],z);}
+  else{const k=R();
+   if(k<0.3){mkBall(lanes[0],z);mkSpikes(lanes[1],z);if(R()<0.5)mkSpikes(lanes[2],z);}
+   else if(k<0.5){mkBall(lanes[0],z);mkBall(lanes[1],z,true);if(R()<0.4)mkSpikes(lanes[2],z);}
+   else if(k<0.68){mkBall(lanes[0],z);mkBlock(0,z-3.5,true);}
+   else if(k<0.84){mkBall(lanes[0],z);mkBall(lanes[1],z);mkBlock(LANES[lanes[2]],z);}
+   else{mkSpikes(lanes[0],z);mkSpikes(lanes[1],z);mkBall(lanes[2],z-2);}}
+  z-=ROWGAP+1;}
+ dbl={by,items,end:z-10,ms:0,inv:0};pz=top.z;px=0;phase='dbl';floatText('Doubling run! ×2',W/2,H*0.3,'#ff4fa8',50);say('Doubling run! Catch the times two balls to double your number. Miss the blocks!');}
+function halve(msg){const a=val;setVal(Math.max(1,Math.floor(val/2)));rad=radFor(val);dbl.inv=0.6;shake(9,0.3);sfx.hit();bumpT=0;const [sx,sy]=screenOf(px,dbl.by+rad*2,pz);floatText(a>1?'÷2':'Bump!',sx,sy,'#6aa8ff',54);floatText(msg,W/2,H*0.32,'#fff',40);say(a>1?msg.replace('÷2','')+' '+fmt(a)+' halved is '+fmt(val):'Bump!');}
 function endDouble(t){if(phase!=='dbl')return;phase='done';setTimeout(()=>{LV=null;gameOver({title:t,delay:0});},1700);}
 function screenOf(x,y,z){const v=new THREE.Vector3(x,y,z).project(camera);return [(v.x+1)/2*W,(1-v.y)/2*H];}
 function shatter(o){o.g.children.slice().forEach(b=>{const p=new THREE.Vector3();b.getWorldPosition(p);o.g.remove(b);b.position.copy(p);scene.add(b);debris.push({m:b,v:new THREE.Vector3((Math.random()-0.5)*8,4+Math.random()*5,-3-Math.random()*5),r:new THREE.Vector3(Math.random()*6,Math.random()*6,0),t:2});});scene.remove(o.g);}
@@ -249,7 +262,10 @@ function update(dt){
     const ms=val>=1e9?3:val>=1e6?2:val>=1e3?1:0,newMs=ms>dbl.ms;if(newMs){dbl.ms=ms;floatText(['','Over a thousand!','Over a million!','Over a billion!'][ms],W/2,H*0.32,'#fff',44);}
     if(val>=CAP){sfx.win();for(let i=0;i<8;i++)setTimeout(()=>burst(rnd(W*0.15,W*0.85),rnd(H*0.15,H*0.55),['#ffd27a','#ff6b9a','#7ad7ff','#9bff8a','#fff'],30,420,7,300),i*150);say('Wow! You made '+fmt(val)+'! That is over a billion!');endDouble('You made '+fmt(val)+'!');break;}
     say((newMs?['','Over a thousand! ','Over a million! ','Over a billion! '][ms]:'')+fmt(val));}
-   if(o.type==='block'&&Math.abs(pz-o.z)<rad+0.6&&Math.abs(px-o.x)<rad+1.0){o.done=true;shatter(o);shake(9,0.3);sfx.hit();say('Bump! You made '+fmt(val));endDouble('You made '+fmt(val)+'!');break;}}
+   if(o.type==='half'&&Math.abs(pz-o.z)<rad+o.r*0.8&&Math.abs(px-o.x)<rad+o.r*0.85){o.done=true;scene.remove(o.m);scene.remove(o.lab);halve('Oh no! ÷2');}
+   if((o.type==='block'||o.type==='slider')&&dbl.inv<=0&&Math.abs(pz-o.z)<rad+0.6&&Math.abs(px-o.g.position.x)<rad+1.0){o.done=true;shatter(o);if(o.lab)scene.remove(o.lab);halve('Bump! ÷2');}
+   if(o.type==='spikes'&&dbl.inv<=0&&Math.abs(pz-o.z)<rad+0.7&&Math.abs(px-o.x)<rad+1.05){o.done=true;o.g.children.forEach(c=>{if(c.geometry===spikeGeo)c.scale.set(1,0.3,1);});halve('Ouch, spikes! ÷2');}}
+  dbl.inv=Math.max(0,dbl.inv-dt);dbl.items.forEach(o=>{if(o.type==='slider'&&!o.done){const x=Math.sin(performance.now()/1000*o.sp+o.ph)*LANES[2];o.g.position.x=x;o.lab.position.x=x;}if((o.type==='ball'||o.type==='half')&&!o.done)o.m.rotation.y+=dt*1.5;});
   if(phase==='dbl'&&pz<=dbl.end){say('The end of the road! You made '+fmt(val));endDouble('You made '+fmt(val)+'!');}}
  else if(phase==='climb'){
   if(hop){hop.t+=dt/0.42;const k=Math.min(1,hop.t);pz=hop.z0+(hop.z1-hop.z0)*k;px=hop.x0*(1-k);me.position.y=hop.y0+(hop.y1-hop.y0)*k+Math.sin(k*Math.PI)*1.4;

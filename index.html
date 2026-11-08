@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Dexter's Games</title>
 <script src="voice.js"></script>
-<meta name="description" content="55 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
+<meta name="description" content="65 free games for ages 4 to 7 from Dexter's Learning Tube. Rockets, monsters, puzzles, planets, animals and more. No adverts, no sign-up.">
 <meta name="theme-color" content="#12234a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="img/logo-192.png">
@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Dexter's Games">
 <meta property="og:title" content="Dexter's Games">
-<meta property="og:description" content="55 free games for ages 4 to 7. No adverts, no sign-up.">
+<meta property="og:description" content="65 free games for ages 4 to 7. No adverts, no sign-up.">
 <meta property="og:image" content="https://cawconsultancy-dev.github.io/dexters-games/img/share.png">
 <meta property="og:url" content="https://cawconsultancy-dev.github.io/dexters-games/">
 <meta name="twitter:card" content="summary_large_image">
@@ -266,6 +266,7 @@ const WORLDS=[
  {id:'rockets',name:'Rockets and robots',em:'🚀',c:'#7a5ae0',d:'#4a2fa3'},
  {id:'monsters',name:'Monsters and stories',em:'👾',c:'#e0567a',d:'#a02e52'},
  {id:'puzzles',name:'Puzzles, fish and trains',em:'🧩',c:'#2ba6b8',d:'#17707e'},
+ {id:'brain',name:'Brain Puzzles',em:'🧠',c:'#1f9e8f',d:'#126b60'},
  {id:'drums',name:'Music and drums',em:'🎹',c:'#f07a4a',d:'#b04a22'},
  {id:'space',name:'Space',em:'🪐',c:'#3a5bd9',d:'#1f3496'},
  {id:'numbers',name:'Numbers and clocks',em:'🔢',c:'#e9a52c',d:'#a86f0e'},
@@ -288,6 +289,16 @@ const GAMES=[
  ['pattern-train','Pattern Train','🚂','puzzles','What comes next on the train?'],
  ['fish-tank','Fish Tank Dash','🐠','puzzles','Quick! Which tank has more fish?'],
  ['pipe-flow','Pipe Flow','🚰','puzzles','Turn the pipes to water the flowers',1],
+ ['slide-picture','Slide Picture','🧩','brain','Slide the squares to fix the picture',1],
+ ['robot-code','Robot Code','🤖','brain','Plan the arrows, then press Go',1],
+ ['push-crate','Push the Crate','📦','brain','Push every crate onto a star',1],
+ ['ring-tower','Tower Stack','🗼','brain','Move the ring tower to the flag',1],
+ ['balance-scales','Balance Scales','⚖️','brain','Add blocks to make the scales balance',1],
+ ['shadow-match','Shadow Match','👤','brain','Match each picture to its shadow',1],
+ ['picture-sudoku','Picture Sudoku','🍓','brain','One of each picture in every row',1],
+ ['space-maze','Space Maze','🧑‍🚀','brain','Find the way to the rocket',1],
+ ['block-copy','Block Copy 3D','🧊','brain','Build the same 3D shape',1],
+ ['laser-mirrors','Laser Mirrors','🔦','brain','Turn the mirrors to hit the target',1],
  ['drum-copycat','Drum Copycat','🥁','drums','Copy the beats and dance with the alien'],
  ['star-notes','Star Notes','🎹','drums','Tap the falling stars to play real songs',1],
  ['cosmic-quiz','Cosmic Quiz','🪐','space','Planets, stars, moons and black holes'],
@@ -373,7 +384,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape'&&open)$('back').click();});
 $('toGrown').onclick=()=>$('grown').scrollIntoView({behavior:'smooth'});
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),2200);}
 const URL_APP='https://cawconsultancy-dev.github.io/dexters-games/';
-$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"55 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
+$('shareBtn').onclick=async()=>{const data={title:"Dexter's Games",text:"65 free games for ages 4 to 7. No adverts, no sign-up.",url:URL_APP};
  try{if(navigator.share){await navigator.share(data);return;}await navigator.clipboard.writeText(URL_APP);toast('Link copied');}catch(e){if(e&&e.name!=='AbortError')toast(URL_APP);}};
 const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
 const isAndroid=/android/i.test(navigator.userAgent);

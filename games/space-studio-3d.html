@@ -477,6 +477,8 @@ const OBJ_3D={
  peg51b:['51 Pegasi b','exo','the first planet found going round a star like our Sun'],hd189b:['HD 189733 b','exo','a blue planet where it may rain glass'],
  kelt9b:['KELT-9b','exo','the hottest planet ever found'],hd137010b:['HD 137010 b','exo','a planet candidate about the size of Earth, with a year almost as long as ours']};
 const OBJ={};Object.keys(D2.OBJ).forEach(k=>{OBJ[k]=D2.OBJ[k].slice();if(k==='proxima')OBJ.wdgreen=OBJ_3D.wdgreen;});
+/* Dexter's Learning Tube logo stamp (does not talk) */
+OBJ.dltlogo=["Dexter's Learning Tube",'extra','our channel logo'];const LOGO=new Image();LOGO.onload=()=>{try{delete ICONS.dltlogo;if(cat==='extra')renderStamps();}catch(e){}};LOGO.src='../img/logo-512.png';
 const CATS=D2.CATS;
 const STARC={sun:[['#fff6b0','#ffc531','#ff8a00'],'255,190,60'],sirius:[['#ffffff','#cfe2ff','#8fb4ff'],'170,200,255'],polaris:[['#fffbe8','#fff0b8','#e8c766'],'255,240,180'],
  betelgeuse:[['#ffd2a8','#ff6a3d','#b22a12'],'255,90,50'],rigel:[['#ffffff','#a9c8ff','#5b86ff'],'140,180,255'],vega:[['#ffffff','#d7e6ff','#9dbcff'],'190,215,255'],
@@ -593,17 +595,17 @@ function initGL(){if(renderer||!window.THREE)return;try{const cvs=$('gl');render
  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(50,innerWidth/innerHeight,0.1,500);amb=new THREE.AmbientLight(0xffffff,0.55);scene.add(amb);dirL=new THREE.DirectionalLight(0xffffff,0.85);scene.add(dirL);scene.add(dirL.target);
  sphereGeo=new THREE.SphereGeometry(1,48,32);ray=new THREE.Raycaster();resizeGL();makeSky();makeDemo();}catch(e){glOK=false;renderer=null;}}
 function resizeGL(){if(!renderer)return;renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camDist=innerWidth<innerHeight?21:16;camera.updateProjectionMatrix();}
-function isSpr(t){return (D2.SPEC[t]&&D2.SPEC[t].k!=='sun')||!!D2.COMETS[t]||['star','rocket','satellite','galaxy','blackhole'].includes(t);}
+function isSpr(t){return t==='dltlogo'||(D2.SPEC[t]&&D2.SPEC[t].k!=='sun')||!!D2.COMETS[t]||['star','rocket','satellite','galaxy','blackhole'].includes(t);}
 function isRockT(t){return t==='asteroid'||(OBJ[t]&&OBJ[t][1]==='rock');}
-function hasFace3(t){return true;}
-function extraFace(t){if(D2.hasFace(t))return null;if(!D2.MOOD[t])D2.MOOD[t]=['smile','grin','o','tongue'][hash(t)%4];const S=D2.SPEC[t],k=S?S.k:t;
+function hasFace3(t){return t!=='dltlogo';}
+function extraFace(t){if(t==='dltlogo')return null;if(D2.hasFace(t))return null;if(!D2.MOOD[t])D2.MOOD[t]=['smile','grin','o','tongue'][hash(t)%4];const S=D2.SPEC[t],k=S?S.k:t;
  const fr={con:0.8,cloud:0.9,crab:0.8,ringneb:0.7,cats:0.7,spiral:0.75,lmc:0.8,cartwheel:0.6,sombrero:0.7,galaxy:0.75,iss:0.9,hubble:0.8,jwst:0.8,voyager:0.85,supernova:0.8,rocket:0.55,satellite:0.7}[k]||0.7;
  return [fr,k==='con'||k==='cloud'||k==='crab'||k==='horse'?'#ffffff':undefined];}
 const SPRI={};
-function sprInfo(t){if(SPRI[t])return SPRI[t];const c=document.createElement('canvas');c.width=c.height=800;const x=c.getContext('2d');D2.set(0,0.5);D2.drawObj(x,t,400,400,40,0,undefined);const d=x.getImageData(0,0,800,800).data;let x0=800,y0=800,x1=0,y1=0;
+function sprInfo(t){if(SPRI[t])return SPRI[t];if(t==='dltlogo')return SPRI[t]={bx:-1,by:-1,bw:2,bh:2};const c=document.createElement('canvas');c.width=c.height=800;const x=c.getContext('2d');D2.set(0,0.5);D2.drawObj(x,t,400,400,40,0,undefined);const d=x.getImageData(0,0,800,800).data;let x0=800,y0=800,x1=0,y1=0;
  for(let y=0;y<800;y+=2)for(let xx=0;xx<800;xx+=2){if(d[(y*800+xx)*4+3]>10){if(xx<x0)x0=xx;if(xx>x1)x1=xx;if(y<y0)y0=y;if(y>y1)y1=y;}}
  if(x1<x0){x0=360;x1=440;y0=360;y1=440;}const I={bx:(x0-2-400)/40,by:(y0-2-400)/40,bw:(x1-x0+4)/40,bh:(y1-y0+4)/40};const ef=extraFace(t);if(ef){const f=ef[0]*0.9,L=Math.min(I.bx,-f),T=Math.min(I.by,-f),Rr=Math.max(I.bx+I.bw,f),B=Math.max(I.by+I.bh,f);I.bx=L;I.by=T;I.bw=Rr-L;I.bh=B-T;}SPRI[t]=I;return I;}
-function drawSpr(t,c,open,now){const I=sprInfo(t);const k=256/Math.max(I.bw,I.bh);c.width=Math.max(8,Math.ceil(I.bw*k));c.height=Math.max(8,Math.ceil(I.bh*k));const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);D2.set(open||0,now||0.5);D2.drawObj(x,t,-I.bx*k,-I.by*k,k,0,undefined);const ef=extraFace(t);if(ef){x.save();x.translate(-I.bx*k,-I.by*k);if(ef[1]){const cx0=-I.bx*k,cy0=-I.by*k,rr=Math.min(k*ef[0]*0.85,cx0,cy0,c.width-cx0,c.height-cy0),g=x.createRadialGradient(0,0,0,0,0,rr);g.addColorStop(0,'rgba(120,140,255,0.45)');g.addColorStop(1,'rgba(120,140,255,0)');x.fillStyle=g;x.beginPath();x.arc(0,0,rr,0,7);x.fill();}D2.face(x,k*ef[0],t,ef[1]);x.restore();}D2.set(0,0.5);}
+function drawSpr(t,c,open,now){if(t==='dltlogo'){c.width=c.height=256;const x=c.getContext('2d');x.clearRect(0,0,256,256);x.save();x.beginPath();x.arc(128,128,127,0,7);x.clip();if(LOGO.complete&&LOGO.naturalWidth)x.drawImage(LOGO,0,0,256,256);else{x.fillStyle='#1d2b5a';x.fillRect(0,0,256,256);}x.restore();return;}const I=sprInfo(t);const k=256/Math.max(I.bw,I.bh);c.width=Math.max(8,Math.ceil(I.bw*k));c.height=Math.max(8,Math.ceil(I.bh*k));const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);D2.set(open||0,now||0.5);D2.drawObj(x,t,-I.bx*k,-I.by*k,k,0,undefined);const ef=extraFace(t);if(ef){x.save();x.translate(-I.bx*k,-I.by*k);if(ef[1]){const cx0=-I.bx*k,cy0=-I.by*k,rr=Math.min(k*ef[0]*0.85,cx0,cy0,c.width-cx0,c.height-cy0),g=x.createRadialGradient(0,0,0,0,0,rr);g.addColorStop(0,'rgba(120,140,255,0.45)');g.addColorStop(1,'rgba(120,140,255,0)');x.fillStyle=g;x.beginPath();x.arc(0,0,rr,0,7);x.fill();}D2.face(x,k*ef[0],t,ef[1]);x.restore();}D2.set(0,0.5);}
 function rockGeo(t){const key='rk_'+t;if(lumpyGeo[key])return lumpyGeo[key];const k=D2.ROCK[t]||{};const sh=k.s||'lumpy',hs=hash(t)%97;const g=new THREE.SphereGeometry(1,36,26);const p=g.attributes.position;
  for(let i=0;i<p.count;i++){let X=p.getX(i),Y=p.getY(i),Z=p.getZ(i);let f=1+0.12*Math.sin(3*X+hs)*Math.cos(2.5*Y+hs*0.3)+0.08*Math.sin(5*Z+hs*0.7)+0.05*Math.cos(4*X*Y+hs);
   if(sh==='peanut'){X*=1.55;const pinch=1-0.3*Math.exp(-X*X*3);Y*=pinch;Z*=pinch;}else if(sh==='top'){f*=1+0.18*(1-Y*Y)-0.05;Y*=0.85;}else if(t!=='asteroid'&&sh!=='lumpy'){f=1+(f-1)*0.4;}
@@ -650,8 +652,8 @@ function placeBody(b,tm,dt){const p=b.ph||0,r=b.r;let dx=0,dy=0,dz=0,sc=1,wob=0;
  case 'grow':sc=1+0.2*Math.sin(tm*3+p);break;case 'dance':wob=Math.sin(tm*5+p)*0.35;dy=Math.abs(Math.sin(tm*5+p))*r*0.3;break;}
  const talk=(b===talker||(allTalk&&!b.demo))&&hasFace3(b.t);if(talk){dy+=lvl*r*0.15;sc*=1+lvl*0.06;}
  if(b.isS){b.spin+=dt*(b.an==='spin'?2.2:0);b.grp.position.set(b.base.x+dx,b.base.y+dy,b.base.z+dz);const s=r*sc;b.spr.scale.set(b.I.bw*s,b.I.bh*s,1);b.spr.material.rotation=b.spin+wob;
-  if(b.face){const open=talk?lvl:0,key=(blinkOf(b.t)?'b':'o')+Math.round(open*12);if(key!==b.fkey){b.fkey=key;drawSpr(b.t,b.sc2,open,nowS);b.stex.needsUpdate=true;}}
-  b.lab.visible=names&&!b.demo;if(b.lab.visible){b.lab.position.set(b.grp.position.x,b.grp.position.y-s*(b.I.by+b.I.bh)-0.3,b.grp.position.z);const ld=Math.max(1,camera.position.distanceTo(b.lab.position)/13);b.lab.scale.set(2.6*ld,0.49*ld,1);}
+  if(b.face){const open=talk?lvl:0,key=(blinkOf(b.t)?'b':'o')+Math.round(open*12)+(LOGO.complete?1:0);if(key!==b.fkey){b.fkey=key;drawSpr(b.t,b.sc2,open,nowS);b.stex.needsUpdate=true;}}
+  b.lab.visible=names&&!b.demo&&b.t!=='dltlogo';if(b.lab.visible){b.lab.position.set(b.grp.position.x,b.grp.position.y-s*(b.I.by+b.I.bh)-0.3,b.grp.position.z);const ld=Math.max(1,camera.position.distanceTo(b.lab.position)/13);b.lab.scale.set(2.6*ld,0.49*ld,1);}
   b.sc=s*Math.max(0.8,Math.min(b.I.bw,b.I.bh)*0.45);return;}
  b.spin+=dt*(b.an==='spin'?2.6:0.25/Math.max(0.5,r));b.mesh.rotation.y=(hash(b.t)%628)/100+b.spin;
  b.grp.position.set(b.base.x+dx,b.base.y+dy,b.base.z+dz);b.grp.rotation.z=wob;const s=r*sc;b.tilt.scale.set(s,s,s);if(b.glow)b.glow.scale.set(s*(b.t==='sun'?4.6:STARC[b.t]?3.8:2.8),s*(b.t==='sun'?4.6:STARC[b.t]?3.8:2.8),1);
@@ -670,7 +672,7 @@ function rayPlane(x,y,anc){ray.setFromCamera(new THREE.Vector2(x/W*2-1,-(y/H)*2+
 function hitItem(x,y){let best=null,bd=1e9;items.forEach(b=>{const [sx,sy,sr]=screenR(b);if(Math.hypot(x-sx,y-sy)<Math.max(26,sr*1.1)){const d=camera.position.distanceTo(b.grp.position);if(d<bd){bd=d;best=b;}}});return best;}
 /* ---------- studio ---------- */
 let items=[],cat='planet',sel='earth',size=1,names=true,built=false,saved=0,press=null;
-function radiusFor(t){const bs=BASE[t]!==undefined?BASE[t]:(D2.BASE[t]||0.6);return Math.min(isSpr(t)?3.2:4.6,bs*(isSpr(t)?2.4:4)*[0.65,1,1.5][size]);}
+function radiusFor(t){if(t==='dltlogo')return 2.2*[0.65,1,1.5][size];const bs=BASE[t]!==undefined?BASE[t]:(D2.BASE[t]||0.6);return Math.min(isSpr(t)?3.2:4.6,bs*(isSpr(t)?2.4:4)*[0.65,1,1.5][size]);}
 function buildTools(){if(built)return;built=true;renderCats();renderOpts();renderStamps();
  $('cats').onclick=$('opts').onclick=e=>{const b=e.target.closest('[data-c]');if(b){cat=b.dataset.c;renderCats();renderStamps();sfx.tap();say(b.textContent.replace(/^\S+\s/,''));return;}
   const s=e.target.closest('[data-s]');if(s){size=+s.dataset.s;renderOpts();sfx.tap();}

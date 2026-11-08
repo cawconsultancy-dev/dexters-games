@@ -172,18 +172,22 @@ function mkBody(pose,x,y,rot){const c=Math.cos(rot||0),s=Math.sin(rot||0);P=pose
 function setPose(pose,x,y,rot){const c=Math.cos(rot||0),s=Math.sin(rot||0);pose.forEach((q,i)=>{const p=P[i];p.x=p.ox=x+q[0]*c-q[1]*s;p.y=p.oy=y+q[0]*s+q[1]*c;});}
 function kick(vx,vy){P.forEach(p=>{p.ox=p.x-vx*HS;p.oy=p.y-vy*HS;});}
 function stick(a,b,len,only){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d<0.01){b.x+=0.02;return;}if(only&&d>=len)return;const f=(d-len)/d*0.5;a.x+=dx*f;a.y+=dy*f;b.x-=dx*f;b.y-=dy*f;}
+let trampT=0;
 function collide(p){p.seg=null;
  for(const s of SEG){const ax=s[0],ay=s[1],bx=s[2],by=s[3],ex=bx-ax,ey=by-ay,l2=ex*ex+ey*ey||1;let t=((p.x-ax)*ex+(p.y-ay)*ey)/l2;t=t<0?0:t>1?1:t;
   const cx=ax+ex*t,cy=ay+ey*t,dx=p.x-cx,dy=p.y-cy,d=Math.hypot(dx,dy),R=p.r+s[4];if(d>=R)continue;
-  const nx=d>0.001?dx/d:0,ny=d>0.001?dy/d:-1;p.x=cx+nx*R;p.y=cy+ny*R;
-  let vx=p.x-p.ox-s.vx*HS,vy=p.y-p.oy-s.vy*HS;const vn=vx*nx+vy*ny;if(vn<0){const tx=vx-vn*nx,ty=vy-vn*ny;
-   let rest=0.08,fr=0.55;if(s[5]==='t'){rest=1.18;fr=0.98;if(-vn/HS>250){flash['t'+SEG.indexOf(s)]=0.3;boing(-vn/HS);}}
-   else if(-vn/HS>420)thud(-vn/HS);
-   let nvn=-vn*rest;if(s[5]==='t')nvn=Math.min(nvn,1900*HS);vx=tx*fr+nx*nvn;vy=ty*fr+ny*nvn;p.ox=p.x-vx-s.vx*HS;p.oy=p.y-vy-s.vy*HS;}
-  p.seg=s;}
- for(const b of BUMP){const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy),R=p.r+b.r;if(d>=R||d<0.001)continue;const nx=dx/d,ny=dy/d;p.x=b.x+nx*R;p.y=b.y+ny*R;
-  let vx=p.x-p.ox,vy=p.y-p.oy;const vn=vx*nx+vy*ny;if(vn<0){vx-=2.05*vn*nx;vy-=2.05*vn*ny;p.ox=p.x-vx;p.oy=p.y-vy;if(-vn/HS>200&&b.hit<=0.05){b.hit=0.35;ding();}}}}
-function step(free){const dmp=free?0.9995:1;
+  const nx=d>0.001?dx/d:0,ny=d>0.001?dy/d:-1;let vx=p.x-p.ox-s.vx*HS,vy=p.y-p.oy-s.vy*HS;p.x=cx+nx*R;p.y=cy+ny*R;
+  const vn=vx*nx+vy*ny;p.seg=s;
+  if(s[5]==='t'&&ny<-0.5){if(trampT<=0&&mode==='fly'){const out=clamp(Math.max(-vn/HS,0)*1.1,1050,1500);trampT=0.25;
+     for(const q of P){q.oy=q.y+out*HS;}flash['t'+SEG.indexOf(s)]=0.35;boing(out);}
+   else if(vn<0){p.ox=p.x-vx*0.98;p.oy=p.y+Math.abs(vn)*0.5;}continue;}
+  if(vn<0){const tx=vx-vn*nx,ty=vy-vn*ny;if(-vn/HS>420)thud(-vn/HS);
+   const nvn=-vn*0.08;vx=tx*0.55+nx*nvn;vy=ty*0.55+ny*nvn;}
+  else{vx*=1;vy*=1;}
+  p.ox=p.x-vx-s.vx*HS;p.oy=p.y-vy-s.vy*HS;}
+ for(const b of BUMP){const dx=p.x-b.x,dy=p.y-b.y,d=Math.hypot(dx,dy),R=p.r+b.r;if(d>=R||d<0.001)continue;const nx=dx/d,ny=dy/d;let vx=p.x-p.ox,vy=p.y-p.oy;p.x=b.x+nx*R;p.y=b.y+ny*R;
+  const vn=vx*nx+vy*ny;if(vn<0){vx-=2.05*vn*nx;vy-=2.05*vn*ny;if(-vn/HS>200&&b.hit<=0.05){b.hit=0.35;ding();}}p.ox=p.x-vx;p.oy=p.y-vy;}}
+function step(free){const dmp=free?0.9995:1;trampT=Math.max(0,trampT-HS);
  for(const p of P){let vx=(p.x-p.ox)*dmp,vy=(p.y-p.oy)*dmp;const sp=Math.hypot(vx,vy),mx=3000*HS;if(sp>mx){vx*=mx/sp;vy*=mx/sp;}if(!isFinite(sp)){vx=vy=0;}p.ox=p.x;p.oy=p.y;p.x+=vx;p.y+=vy+GRAV*HS*HS;}
  for(const p of rope){if(p.pin)continue;const vx=p.x-p.ox,vy=p.y-p.oy;p.ox=p.x;p.oy=p.y;p.x+=vx;p.y+=vy+GRAV*HS*HS;}
  for(let k=0;k<10;k++){BONES.forEach(([a,b],i)=>stick(P[a],P[b],BL[i]));APART.forEach(([a,b,l])=>stick(P[a],P[b],l,1));
@@ -293,6 +297,7 @@ G.draw=()=>{const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#5fb8f5'
   if(mode==='swing')text(L.t==='chain'?'👆 Tap to let go!':'👆 Tap to let go of the wheel!',W/2,(W<560?92:34)+32,22,'#fff','center','#0009');
   else if(mode==='ready'&&!press)text(L.t==='seesaw'?'👆 Drag the weight up, then let go':'👆 Pull back, then let go',W/2,(W<560?92:34)+32,22,'#fff','center','#0009');
   if(W<H)text('Turn sideways for a bigger view',W/2,H-30,18,'#1d1b3a','center','#ffffffaa');}};
+window.__rfFlash=()=>flash;window.__rfP=()=>P;
 /* test hook */
 window.__rf={LV,setLevel(i){lvl=i;setupLevel();},sim(fn,secs){for(let i=0;i<secs/HS&&mode!=='done';i++){simT+=HS;moveWorld(simT,HS);tickLauncher();step(mode==='fly'||mode==='done');if(fn)fn(i*HS);
    if(mode==='fly'){flyT+=HS;restT=maxRelSpeed()<45?restT+HS:0;const pe=P[2];if(pe.y>WH+300||pe.x<-300||pe.x>WW+300)return {r:-1};if(restT>0.6||flyT>10){const t=target(),dx=Math.abs(pe.x-t.x);return {r:dx<=t.w/2+4&&pe.y<t.y+20&&pe.y>t.y-140?1:0,x:pe.x,y:pe.y};}}}return {r:-2,x:P[2].x,y:P[2].y,mode};},

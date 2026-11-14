@@ -12,7 +12,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;overflow:hidden;background:#fde7f0;color:#1d1b3a;font-family:Fredoka,"Arial Rounded MT Bold",Arial,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none;overscroll-behavior:none}
-canvas#c{position:fixed;inset:0;display:block;touch-action:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 .hud{position:fixed;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 0;pointer-events:none;z-index:5}
 .pill{display:flex;align-items:center;gap:8px;background:#ffffffd9;border:2px solid #ffffff;border-radius:999px;padding:6px 18px 6px 12px;font-size:26px;font-weight:700;box-shadow:0 6px 16px #0002;color:#5b2373}
 .sp{flex:1}
@@ -248,7 +248,7 @@ function applyCam(){const w=innerWidth,h=innerHeight,top=72,bot=trayH(),yc=(top+
  cam.aspect=w/fullH;cam.setViewOffset(w,fullH,0,offY,w,h);
  const availH=Math.max(120,h-top-bot),vf=cam.fov*D,vE=2*Math.atan(Math.tan(vf/2)*availH/fullH),hE=2*Math.atan(Math.tan(vf/2)*w/fullH),a=Math.min(vE,hE),dist=cur.r/Math.sin(a/2);
  cam.position.set(cur.c.x,cur.c.y+Math.sin(cur.el)*dist,cur.c.z+Math.cos(cur.el)*dist);cam.lookAt(cur.c);cam.updateProjectionMatrix();}
-function resize(){R.setSize(innerWidth,innerHeight,false);applyCam();}
+function resize(){R.setSize(innerWidth,innerHeight);applyCam();}
 addEventListener('resize',resize);
 
 /* ---------- state ---------- */

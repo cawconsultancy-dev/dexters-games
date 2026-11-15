@@ -168,7 +168,9 @@ function makeLevel(n){const R=(s=>()=>{s=(s*16807)%2147483647;return s/214748364
   LANES.forEach((x,i)=>items.push({type:'num',z,x,v:vals[i],row:r}));mx+=Math.max(...vals);mn+=Math.min(...vals.filter(v=>v>0));z-=9;}
  const finish=z-6;return {items,finish,best:Math.max(mx,1),len:-finish+30};}
 /* ---------- world ---------- */
-let LV=null,me=null,objs=[],val=1,px=0,pz=0,speed=6,phase='title',bounceT=0,finishT=0,climb=0,steps=[],debris=[],dragX=null,dragPX=0,keyL=false,keyR=false,camZ=0;
+let LV=null,me=null,objs=[],val=1,px=0,pz=0,speed=6,phase='title',bounceT=0,finishT=0,climb=0,steps=[],debris=[],dragX=null,dragPX=0,keyL=false,keyR=false,camZ=0,hop=null;
+/* one note per step: the C major scale going up, so the climb plays a tune */
+const NOTES=[523.25,587.33,659.25,698.46,783.99,880,987.77,1046.5,1174.66,1318.51,1396.91,1567.98];
 function buildWorld(){initGL();if(!renderer)return false;while(scene.children.length)scene.remove(scene.children[0]);
  scene.background=skyTex();scene.fog=new THREE.Fog(0xe8f6ff,60,150);scene.add(new THREE.HemisphereLight(0xffffff,0xb8c8e0,0.95));const sun=new THREE.DirectionalLight(0xffffff,0.5);sun.position.set(-10,20,10);scene.add(sun);
  LV=makeLevel(level);const len=LV.len+40;const st=stripeTex();st.repeat.set(1,len/16);
@@ -185,7 +187,7 @@ function buildWorld(){initGL();if(!renderer)return false;while(scene.children.le
  steps=[];const stepV=Math.max(2,Math.round(LV.best/10));const sm=[0xff5d8f,0xffb52e,0x4ecdc4,0x8e7cff,0x5b9cff];
  for(let i=0;i<12;i++){const v=(i+1)*stepV;const b=new THREE.Mesh(new THREE.BoxGeometry(ROADW,0.8,2.2),new THREE.MeshLambertMaterial({color:sm[i%sm.length]}));b.position.set(0,0.4+i*0.8,LV.finish-4-i*2.2);scene.add(b);const lab=numSprite(String(v),GOLD,0.9);lab.position.set(ROADW/2-1.2,1.3+i*0.8,LV.finish-4-i*2.2+1.0);scene.add(lab);steps.push({v,z:LV.finish-4-i*2.2,y:0.8+i*0.8});}
  const fl=new THREE.Mesh(new THREE.PlaneGeometry(ROADW,1.2),new THREE.MeshBasicMaterial({map:(()=>{const c=document.createElement('canvas');c.width=64;c.height=8;const x=c.getContext('2d');for(let i=0;i<16;i++)for(let j=0;j<2;j++){x.fillStyle=(i+j)%2?'#222':'#fff';x.fillRect(i*4,j*4,4,4);}const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;return t;})()}));fl.rotation.x=-Math.PI/2;fl.position.set(0,0.02,LV.finish);scene.add(fl);
- me=numSprite('1',BLUE,2.2);scene.add(me);val=1;px=0;pz=0;camZ=0;debris=[];return true;}
+ me=numSprite('1',BLUE,2.2);scene.add(me);val=1;px=0;pz=0;camZ=0;debris=[];hop=null;return true;}
 /* ---------- gameplay ---------- */
 function setVal(v){val=Math.max(0,v);setSpriteText(me,String(val),BLUE);me.userData.h=2.2+Math.min(1.6,Math.log10(Math.max(1,val))*0.8);setSpriteText(me,String(val),BLUE);}
 function screenOf(x,y,z){const v=new THREE.Vector3(x,y,z).project(camera);return [(v.x+1)/2*W,(1-v.y)/2*H];}
@@ -201,10 +203,11 @@ function update(dt){if(phase==='run'){
    if(o.type==='wall'&&pz-o.z<0.9&&pz-o.z>-0.5&&bounceT<=0){
     if(val>o.v){o.done=true;const a=val;setVal(a-o.v);smash(o);const [sx,sy]=screenOf(px,2,pz);floatText('−'+o.v,sx,sy,'#ffd84a',52);say(a+' take away '+o.v+' is '+(a-o.v)+'!');}
     else{bounceT=0.6;pz=o.z+1.2;tone(180,0.3,'sawtooth',0.1,0,90);shake(6,0.2);say('Too small! You need more than '+o.v);const back=o.z+3.2;[-2.6,0,2.6].forEach((x,i)=>{const v=[2,3,2][i];const s=numSprite(String(v),BLUE,1.6);s.position.set(x,0.85,back);scene.add(s);objs.push({type:'num',z:back,x,v,spr:s,done:false,row:'b'+o.z+bounceT});});}}}
-  if(pz<=LV.finish){phase='climb';climb=0;finishT=0;say('Climb the steps!');}}
- else if(phase==='climb'){finishT+=dt;const reach=steps.filter(s=>s.v<=val).length;const target=Math.min(reach,steps.length);if(climb<target&&finishT>0.25){climb++;finishT=0;tone(400+climb*60,0.12,'triangle',0.1);}
-  const s=climb>0?steps[climb-1]:null;const tz=s?s.z:LV.finish-2,ty=s?s.y:0;pz+=(tz-pz)*Math.min(1,dt*6);me.position.y+=((ty+1.1)-me.position.y)*Math.min(1,dt*6);px+=(0-px)*Math.min(1,dt*4);
-  if(climb>=target&&finishT>0.9){phase='done';finishLevel(s?s.v:0);}}
+  if(pz<=LV.finish){phase='climb';climb=0;finishT=0.3;hop=null;say('Bounce up the steps!');}}
+ else if(phase==='climb'){
+  if(hop){hop.t+=dt/0.28;const k=Math.min(1,hop.t);pz=hop.z0+(hop.z1-hop.z0)*k;px=hop.x0*(1-k);me.position.y=hop.y0+(hop.y1-hop.y0)*k+Math.sin(k*Math.PI)*1.4;
+   if(k>=1){hop=null;climb++;const n=NOTES[(climb-1)%NOTES.length];tone(n,0.45,'triangle',0.6);tone(n*2,0.3,'sine',0.3);tone(n/2,0.35,'square',0.12);const [sx,sy]=screenOf(px,me.position.y+1,pz);floatText('♪',sx+rnd(-30,30),sy-20,['#ff5a5a','#3aa0ff','#4fc95e','#ff6bd0','#ffcf2a'][climb%5],48);finishT=0.08;}}
+  else{finishT-=dt;if(finishT<=0){const nxt=steps[climb];if(nxt&&val>=nxt.v){hop={t:0,z0:pz,z1:nxt.z,y0:me.position.y,y1:nxt.y+1.1,x0:px};}else{phase='done';finishLevel(climb>0?steps[climb-1].v:0);}}}}
  objs.forEach(q=>{if(q.fade>0){q.fade-=dt*3;const k=Math.max(0,q.fade);q.spr.material.opacity=k;if(k<=0){scene.remove(q.spr);q.fade=0;}}});
  debris.forEach(d=>{d.v.y-=20*dt;d.m.position.addScaledVector(d.v,dt);d.m.rotation.x+=d.r.x*dt;d.m.rotation.y+=d.r.y*dt;});
  me.position.x=px;me.position.z=pz;if(phase==='run')me.position.y=1.1+Math.abs(Math.sin(pz*0.9))*0.15;

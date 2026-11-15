@@ -311,7 +311,7 @@ function drawMsgs(){const fs=uiFs();cx.textAlign='center';cx.textBaseline='middl
  msgs.forEach((m,i)=>{const y=H*0.22+i*fs*1.5;cx.globalAlpha=Math.min(1,m.life);cx.lineWidth=6;cx.lineJoin='round';cx.strokeStyle='rgba(0,0,0,0.6)';cx.strokeText(m.t,W/2,y);cx.fillStyle=m.col;cx.fillText(m.t,W/2,y);});cx.globalAlpha=1;}
 function shadeScreen(){cx.fillStyle='rgba(5,5,25,0.65)';cx.fillRect(0,0,W,H);cx.textAlign='center';cx.textBaseline='middle';}
 function title(t,y,size,col){cx.fillStyle=col||'#ffd400';cx.font='bold '+size+'px Arial';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(t,W/2,y);}
-function drawTitle(){const fs=uiFs();shadeScreen();
+function drawTitle(){const fs=Math.min(uiFs(),(H*0.53-14)/11.6);shadeScreen();
  title('UK Town Run',H*0.1,fs*2);title('Roll into the same town to double your number!',H*0.1+fs*1.9,fs*0.75,'#fff');
  const r=Math.min(W/13,H/16);[8,21,28,38].forEach((k,i)=>{const x=W/2+(i-1.5)*r*3;drawPlanet(x,H*0.33,Math.pow(2,k),r,false,1);nameTag(x,H*0.33+r*1.55,PL[k].short,fs*0.6);});
  const bh=fs*2.4,by=H*0.47;

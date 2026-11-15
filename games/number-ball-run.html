@@ -168,7 +168,7 @@ function drawMsgs(){const fs=uiFs();cx.textAlign='center';cx.textBaseline='middl
  msgs.forEach((m,i)=>{const y=H*0.2+i*fs*1.6;cx.globalAlpha=Math.min(1,m.life);cx.lineWidth=6;cx.strokeStyle='rgba(0,0,0,0.6)';cx.strokeText(m.t,W/2,y);cx.fillStyle=m.col;cx.fillText(m.t,W/2,y);});cx.globalAlpha=1;}
 function shadeScreen(){cx.fillStyle='rgba(10,10,40,0.65)';cx.fillRect(0,0,W,H);cx.textAlign='center';cx.textBaseline='middle';}
 function title(t,y,size,col){cx.fillStyle=col||'#ffd400';cx.font='bold '+size+'px Arial';cx.fillText(t,W/2,y);}
-function drawTitle(){const fs=uiFs();shadeScreen();
+function drawTitle(){const fs=Math.min(uiFs(),(H*0.50-14)/11.6);shadeScreen();
  title('Number Ball Run',H*0.12,fs*2);title('Steer into the same number to double it!',H*0.12+fs*1.9,fs*0.8,'#fff');
  const r=Math.min(W/12,H/15);[1,2,4,8].forEach((v,i)=>drawBall(W/2+(i-1.5)*r*2.7,H*0.36,v,r,false,1));
  const bh=fs*2.4,by=H*0.5;

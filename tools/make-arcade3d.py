@@ -25,6 +25,23 @@ GAMES = {
     'laser-mirrors': dict(title='Laser Mirrors', patches=[]),
     'balance-scales': dict(title='Balance Scales', patches=[]),
     'shadow-match': dict(title='Shadow Match', patches=[]),
+    # Galaxy Treasure Hunt: the star map and the flight become 3D (tools/arcade3d/galaxy-treasure-hunt.js); missions unchanged
+    'galaxy-treasure-hunt': dict(title='Galaxy Treasure Hunt', dom=True, patches=[
+        ("<title>Dexter's Galaxy Treasure Hunt</title>", "<title>Dexter's Galaxy Treasure Hunt 3D</title>"),
+        ("<h1>Dexter's Galaxy Treasure Hunt</h1>", "<h1>Dexter's Galaxy Treasure Hunt 3D</h1>"),
+        ('<div class="trail" id="trail"></div>', '<div id="map3d"></div><div class="trail" id="trail"></div>'),
+        ('<span class="rocket-fly" id="rocket-fly">🚀</span>', '<div id="travel3d" style="position:fixed;inset:0;z-index:0;display:none;pointer-events:none"></div><span class="rocket-fly" id="rocket-fly" style="position:relative;z-index:1">🚀</span>'),
+        ('<p class="travel-text" id="travel-text">', '<p class="travel-text" id="travel-text" style="position:relative;z-index:1;margin-top:auto;margin-bottom:40px">'),
+        ('    var flyBtn = document.getElementById("btn-fly");', '    if (window.GTH3D) GTH3D.map(STOPS, state);\n    var flyBtn = document.getElementById("btn-fly");'),
+        ('    setTimeout(function () { renderMission(stop); }, 2100);', '    if (window.GTH3D) GTH3D.travel(STOPS, state.stopIndex, function () { renderMission(stop); });\n    else setTimeout(function () { renderMission(stop); }, 2100);'),
+    ]),
+    # Crazy Snake draws itself (no game shell): tools/arcade3d/crazy-snake.js swaps its drawing for 3D and aims at the floor
+    'crazy-snake': dict(title='Crazy Snake', dom=True, patches=[
+        ("<title>Dexter's Crazy Snake Game</title>", "<title>Dexter's Crazy Snake Game 3D</title>"),
+        ("const cv=document.getElementById('c'),cx=cv.getContext('2d');", "const cv=document.getElementById('c');let cx=cv.getContext('2d');"),
+        ("me.tgt=Math.atan2(pointer.y-sy(me.y),pointer.x-sx(me.x));", "me.tgt=window.SNK3D?SNK3D.aim(pointer):Math.atan2(pointer.y-sy(me.y),pointer.x-sx(me.x));"),
+        ("title('Crazy Snake Game',H*0.08+fs*2,fs*2.2);", "title('Crazy Snake Game 3D',H*0.08+fs*2,fs*2.2);"),
+    ]),
     # Rocket Race is not built on the game shell: its board is swapped for a 3D one by tools/arcade3d/rocket-race.js
     'rocket-race': dict(title='Rocket Race', dom=True, patches=[("title:'Rocket Race',", "title:'Rocket Race 3D',"), ('<title>Rocket Race</title>', '<title>Rocket Race 3D</title>')]),
 }

@@ -485,18 +485,14 @@ const PAL={
  unknown:[[['#4a4a62','#7a7a94','#a8a8c0','#d8d8e8'],['#4f4a5c','#827a90','#b0a8bc','#ddd8e6']]]};
 
 const cache=new Map();
-function planetImage(p,size){const ck=p.n+'|'+size;if(cache.has(ck))return cache.get(ck);
- const cv=document.createElement('canvas');cv.width=cv.height=size;const c=cv.getContext('2d');
+/* the colour of a planet's surface at a point on its sphere (dx right, dy down, dz towards you) */
+function planetPainter(p){
  const R=rng(hash(p.n)),N=makeNoise(R);
  const kind=p.g==='ss'?(p.k2||'ice'):(p.ty==='unknown'?'unknown':p.ty);
  const pals=PAL[kind][0],pal=pals[Math.floor(R()*pals.length)].map(hex);
  const gas=p.r!=null&&p.r>=2.2&&p.g!=='ss';
- const img=c.createImageData(size,size),D=img.data,rad=size/2-1,cx=size/2,cy=size/2;
  const sc=1.6+R()*1.4,ox=R()*50,oy=R()*50,oz=R()*50,tilt=(R()-.5)*0.6,band=3+R()*6;
- const lx=-0.55,ly=-0.5,lz=0.67;
- for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-  const dx=(x+.5-cx)/rad,dy=(y+.5-cy)/rad,d2=dx*dx+dy*dy;if(d2>1)continue;
-  const dz=Math.sqrt(1-d2);
+ return {kind,gas,col(dx,dy,dz){
   let col;
   if(gas){const yy=dy*Math.cos(tilt)+dx*Math.sin(tilt);
    const w=N(dx*2+ox,yy*0.6+oy,dz*2+oz,3)*0.8;
@@ -513,6 +509,16 @@ function planetImage(p,size){const ck=p.n+'|'+size;if(cache.has(ck))return cache
    else if(kind==='ice'||kind==='cold'){col=ramp([[0,pal[0]],[0.4,pal[1]],[0.7,pal[2]],[1,pal[3]]],0.55+h*1.4);
     if(Math.abs(fine)<0.025)col=mix(col,pal[0],0.55);}
    else col=ramp([[0,pal[0]],[0.35,pal[1]],[0.7,pal[2]],[1,pal[3]]],0.5+h*1.5+fine*0.3);}
+  return col;}};}
+function planetImage(p,size){const ck=p.n+'|'+size;if(cache.has(ck))return cache.get(ck);
+ const cv=document.createElement('canvas');cv.width=cv.height=size;const c=cv.getContext('2d');
+ const PP=planetPainter(p),kind=PP.kind;
+ const img=c.createImageData(size,size),D=img.data,rad=size/2-1,cx=size/2,cy=size/2;
+ const lx=-0.55,ly=-0.5,lz=0.67;
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+  const dx=(x+.5-cx)/rad,dy=(y+.5-cy)/rad,d2=dx*dx+dy*dy;if(d2>1)continue;
+  const dz=Math.sqrt(1-d2);
+  const col=PP.col(dx,dy,dz);
   const glowy=kind==='molten'||kind==='lava';
   let l=Math.max(0,dx*lx+dy*ly+dz*lz);l=glowy?0.55+0.45*l:0.18+0.92*l;
   const rim=Math.pow(1-dz,3);
@@ -618,6 +624,40 @@ $('say').onclick=()=>{if(!window.speechSynthesis)return;const p=PLANETS[cur];spe
  facts(p).forEach(x=>parts.push(x));
  const u=new SpeechSynthesisUtterance(parts.join(' ').replace(/(^|[\s(])-(\d)/g,'$1minus $2').replace(/ × /g,' times '));speechSynthesis.speak(u);};
 render();
+</script>
+<script>
+/* 3D globes: when a planet's card opens, its picture becomes a spinning 3D globe painted with exactly
+   the same colours. Drag it to spin it. Stars, galaxies and the other drawn objects stay as pictures.
+   If 3D cannot start, the picture stays as it was. */
+(function(){
+ let T=null,R=null,scene,cam,ball,glowBall,want=null,loading=false,raf=0,spinV=0.5,drag=null,lastT=0;
+ const gl=document.createElement('canvas');gl.style.cssText='position:absolute;inset:0;margin:auto;touch-action:none;cursor:grab';
+ const box=document.querySelector('.hero .sky');box.style.position='relative';
+ function load(cb){if(T)return cb();if(loading)return;loading=true;const sc=document.createElement('script');sc.src='lib/three.min.js';sc.onload=()=>{T=window.THREE;try{init();}catch(e){T=null;}cb();};document.head.appendChild(sc);}
+ function init(){R=new T.WebGLRenderer({canvas:gl,antialias:true,alpha:true});if(T.ColorManagement)T.ColorManagement.legacyMode=false;R.outputEncoding=T.sRGBEncoding;R.setPixelRatio(Math.min(2,devicePixelRatio||1));
+  scene=new T.Scene();cam=new T.PerspectiveCamera(30,1,0.1,50);cam.position.set(0,0,4.6);
+  scene.add(new T.AmbientLight(0xffffff,0.28));const sun=new T.DirectionalLight(0xffffff,1.25);sun.position.set(-0.55,0.5,0.67);scene.add(sun);
+  ball=new T.Mesh(new T.SphereGeometry(1,64,40),new T.MeshStandardMaterial({roughness:0.75}));ball.rotation.z=0.2;scene.add(ball);
+  glowBall=new T.Mesh(new T.SphereGeometry(1.06,48,30),new T.MeshBasicMaterial({color:'#9fd8ff',transparent:true,opacity:0.12,side:T.BackSide}));scene.add(glowBall);
+  gl.addEventListener('pointerdown',e=>{drag={x:e.clientX,v:0};gl.setPointerCapture(e.pointerId);gl.style.cursor='grabbing';});
+  gl.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x;drag.x=e.clientX;ball.rotation.y+=dx*0.012;drag.v=dx*0.012*60;});
+  const up=()=>{if(drag){spinV=Math.max(-6,Math.min(6,drag.v||spinV));drag=null;gl.style.cursor='grab';}};gl.addEventListener('pointerup',up);gl.addEventListener('pointercancel',up);}
+ const texCache=new Map();
+ function globeTex(p){let t=texCache.get(p.n);if(t)return t;const PP=planetPainter(p),w=384,h=192,c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d'),img=g.createImageData(w,h),D=img.data;
+  for(let v=0;v<h;v++){const lat=Math.PI/2-(v+0.5)/h*Math.PI,cl=Math.cos(lat),sl=Math.sin(lat);for(let u=0;u<w;u++){const lon=(u+0.5)/w*Math.PI*2-Math.PI,col=PP.col(cl*Math.sin(lon),-sl,cl*Math.cos(lon)),i=(v*w+u)*4;D[i]=col[0];D[i+1]=col[1];D[i+2]=col[2];D[i+3]=255;}}
+  g.putImageData(img,0,0);t={tex:new T.CanvasTexture(c),kind:PP.kind};t.tex.encoding=T.sRGBEncoding;t.tex.anisotropy=4;if(texCache.size>40)texCache.delete(texCache.keys().next().value);texCache.set(p.n,t);return t;}
+ function show(p){want=p;if(p.d2){hide();return;}load(()=>{if(!T||want!==p)return;const t=globeTex(p),glowy=t.kind==='molten'||t.kind==='lava';
+  ball.material.map=t.tex;ball.material.emissive=new T.Color(glowy?'#ffffff':'#000000');ball.material.emissiveMap=glowy?t.tex:null;ball.material.emissiveIntensity=glowy?0.55:0;ball.material.needsUpdate=true;
+  glowBall.material.color.set(glowy?'#ff8a3a':t.kind==='ice'||t.kind==='cold'?'#cfeaff':'#9fd8ff');glowBall.material.opacity=glowy?0.22:0.12;
+  const big=$('big'),sz=big.getBoundingClientRect().width||190;gl.style.width=gl.style.height=sz+'px';R.setSize(sz,sz,false);
+  if(gl.parentNode!==box)box.appendChild(gl);gl.hidden=false;big.style.visibility='hidden';spinV=0.5;ball.rotation.y=0;
+  if(!raf){lastT=performance.now();raf=requestAnimationFrame(loop);}});}
+ function hide(){want=null;gl.hidden=true;const big=$('big');if(big)big.style.visibility='';if(raf){cancelAnimationFrame(raf);raf=0;}}
+ function loop(now){const dt=Math.min(0.05,(now-lastT)/1000);lastT=now;if($('ov').hidden||gl.hidden){raf=0;return;}
+  if(!drag){ball.rotation.y+=spinV*dt;spinV+= (0.5-spinV)*Math.min(1,dt*0.8);}R.render(scene,cam);raf=requestAnimationFrame(loop);}
+ const _open=openCard;openCard=function(i){_open(i);try{show(PLANETS[i]);}catch(e){hide();}};
+ const _close=closeCard;closeCard=function(){hide();_close();};
+})();
 </script>
 </body>
 </html>

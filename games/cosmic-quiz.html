@@ -222,6 +222,7 @@
     <div class="progress-dots" id="progress-dots"></div>
     <div class="question-card">
       <div class="world-tag" id="world-tag"></div>
+      <div id="cq3d" style="width:150px;height:150px;margin:0 auto 4px;display:none"></div>
       <p class="question-text" id="question-text"></p>
       <button class="speak-btn" id="btn-speak">🔊 Hear it again</button>
     </div>
@@ -463,6 +464,7 @@
     document.querySelector(".question-card").style.setProperty("--world-color", w.colorHex);
     document.getElementById("world-tag").style.color = w.colorHex;
     document.getElementById("world-tag").textContent = w.emoji + " " + w.name;
+    if (window.CQ3D) CQ3D.world(w.id);
     document.getElementById("question-text").textContent = q.q;
     document.getElementById("feedback-msg").textContent = "";
     document.getElementById("feedback-msg").className = "feedback-msg";
@@ -529,6 +531,7 @@
         document.getElementById("round-stars-count").textContent = state.roundStars;
         msg.textContent = CHEERS[Math.floor(Math.random() * CHEERS.length)];
         playTone([523.25, 659.25, 783.99]);
+        if (window.CQ3D) CQ3D.cheer();
         spawnConfetti(currentWorld().colorHex);
       } else {
         msg.textContent = "That's it! ✅";
@@ -606,6 +609,45 @@
   loadProgress();
   buildStarfield();
   renderHome();
+})();
+</script>
+<script src="lib/three.min.js"></script>
+<script>
+/* A spinning 3D model for each world at the top of every question: a ringed planet, a star, a world
+   round another star, a rocket, a moon, or a black hole. It does a happy spin when you get one right.
+   If 3D cannot start, the quiz looks as it did. */
+(function(){
+ if(!window.THREE)return;const T=THREE,cv=document.createElement('canvas');let R;try{R=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true});}catch(e){return;}
+ if(T.ColorManagement)T.ColorManagement.legacyMode=false;R.outputEncoding=T.sRGBEncoding;R.setPixelRatio(Math.min(2,devicePixelRatio||1));R.setSize(150,150,false);cv.style.cssText='width:150px;height:150px;display:block';
+ const scene=new T.Scene(),cam=new T.PerspectiveCamera(32,1,0.1,50);cam.position.set(0,0.9,6);cam.lookAt(0,0,0);
+ scene.add(new T.AmbientLight(0xffffff,0.35));const sun=new T.DirectionalLight(0xffffff,1.2);sun.position.set(-3,3,4);scene.add(sun);
+ const srgb=t=>{t.encoding=T.sRGBEncoding;return t;},M=(c,o)=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:0.6},o||{}));
+ function tex(w,h,f){const c=document.createElement('canvas');c.width=w;c.height=h;f(c.getContext('2d'),w,h);return srgb(new T.CanvasTexture(c));}
+ const bands=(cols,n)=>tex(64,128,(g)=>{for(let i=0;i<n;i++){g.fillStyle=cols[i%cols.length];g.fillRect(0,i*128/n,64,128/n+1);}});
+ const spots=(base,list)=>tex(256,128,(g)=>{g.fillStyle=base;g.fillRect(0,0,256,128);list.forEach(([c,n,r])=>{g.fillStyle=c;for(let i=0;i<n;i++){g.beginPath();g.ellipse(Math.random()*256,10+Math.random()*108,r*(0.5+Math.random()),r*0.7*(0.5+Math.random()),0,0,7);g.fill();}});});
+ const glowTex=col=>tex(128,128,(g)=>{const r=g.createRadialGradient(64,64,8,64,64,64);r.addColorStop(0,col);r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,0,128,128);});
+ const models={
+  solar(){const g=new T.Group(),p=new T.Mesh(new T.SphereGeometry(1,40,28),M('#fff',{map:bands(['#f0d9a0','#d9bd78','#f7e6bc','#c9a860'],12)}));g.add(p);const r=new T.Mesh(new T.RingGeometry(1.35,2.1,64),new T.MeshStandardMaterial({color:'#e8d4a0',side:T.DoubleSide,transparent:true,opacity:0.85}));r.rotation.x=-Math.PI/2+0.45;g.add(r);g.userData.spin=p;return g;},
+  stars(){const g=new T.Group(),s=new T.Mesh(new T.SphereGeometry(0.95,40,28),new T.MeshBasicMaterial({color:'#ffd23f'}));g.add(s);const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex('rgba(255,200,60,0.9)'),transparent:true,depthWrite:false}));gl.scale.set(3.6,3.6,1);g.add(gl);
+   for(let i=0;i<10;i++){const t=new T.Mesh(new T.OctahedronGeometry(0.09,0),new T.MeshBasicMaterial({color:'#fff7c2'}));const a=i/10*Math.PI*2;t.position.set(Math.cos(a)*1.9,Math.sin(a*2)*0.4,Math.sin(a)*1.9);g.add(t);}g.userData.spin=g;return g;},
+  exo(){const g=new T.Group(),star=new T.Mesh(new T.SphereGeometry(0.5,24,16),new T.MeshBasicMaterial({color:'#ff6a3a'}));star.position.set(-1.1,0.5,-1.5);g.add(star);const sg=new T.Sprite(new T.SpriteMaterial({map:glowTex('rgba(255,110,60,0.8)'),transparent:true,depthWrite:false}));sg.scale.set(2,2,1);sg.position.copy(star.position);g.add(sg);
+   const p=new T.Mesh(new T.SphereGeometry(0.85,40,28),M('#fff',{map:spots('#2f9e8f',[['#3fa34d',12,18],['#ffffff',16,9]])}));p.position.set(0.5,-0.2,0.4);g.add(p);g.userData.spin=p;return g;},
+  explorers(){const g=new T.Group(),inner=new T.Group();g.add(inner);inner.add(new T.Mesh(new T.CylinderGeometry(0.42,0.48,1.5,24),M('#f4f6ff',{roughness:0.35})));
+   const n=new T.Mesh(new T.ConeGeometry(0.42,0.75,24),M('#e63946'));n.position.y=1.12;inner.add(n);const w=new T.Mesh(new T.SphereGeometry(0.18,16,12),M('#5ec8ff',{emissive:'#1d6aa8',emissiveIntensity:0.5}));w.position.set(0,0.3,0.42);inner.add(w);
+   for(let i=0;i<3;i++){const f=new T.Mesh(new T.BoxGeometry(0.06,0.55,0.5),M('#e63946'));const a=i*Math.PI*2/3;f.position.set(Math.sin(a)*0.5,-0.55,Math.cos(a)*0.5);f.rotation.y=a;inner.add(f);}
+   const fl=new T.Mesh(new T.ConeGeometry(0.3,0.8,16),new T.MeshBasicMaterial({color:'#ffb347'}));fl.rotation.x=Math.PI;fl.position.y=-1.15;inner.add(fl);g.userData.flame=fl;inner.rotation.z=-0.35;g.userData.spin=inner;return g;},
+  moons(){const g=new T.Group(),m=new T.Mesh(new T.SphereGeometry(1,40,28),M('#fff',{map:spots('#bdb8b0',[['#9a948c',30,8],['#d6d2cc',14,5]])}));g.add(m);g.userData.spin=m;return g;},
+  blackholes(){const g=new T.Group(),h=new T.Mesh(new T.SphereGeometry(0.7,32,20),new T.MeshBasicMaterial({color:'#000000'}));g.add(h);
+   const d=new T.Mesh(new T.TorusGeometry(1.35,0.38,16,64),new T.MeshBasicMaterial({map:tex(256,8,(c)=>{const gr=c.createLinearGradient(0,0,256,0);['#ffb347','#ff5a1f','#ffd27a','#ff6a3a','#ffb347'].forEach((x,i,a)=>gr.addColorStop(i/(a.length-1),x));c.fillStyle=gr;c.fillRect(0,0,256,8);})}));d.scale.z=0.25;d.rotation.x=Math.PI/2-0.35;g.add(d);
+   const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex('rgba(255,140,60,0.6)'),transparent:true,depthWrite:false}));gl.scale.set(3.6,3.6,1);g.add(gl);g.userData.spin=d;g.userData.axis='z';return g;}};
+ const built={};let cur=null,cheerT=0,raf=0,last=performance.now();
+ function loop(now){const dt=Math.min(0.05,(now-last)/1000);last=now;const box=document.getElementById('cq3d');
+  if(!cur||!box||box.offsetParent===null){raf=0;return;}const sp=cur.userData.spin,ax=cur.userData.axis||'y';
+  cheerT=Math.max(0,cheerT-dt);sp.rotation[ax]+=dt*(0.6+cheerT*9);cur.position.y=Math.sin(now/600)*0.08+(cheerT>0?Math.sin(cheerT*Math.PI)*0.4:0);
+  if(cur.userData.flame)cur.userData.flame.scale.y=0.7+Math.random()*0.6;R.render(scene,cam);raf=requestAnimationFrame(loop);}
+ window.CQ3D={world(id){const box=document.getElementById('cq3d');if(!box||!models[id])return;if(cur)scene.remove(cur);cur=built[id]||(built[id]=models[id]());if(id==='solar'||id==='blackholes')cur.scale.setScalar(0.78);scene.add(cur);
+   box.style.display='block';if(cv.parentNode!==box)box.appendChild(cv);if(!raf){last=performance.now();raf=requestAnimationFrame(loop);}},
+  cheer(){cheerT=1;}};
 })();
 </script>
 </body>

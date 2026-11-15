@@ -150,6 +150,7 @@ const EARL=[[-.62,.12],[-.6,.88],[-.12,.45]],EARR=mir(EARL);
 const SHAPES=[
  {id:'circle',g:0,name:'Circle',f:(x,y)=>len(x,y)-.95},
  {id:'square',g:0,name:'Square',f:(x,y)=>sBox(x,y,0,0,.86,.86,.2)},
+ {id:'rectangle',g:0,name:'Rectangle',f:(x,y)=>sBox(x,y,0,0,.96,.62,.12)},
  {id:'heart',g:0,name:'Heart',f:(x,y)=>sPoly(x,y,HEART)},
  {id:'star',g:0,name:'Star',f:(x,y)=>sPoly(x,y,STAR)-.07},
  {id:'triangle',g:0,name:'Triangle',f:(x,y)=>sPoly(x,y,TRI)-.12},
@@ -254,7 +255,10 @@ addEventListener('resize',resize);
 /* ---------- state ---------- */
 let stage='title',sel=store.get('col',0),shapeId=store.get('shape','star'),patIx=store.get('pat',0),cubes=[],pop=null,pops=0,flipping=false;
 if(!SH[shapeId])shapeId='star';
-const PATS=['Rows','Stripes','Rings','Sprinkles'];
+const PATS=['Rows','Stripes','Rings','Sprinkles','Like my plate'];
+const PLATE_PAT=4;
+/* first time on this version: switch to copying the plate, so flags come out as he built them */
+if(!store.get('pat5',false)){patIx=PLATE_PAT;store.set('pat',patIx);store.set('pat5',true);}
 
 function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),1800);}
 function setCount(){$('count').textContent=stage==='play'?'💥 '+pops:'🧊 '+cubes.length;$('makeBtn').classList.toggle('off',!cubes.length);}
@@ -281,7 +285,16 @@ const bubMat={};const bubbleMat=(ci,dk)=>{const k=ci+(dk?'d':'');return bubMat[k
 const BK=.78;
 const UVG={generateTopUV(g,v,a,b,c){return [new THREE.Vector2(v[a*3],v[a*3+1]),new THREE.Vector2(v[b*3],v[b*3+1]),new THREE.Vector2(v[c*3],v[c*3+1])];},
  generateSideWallUV(g,v,a,b,c,d){return [a,b,c,d].map(i=>new THREE.Vector2(v[i*3],v[i*3+1]));}};
-function assign(L,seq,pat){const n=L.bubbles.length,order=[],cnt={};seq.forEach(c=>{if(!(c in cnt)){cnt[c]=0;order.push(c);}cnt[c]++;});
+/* Like my plate: each bubble takes the colour you can see on top of the plate at the same spot.
+   The cubes he placed are stretched to fill the popper, so a small flag built on the plate fills the whole popper. */
+function plateCopy(L,lay){const top=new Map();lay.forEach(([ci,k])=>{if(CELLS[k])top.set(k,ci);});
+ const F=[...top].map(([k,ci])=>({x:CELLS[k].x,z:CELLS[k].z,ci}));if(!F.length)return L.bubbles.map(()=>0);
+ const B=L.bubbles,ext=(a,f)=>[Math.min(...a.map(f)),Math.max(...a.map(f))];
+ const [px0,px1]=ext(F,c=>c.x),[pz0,pz1]=ext(F,c=>c.z),[bx0,bx1]=ext(B,b=>b.x),[bz0,bz1]=ext(B,b=>-b.y);
+ const m=(v,a0,a1,b0,b1)=>a1-a0<1e-6?(b0+b1)/2:b0+(v-a0)/(a1-a0)*(b1-b0);
+ return B.map(b=>{const x=m(b.x,bx0,bx1,px0,px1),z=m(-b.y,bz0,bz1,pz0,pz1);let best=F[0],bd=1e9;
+  F.forEach(c=>{const d=(c.x-x)**2+(c.z-z)**2;if(d<bd-1e-9){bd=d;best=c;}});return best.ci;});}
+function assign(L,seq,pat,lay){if(pat===PLATE_PAT&&lay&&lay.length)return plateCopy(L,lay);const n=L.bubbles.length,order=[],cnt={};seq.forEach(c=>{if(!(c in cnt)){cnt[c]=0;order.push(c);}cnt[c]++;});
  const tot=seq.length,f=order.map(c=>cnt[c]/tot*n),base=f.map(Math.floor);let rem=n-base.reduce((a,b)=>a+b,0);
  order.map((c,i)=>i).sort((a,b)=>(f[b]-base[b])-(f[a]-base[a])).forEach(i=>{if(rem>0){base[i]++;rem--;}});
  if(n>=order.length)base.forEach((b,i)=>{if(b===0){const big=base.indexOf(Math.max(...base));base[big]--;base[i]=1;}});
@@ -292,18 +305,18 @@ function paintSlab(L,cols){const N=384,E=4.6;return canvasTex(N,N,(g)=>{const im
  for(let py=0;py<N;py++){const y=E-(py+.5)/N*2*E;for(let px=0;px<N;px++){const x=-E+(px+.5)/N*2*E;let bi=0,bd=1e9;for(let i=0;i<B.length;i++){const d=(B[i].x-x)**2+(B[i].y-y)**2;if(d<bd){bd=d;bi=i;}}const c=rgb[cols[bi]],o=(py*N+px)*4;img.data[o]=c[0];img.data[o+1]=c[1];img.data[o+2]=c[2];img.data[o+3]=255;}}
  g.putImageData(img,0,0);});}
 function slabTex(L,cols){const t=paintSlab(L,cols);t.repeat.set(1/9.2,1/9.2);t.offset.set(.5,.5);return t;}
-function buildPopper(id,seq,pat){const L=layoutFor(id),shape=new THREE.Shape(L.loop.map(p=>new THREE.Vector2(p[0],p[1])));
+function buildPopper(id,seq,pat,lay){const L=layoutFor(id),shape=new THREE.Shape(L.loop.map(p=>new THREE.Vector2(p[0],p[1])));
  L.bubbles.forEach(b=>{const h=new THREE.Path();h.absarc(b.x,b.y,L.r,0,Math.PI*2,true);shape.holes.push(h);});
  const geo=new THREE.ExtrudeGeometry(shape,{depth:.32,bevelEnabled:true,bevelThickness:.1,bevelSize:.08,bevelSegments:3,curveSegments:18,UVGenerator:UVG});
  geo.rotateX(-Math.PI/2);geo.translate(0,-.16,0);
- const cols=assign(L,seq,pat),tex=slabTex(L,cols);
+ const cols=assign(L,seq,pat,lay),tex=slabTex(L,cols);
  const g=new THREE.Group(),body=new THREE.Group();body.position.y=.26;g.add(body);
  const slab=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({map:tex,roughness:.55}));slab.castShadow=true;slab.receiveShadow=true;body.add(slab);
  const bg=new THREE.SphereGeometry(L.r,28,10,0,Math.PI*2,0,Math.PI/2);
  const bubbles=L.bubbles.map((b,i)=>{const m=new THREE.Mesh(bg,bubbleMat(cols[i]));m.position.set(b.x,.26,-b.y);m.scale.set(1,BK,1);m.castShadow=true;m.receiveShadow=true;body.add(m);const o={m,b,ci:cols[i],popped:false};m.userData.bub=o;return o;});
  return {id,g,body,slab,tex,bubbles,L,seq,pat,geo,bg};}
 function disposePopper(p){if(!p)return;scene.remove(p.g);p.geo.dispose();p.bg.dispose();p.tex.dispose();p.slab.material.dispose();}
-function recolour(){if(!pop)return;const cols=assign(pop.L,pop.seq,patIx);pop.bubbles.forEach((b,i)=>{b.ci=cols[i];b.m.material=bubbleMat(cols[i],b.popped);});
+function recolour(){if(!pop)return;const cols=assign(pop.L,pop.seq,patIx,pop.layout);pop.bubbles.forEach((b,i)=>{b.ci=cols[i];b.m.material=bubbleMat(cols[i],b.popped);});
  pop.tex.dispose();pop.tex=slabTex(pop.L,cols);pop.slab.material.map=pop.tex;pop.slab.material.needsUpdate=true;pop.pat=patIx;
  pop.bubbles.forEach(b=>{const d=len(b.b.x,b.b.y);anim(.3,k=>{const s=1+Math.sin(k*Math.PI)*.25;b.m.scale.x=b.m.scale.z=s;},null,d*.05);});save();}
 function playView(dur){setView(new THREE.Vector3(0,.3,0),pop.L.rad+.2,62*D,dur);}
@@ -318,7 +331,7 @@ const flash=new THREE.Mesh(new THREE.SphereGeometry(1,24,16),new THREE.MeshBasic
 let orbit=[],orbitShrink=1,orbitSpeed=1;
 function make(){audioInit();if(stage!=='build')return;if(!cubes.length){toast('Put some cubes on the plate first');S.click();anim(.4,k=>{plate.rotation.y=Math.sin(k*Math.PI*4)*.06;});return;}
  stage='spam';showTray('none');const layout=cubes.map(c=>[c.ci,CELLS.indexOf(c.cell)]),seq=cubes.map(c=>c.ci);
- disposePopper(pop);pop=buildPopper(shapeId,seq,patIx);pop.layout=layout;pop.g.visible=false;scene.add(pop.g);save();
+ disposePopper(pop);pop=buildPopper(shapeId,seq,patIx,layout);pop.layout=layout;pop.g.visible=false;scene.add(pop.g);save();
  const V=new THREE.Vector3(0,4.4,0);setView(new THREE.Vector3(0,2.3,0),5.2,38*D,.7);
  swirl.position.copy(V);swirl.visible=true;swirl.scale.setScalar(.2);orbit=[];orbitShrink=1;orbitSpeed=1;
  const list=cubes.slice().sort(()=>rand()-.5),n=list.length,gapT=clamp(2.2/n,.03,.12);cubes=[];CELLS.forEach(c=>c.h=0);
@@ -353,7 +366,7 @@ function flip(){audioInit();if(flipping||stage!=='play'||!pop)return;flipping=tr
   anim(.32,k=>{const a=-Math.PI/2*(1-easeOut(k));bd.rotation.z=a;bd.position.y=.26+(hx*.75+.3)*Math.abs(Math.sin(a));bd.scale.setScalar(1-.25*Math.abs(Math.sin(a)));},()=>{
    bd.rotation.z=0;bd.position.y=.26;bd.scale.setScalar(1);S.thud();flipping=false;anim(.2,k=>{const s=Math.sin(k*Math.PI)*.06;bd.scale.set(1+s,1-s*2,1+s);});});});}
 function changeShape(id){shapeId=id;store.set('shape',id);drawShapeBtns();if(stage==='play'&&pop){const old=pop;S.poof();
- anim(.22,k=>{old.g.scale.setScalar(Math.max(.001,1-k));},()=>{disposePopper(old);pop=buildPopper(id,old.seq,patIx);pop.layout=old.layout;scene.add(pop.g);pop.g.scale.setScalar(.01);playView(.5);
+ anim(.22,k=>{old.g.scale.setScalar(Math.max(.001,1-k));},()=>{disposePopper(old);pop=buildPopper(id,old.seq,patIx,old.layout);pop.layout=old.layout;scene.add(pop.g);pop.g.scale.setScalar(.01);playView(.5);
   anim(.4,k=>{pop.g.scale.setScalar(Math.max(.01,back(k)));},()=>{S.thud();});save();});}}
 function backToBuild(){audioInit();if(stage!=='play'||flipping)return;stage='build';const old=pop;
  anim(.3,k=>{old.g.scale.setScalar(Math.max(.001,1-k));},()=>{old.g.visible=false;});
@@ -391,7 +404,7 @@ $('patName').textContent=PATS[patIx];
 const last=store.get('last',null);if(last&&last.layout&&last.layout.length)$('lastBtn').hidden=false;
 $('startBtn').onclick=()=>{audioInit();S.click();$('title').hidden=true;stage='build';showTray('build');setCount();setView(new THREE.Vector3(0,.7,0),4,52*D,0);applyCam();};
 $('lastBtn').onclick=()=>{audioInit();$('title').hidden=true;const l=store.get('last',null);if(l.shape&&SH[l.shape]){shapeId=l.shape;drawShapeBtns();}patIx=l.pat||0;$('patName').textContent=PATS[patIx];
- const lay=l.layout.filter(x=>CELLS[x[1]]&&COLS[x[0]]);plate.visible=false;pop=buildPopper(shapeId,lay.map(x=>x[0]),patIx);pop.layout=lay;scene.add(pop.g);S.boom();reveal(new THREE.Vector3(0,4.4,0));};
+ const lay=l.layout.filter(x=>CELLS[x[1]]&&COLS[x[0]]);plate.visible=false;pop=buildPopper(shapeId,lay.map(x=>x[0]),patIx,lay);pop.layout=lay;scene.add(pop.g);S.boom();reveal(new THREE.Vector3(0,4.4,0));};
 
 /* ---------- loop ---------- */
 let lastT=performance.now();

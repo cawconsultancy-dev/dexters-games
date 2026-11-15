@@ -18,6 +18,13 @@ GAMES = {
     'sky-hopper': dict(title='Sky Hopper', patches=[]),
     'tower-stack': dict(title='Sky Tower', patches=[]),
     'comet-flyer': dict(title='Comet Flyer', patches=[]),
+    'ring-tower': dict(title='Tower Stack', patches=[]),
+    'push-crate': dict(title='Push the Crate', patches=[]),
+    'space-maze': dict(title='Space Maze', patches=[]),
+    'robot-code': dict(title='Robot Code', patches=[]),
+    'laser-mirrors': dict(title='Laser Mirrors', patches=[]),
+    'balance-scales': dict(title='Balance Scales', patches=[]),
+    'shadow-match': dict(title='Shadow Match', patches=[]),
     # Rocket Race is not built on the game shell: its board is swapped for a 3D one by tools/arcade3d/rocket-race.js
     'rocket-race': dict(title='Rocket Race', dom=True, patches=[("title:'Rocket Race',", "title:'Rocket Race 3D',"), ('<title>Rocket Race</title>', '<title>Rocket Race 3D</title>')]),
 }

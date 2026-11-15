@@ -49,6 +49,7 @@
     if (cfg.shadows) { sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); Object.assign(sun.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 1, far: 60 }); sun.shadow.bias = -0.0008; }
     K.sunLight = sun; K.hemi = hemi;
     cfg.build(K);
+    window.__k3 = K; // handy for testing
 
     let lw = 0, lh = 0;
     function fitGL() { if (W === lw && H === lh) return; lw = W; lh = H; renderer.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix(); if (cfg.resize) cfg.resize(K); }
@@ -84,6 +85,11 @@
       });
       ctx.globalAlpha = 1; floats = floats.filter(f => f.l > 0);
     };
+    /* taps: puzzles that check where you tapped get the spot on their own board, found by pointing into the 3D scene */
+    const rc = new THREE.Raycaster(), nd = new THREE.Vector2(), hitP = new THREE.Vector3();
+    K.rayPlane = function (sx, sy, normal, constant) { nd.set(sx / W * 2 - 1, -(sy / H) * 2 + 1); rc.setFromCamera(nd, cam); const pl = new THREE.Plane(normal, constant); return rc.ray.intersectPlane(pl, hitP) ? hitP.clone() : null; };
+    K.raycast = function (sx, sy, objs) { nd.set(sx / W * 2 - 1, -(sy / H) * 2 + 1); rc.setFromCamera(nd, cam); return rc.intersectObjects(objs, true)[0] || null; };
+    if (cfg.unmap) { const orig = window.pos; window.pos = function (e) { const r = cfg.unmap(K, e.clientX, e.clientY); return r || orig(e); }; }
     window.addEventListener('resize', () => { lw = 0; });
     return K;
   }

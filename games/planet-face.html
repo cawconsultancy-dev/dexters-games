@@ -50,7 +50,6 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
 <div class="tray" id="tray">
  <div class="pick" id="pick"></div>
  <div class="row">
-  <button class="tb" id="modeBtn">👀 Eyes and mouth</button>
   <button class="tb" id="snapBtn">📸 Photo</button>
   <button class="tb rec" id="recBtn">⏺ Record</button>
  </div>
@@ -94,7 +93,7 @@ const WORLDS=[
  {id:'ceres',n:'Ceres',f:'ceres',gap:true},{id:'pluto',n:'Pluto',f:'pluto',rot:1.6},{id:'haumea',n:'Haumea',f:'haumea',egg:true},{id:'makemake',n:'Makemake',f:'makemake'},{id:'eris',n:'Eris',f:'eris'},
  {id:'moon',n:'The Moon (Luna)',short:'Moon',f:'moon',gap:true}];
 let cur=store.get('world','earth');if(!WORLDS.find(w=>w.id===cur))cur='earth';
-let mode=store.get('mode',0);
+const mode=1;/* whole face only (Craig, 17/11/2026) */
 
 /* ---------- canvas sizes ---------- */
 let W=0,H=0,DPR=1;
@@ -229,12 +228,10 @@ let delArm=false;$('delBtn').onclick=()=>{if(!delArm){delArm=true;$('delBtn').te
  delArm=false;$('delBtn').textContent='🗑️ Delete';clipBlob=null;$('cv').removeAttribute('src');$('clip').hidden=true;};
 
 /* ---------- other buttons ---------- */
-function setMode(m){mode=m;store.set('mode',m);smS=0;$('modeBtn').textContent=m?'🙂 Whole face':'👀 Eyes and mouth';}
-$('modeBtn').onclick=()=>setMode(1-mode);
 $('infoBtn').onclick=()=>{$('credits').hidden=false;};$('credX').onclick=()=>{$('credits').hidden=true;};
 $('camBtn').onclick=()=>{video.style.visibility=video.style.visibility==='hidden'?'':'hidden';$('camBtn').textContent=video.style.visibility==='hidden'?'🙂':'🙈';};
 
-setMode(mode);buildPicker();resize();buildGlobe();addEventListener('resize',resize);requestAnimationFrame(draw);
+buildPicker();resize();buildGlobe();addEventListener('resize',resize);requestAnimationFrame(draw);
 window.__pf={get lm(){return lm;}};
 })();
 </script>

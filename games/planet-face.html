@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<script src="../voice.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1030">
+<title>Planet Face</title>
+<style>
+@font-face{font-family:Fredoka;src:url(../fonts/fredoka.woff2) format("woff2");font-weight:300 700;font-display:swap}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1030;color:#fff;font-family:Fredoka,"Arial Rounded MT Bold",Arial,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));width:120px;border-radius:16px;border:3px solid #ffffff99;transform:scaleX(-1);z-index:3;background:#000}
+.top{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:4;display:flex;gap:8px}
+.top button{width:52px;height:52px;border-radius:50%;border:2px solid #ffffff55;background:#ffffff22;color:#fff;font-size:24px;cursor:pointer}
+.tray{position:fixed;left:0;right:0;bottom:0;z-index:4;padding:8px 8px calc(10px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;align-items:center;background:linear-gradient(180deg,#0b103000,#0b1030ee 30%)}
+.pick{display:flex;gap:8px;overflow-x:auto;max-width:100%;padding:4px 6px;scrollbar-width:none}
+.pick::-webkit-scrollbar{display:none}
+.pl{flex:0 0 auto;width:78px;border:none;background:none;color:#fff;font:600 13px Fredoka,sans-serif;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:0}
+.pl canvas{width:58px;height:58px;border-radius:50%;box-shadow:0 0 0 3px #ffffff22}
+.pl.on canvas{box-shadow:0 0 0 4px #ffd23f,0 0 16px #ffd23f99}
+.pl.gap{margin-left:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.tb{border:none;border-radius:20px;background:#fff;color:#2a1a55;font:700 19px Fredoka,sans-serif;padding:10px 18px;min-height:56px;box-shadow:0 4px 0 #b9a8e0;cursor:pointer}
+.tb.rec{background:#e63946;color:#fff;box-shadow:0 4px 0 #8c1c25}
+.tb.recon{background:#fff;color:#e63946;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.6}}
+.ov{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:#0b1030f2;padding:20px;text-align:center}
+.card{max-width:480px;background:linear-gradient(180deg,#fff,#efe9ff);color:#1d1b3a;border-radius:32px;padding:26px 24px;box-shadow:0 30px 70px #000a}
+.card h1{font-size:42px;margin:0 0 8px}
+.card p{font-size:19px;line-height:1.4;color:#4a4870;margin:0 0 16px}
+.big{display:block;width:100%;border:none;border-radius:22px;padding:16px;font:700 26px Fredoka,sans-serif;color:#fff;background:linear-gradient(180deg,#ff7ab8,#e2317f);box-shadow:0 6px 0 #a01e58;cursor:pointer}
+.small{font-size:15px;color:#6a6890;margin-top:14px}
+.cd{position:fixed;inset:0;z-index:9;display:grid;place-items:center;font-size:160px;font-weight:700;color:#fff;text-shadow:0 8px 30px #000;pointer-events:none}
+#clip{position:fixed;inset:0;z-index:11;background:#000e;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
+#clip video{max-width:92vw;max-height:66vh;border-radius:16px;background:#000}
+#credits .card{text-align:left;max-height:80vh;overflow-y:auto}
+#credits p{font-size:15px}
+.toast{position:fixed;left:50%;top:calc(80px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#ffd23f;color:#2a1a00;padding:10px 20px;border-radius:999px;font-size:20px;font-weight:700;z-index:8;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<video id="v" playsinline muted autoplay></video>
+<div class="top"><button id="infoBtn" aria-label="Picture credits">ⓘ</button><button id="camBtn" aria-label="Show or hide me">🙈</button></div>
+<div class="tray" id="tray">
+ <div class="pick" id="pick"></div>
+ <div class="row">
+  <button class="tb" id="modeBtn">👀 Eyes and mouth</button>
+  <button class="tb" id="snapBtn">📸 Photo</button>
+  <button class="tb rec" id="recBtn">⏺ Record</button>
+ </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="cd" id="cd" hidden></div>
+<div class="ov" id="start"><div class="card">
+ <h1>🪐 Planet Face</h1>
+ <p>Pick a planet and put your face on it! Make a video or take a photo.</p>
+ <button class="big" id="go">📷 Start the camera</button>
+ <p class="small" id="err">Your face stays on this iPad. Nothing is uploaded.</p>
+</div></div>
+<div id="clip" hidden><video id="cv" playsinline controls></video><div class="row"><button class="tb" id="saveBtn">💾 Save or send</button><button class="tb" id="againBtn">🎬 Make another</button><button class="tb" id="delBtn">🗑️ Delete</button></div></div>
+<div class="ov" id="credits" hidden><div class="card">
+ <h1 style="font-size:28px">Picture credits</h1>
+ <p>Sun, Mercury, Earth, Mars, Jupiter, Saturn (and its rings), Uranus and Neptune: Solar System Scope (solarsystemscope.com), based on NASA data, licence CC BY 4.0.</p>
+ <p>Venus and Ceres: Oleg Pluton (Helleformer), CC BY 4.0. Pluto: Kexitt and Oleg Pluton, CC BY 4.0. Haumea: Snowfall and Oleg Pluton, CC BY 4.0. Eris: MrSpace43 and Oleg Pluton, CC BY 4.0. Makemake: made for this game by recolouring the Eris picture. The Moon: Ruslan Kabatsayev, from NASA Lunar Reconnaissance Orbiter data, CC BY-SA 4.0. These maps came from the Stellarium project.</p>
+ <p>All pictures were resized for this game. Eris, Haumea and Makemake have never been photographed close up, so their pictures are artists' ideas of how they might look.</p>
+ <p>Face tracking: MediaPipe Face Mesh by Google, Apache License 2.0.</p>
+ <button class="big" id="credX">OK</button>
+</div></div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/facemesh/face_mesh.js"></script>
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('c'),ctx=cv.getContext('2d'),video=$('v');
+const store={get(k,d){try{const v=localStorage.getItem('pf_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('pf_'+k,JSON.stringify(v));}catch(e){}}};
+function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1800);}
+function say(t){if(recording)return;try{const ss=speechSynthesis;ss.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';ss.speak(u);}catch(e){}}
+
+/* ---------- the worlds ---------- */
+const P='../img/planets/';
+const WORLDS=[
+ {id:'sun',n:'The Sun',f:'sun',sun:true},
+ {id:'mercury',n:'Mercury',f:'mercury',gap:true},{id:'venus',n:'Venus',f:'venus'},{id:'earth',n:'Earth',f:'earth',rot:-1.6},{id:'mars',n:'Mars',f:'mars'},
+ {id:'jupiter',n:'Jupiter',f:'jupiter'},{id:'saturn',n:'Saturn',f:'saturn',ring:true},{id:'uranus',n:'Uranus',f:'uranus'},{id:'neptune',n:'Neptune',f:'neptune'},
+ {id:'ceres',n:'Ceres',f:'ceres',gap:true},{id:'pluto',n:'Pluto',f:'pluto',rot:1.6},{id:'haumea',n:'Haumea',f:'haumea',egg:true},{id:'makemake',n:'Makemake',f:'makemake'},{id:'eris',n:'Eris',f:'eris'},
+ {id:'moon',n:'The Moon (Luna)',short:'Moon',f:'moon',gap:true}];
+let cur=store.get('world','earth');if(!WORLDS.find(w=>w.id===cur))cur='earth';
+let mode=store.get('mode',0);
+
+/* ---------- canvas sizes ---------- */
+let W=0,H=0,DPR=1;
+const R3=new THREE.WebGLRenderer({antialias:true,alpha:true});
+THREE.ColorManagement.legacyMode=false;R3.outputEncoding=THREE.sRGBEncoding;R3.setClearColor(0x000000,0);
+const scene=new THREE.Scene(),cam=new THREE.OrthographicCamera(-1,1,1,-1,-5000,5000);
+scene.add(new THREE.AmbientLight(0xffffff,.42));const sunL=new THREE.DirectionalLight(0xffffff,1.05);sunL.position.set(-1,.8,1.3);scene.add(sunL);
+function resize(){DPR=Math.min(1.5,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);
+ R3.setPixelRatio(DPR);R3.setSize(W,H,false);cam.left=-W/2;cam.right=W/2;cam.top=H/2;cam.bottom=-H/2;cam.updateProjectionMatrix();layout();}
+let PX=0,PY=0,PR=100;
+function trayH(){return $('tray').getBoundingClientRect().height;}
+function layout(){const top=20,bot=trayH()+30,avail=H-top-bot;const w=WORLDS.find(x=>x.id===cur)||WORLDS[0];
+ PR=Math.max(60,Math.min(W*.42,avail*.43));if(w.ring)PR=Math.min(PR,W*.42/2.15*1.6,avail*.36);if(w.egg)PR=Math.min(PR,W*.42/1.3);
+ PX=W/2;PY=top+avail/2;if(globe){globe.position.set(PX-W/2,H/2-PY,0);globe.scale.setScalar(PR);}}
+
+/* ---------- textures and the globe ---------- */
+const loader=new THREE.TextureLoader(),texCache={},imgCache={};
+function tex(f){if(!texCache[f]){const t=loader.load(P+f+'.jpg');t.encoding=THREE.sRGBEncoding;t.anisotropy=4;texCache[f]=t;}return texCache[f];}
+const sphereGeo=new THREE.SphereGeometry(1,64,48);
+let ringTex=null;
+let globe=null;
+function buildGlobe(){if(globe){scene.remove(globe);}const w=WORLDS.find(x=>x.id===cur);globe=new THREE.Group();
+ const mat=w.sun?new THREE.MeshBasicMaterial({map:tex(w.f)}):new THREE.MeshStandardMaterial({map:tex(w.f),roughness:1,metalness:0});
+ const ball=new THREE.Mesh(sphereGeo,mat);ball.rotation.y=w.rot||0;if(w.egg)ball.scale.set(1.3,.68,.95);globe.add(ball);globe.userData.ball=ball;
+ if(w.ring){if(!ringTex){ringTex=loader.load(P+'saturn-ring.png');ringTex.encoding=THREE.sRGBEncoding;}
+  const rg=new THREE.RingGeometry(1.25,2.2,128,1),pos=rg.attributes.position,uv=rg.attributes.uv,v=new THREE.Vector3();
+  for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i);uv.setXY(i,(v.length()-1.25)/(2.2-1.25),.5);}
+  const ring=new THREE.Mesh(rg,new THREE.MeshStandardMaterial({map:ringTex,transparent:true,side:THREE.DoubleSide,roughness:1,depthWrite:false}));
+  ring.rotation.x=-Math.PI/2+.42;ring.rotation.y=.12;globe.add(ring);}
+ scene.add(globe);layout();}
+
+/* ---------- planet picker ---------- */
+function thumb(c,w){const g=c.getContext('2d'),s=c.width;const im=new Image();im.onload=()=>{g.save();g.beginPath();g.arc(s/2,s/2,s/2,0,Math.PI*2);g.clip();
+  const sx=im.width*.3,sw=im.width*.4;g.drawImage(im,sx,0,sw,im.height,0,0,s,s);
+  if(!w.sun){const gr=g.createRadialGradient(s*.35,s*.32,s*.1,s/2,s/2,s*.55);gr.addColorStop(0,'#fff0');gr.addColorStop(.7,'#0002');gr.addColorStop(1,'#0008');g.fillStyle=gr;g.fillRect(0,0,s,s);}
+  g.restore();};im.src=P+w.f+'.jpg';}
+function buildPicker(){$('pick').innerHTML=WORLDS.map(w=>`<button class="pl${w.gap?' gap':''}${w.id===cur?' on':''}" data-w="${w.id}"><canvas width="116" height="116"></canvas>${w.short||w.n.replace('The ','')}</button>`).join('');
+ $('pick').querySelectorAll('.pl').forEach(b=>{const w=WORLDS.find(x=>x.id===b.dataset.w);thumb(b.querySelector('canvas'),w);
+  b.onclick=()=>{cur=w.id;store.set('world',cur);$('pick').querySelectorAll('.pl').forEach(x=>x.classList.toggle('on',x===b));buildGlobe();say(w.n);};});
+ const on=$('pick').querySelector('.on');if(on)on.scrollIntoView({inline:'center',block:'nearest'});}
+
+/* ---------- face features ---------- */
+const LEYE=[263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466],REYE=[33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246];
+const LBROW=[276,283,282,295,285,300,293,334,296,336],RBROW=[46,53,52,65,55,70,63,105,66,107];
+const LIPS=[61,146,91,181,84,17,314,405,321,375,291,409,270,269,267,0,37,39,40,185];
+const OVAL=[10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+let lm=null,lastSeen=0,smS=0;
+const tmp=document.createElement('canvas'),tctx=tmp.getContext('2d');
+function hull(pts){/* convex hull (monotone chain) so eye + brow make one tidy shape */const p=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);
+ const lo=[],up=[];p.forEach(q=>{while(lo.length>1&&cr(lo[lo.length-2],lo[lo.length-1],q)<=0)lo.pop();lo.push(q);});for(let i=p.length-1;i>=0;i--){const q=p[i];while(up.length>1&&cr(up[up.length-2],up[up.length-1],q)<=0)up.pop();up.push(q);}
+ up.pop();lo.pop();return lo.concat(up);}
+function cut(pts,expand,scale,dx,dy){if(!video.videoWidth)return;let cx=0,cy=0;pts.forEach(p=>{cx+=p[0];cy+=p[1];});cx/=pts.length;cy/=pts.length;
+ const ex=hull(pts).map(p=>[cx+(p[0]-cx)*expand[0],cy+(p[1]-cy)*expand[1]]);
+ let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;ex.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);});
+ const blur=Math.max(3,(x1-x0)*scale*.09),m=blur*1.6/scale;x0-=m;y0-=m;x1+=m;y1+=m;
+ x0=Math.max(0,x0);y0=Math.max(0,y0);x1=Math.min(video.videoWidth,x1);y1=Math.min(video.videoHeight,y1);const sw=x1-x0,sh=y1-y0;if(sw<4||sh<4)return;
+ const k=scale*DPR,tw=Math.ceil(sw*k),th=Math.ceil(sh*k);if(tw<2||th<2||tw>3000||th>3000)return;tmp.width=tw;tmp.height=th;
+ const OFF=20000;tctx.save();tctx.shadowColor='#000';tctx.shadowBlur=blur*DPR;tctx.shadowOffsetX=OFF;tctx.fillStyle='#000';tctx.beginPath();
+ ex.forEach((p,i)=>{const X=(p[0]-x0)*k-OFF,Y=(p[1]-y0)*k;i?tctx.lineTo(X,Y):tctx.moveTo(X,Y);});tctx.closePath();tctx.fill();tctx.restore();
+ tctx.globalCompositeOperation='source-in';tctx.drawImage(video,x0,y0,sw,sh,0,0,tw,th);tctx.globalCompositeOperation='source-over';
+ ctx.save();ctx.translate(dx,dy);ctx.scale(-1/DPR,1/DPR);ctx.drawImage(tmp,-(cx-x0)*k,-(cy-y0)*k);ctx.restore();}
+function px(i){return [lm[i].x*video.videoWidth,lm[i].y*video.videoHeight];}
+function drawFace(){if(!lm||!video.videoWidth||performance.now()-lastSeen>900)return;
+ const top=px(10),chin=px(152),fh=Math.hypot(top[0]-chin[0],top[1]-chin[1]);if(fh<20)return;
+ const w=WORLDS.find(x=>x.id===cur);
+ ctx.save();ctx.beginPath();if(w.egg)ctx.ellipse(PX,PY,PR*1.3,PR*.68,0,0,Math.PI*2);else ctx.arc(PX,PY,PR,0,Math.PI*2);ctx.clip();
+ if(mode===0){const target=(1.15*PR)/fh;smS=smS?smS*.7+target*.3:target;const s=smS;
+  const le=LEYE.map(px),re=REYE.map(px),wid=a=>{let a0=1e9,a1=-1e9;a.forEach(p=>{a0=Math.min(a0,p[0]);a1=Math.max(a1,p[0]);});return a1-a0;};
+  const wl=wid(le),wr=wid(re),big=Math.max(wl,wr);
+  const ey=w.egg?PY-PR*.08:PY-PR*.12,ex=w.egg?PR*.36:PR*.33,my=w.egg?PY+PR*.3:PY+PR*.36;
+  /* subject's left eye shows on the left of the screen, like a mirror */
+  cut(le.concat(LBROW.map(px)),[1.25,1.3],s*Math.min(1.6,big/Math.max(1,wl)),PX-ex,ey);
+  cut(re.concat(RBROW.map(px)),[1.25,1.3],s*Math.min(1.6,big/Math.max(1,wr)),PX+ex,ey);
+  cut(LIPS.map(px),[1.35,1.6],s,PX,my);}
+ else{const target=(1.7*PR)/fh;smS=smS?smS*.7+target*.3:target;cut(OVAL.map(px),[1.04,1.03],smS,PX,PY);}
+ ctx.restore();}
+
+/* ---------- drawing ---------- */
+const stars=[...Array(140)].map(()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,a:Math.random()*.7+.2}));
+let recording=false,frameT=performance.now();
+function draw(now){const dt=Math.min(.05,(now-frameT)/1000);frameT=now;
+ ctx.fillStyle='#0b1030';ctx.fillRect(0,0,W,H);stars.forEach(s=>{ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
+ const w=WORLDS.find(x=>x.id===cur);
+ if(w.sun){const g=ctx.createRadialGradient(PX,PY,PR*.9,PX,PY,PR*1.7);g.addColorStop(0,'#ffb43ccc');g.addColorStop(1,'#ff8a0000');ctx.fillStyle=g;ctx.fillRect(PX-PR*1.8,PY-PR*1.8,PR*3.6,PR*3.6);}
+ if(globe){globe.userData.ball.rotation.y+=dt*.12;R3.render(scene,cam);ctx.drawImage(R3.domElement,0,0,W,H);}
+ drawFace();
+ ctx.font='700 '+Math.round(Math.max(20,PR*.16))+'px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#fff';ctx.shadowColor='#000a';ctx.shadowBlur=8;
+ const below=w.ring?PR*.95:w.egg?PR*.8:PR*1.08;ctx.fillText(w.n,PX,PY+below);ctx.shadowBlur=0;
+ if(started&&performance.now()-lastSeen>1500){ctx.font='600 20px Fredoka,sans-serif';ctx.fillStyle='#ffd23f';ctx.textBaseline='top';ctx.fillText('Look at the camera',PX,20+Math.max(0,PY-PR-60));}
+ if(recording){ctx.font='600 16px Fredoka,sans-serif';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText("Made by Dexter in Dexter's Games",W-14,H-14);}
+ requestAnimationFrame(draw);}
+
+/* ---------- camera and tracking ---------- */
+let fm=null,stream=null,started=false;
+async function track(){if(video.readyState>=2){try{await fm.send({image:video});}catch(e){}}requestAnimationFrame(track);}
+$('go').onclick=async()=>{$('err').textContent='Starting the camera…';
+ try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:true});}
+ catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});toast('No microphone, videos will be silent');}catch(e2){$('err').textContent='The camera is not allowed. Ask a grown-up to allow the camera in Settings.';return;}}
+ video.srcObject=stream;try{await video.play();}catch(e){}
+ $('err').textContent='Getting the face finder ready…';
+ fm=new FaceMesh({locateFile:f=>'lib/facemesh/'+f});
+ fm.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5,selfieMode:false});
+ fm.onResults(r=>{if(r.multiFaceLandmarks&&r.multiFaceLandmarks[0]){lm=r.multiFaceLandmarks[0];lastSeen=performance.now();}});
+ try{await fm.initialize();}catch(e){$('err').textContent='The face finder could not start. Try again.';return;}
+ $('start').hidden=true;started=true;track();say(WORLDS.find(x=>x.id===cur).n);};
+
+/* ---------- photo ---------- */
+async function shareBlob(blob,name){const file=new File([blob],name,{type:blob.type});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return;}catch(e){if(e&&e.name==='AbortError')return;}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();}
+$('snapBtn').onclick=()=>{if(!started)return;const f=document.createElement('canvas');f.width=cv.width;f.height=cv.height;const g=f.getContext('2d');g.drawImage(cv,0,0);
+ g.font='600 '+Math.round(16*DPR)+'px Fredoka,sans-serif';g.fillStyle='rgba(255,255,255,0.75)';g.textAlign='right';g.fillText("Made by Dexter in Dexter's Games",f.width-14*DPR,f.height-14*DPR);
+ cv.style.filter='brightness(2)';setTimeout(()=>cv.style.filter='',120);f.toBlob(b=>{if(b)shareBlob(b,'planet-face.jpg');},'image/jpeg',.92);};
+
+/* ---------- video recording (stays on the iPad) ---------- */
+let rec=null,chunks=[],clipBlob=null,clipType='',stopTimer=0;
+function startRec(){const types=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'];clipType=types.find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t))||'';
+ const out=cv.captureStream(30);if(stream)stream.getAudioTracks().forEach(t=>out.addTrack(t));
+ try{rec=new MediaRecorder(out,clipType?{mimeType:clipType}:{});}catch(e){toast('Recording does not work here');return;}
+ chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
+ rec.onstop=()=>{recording=false;clearTimeout(stopTimer);appMusic(.45);$('recBtn').textContent='⏺ Record';$('recBtn').classList.remove('recon');$('tray').style.visibility='';
+  clipBlob=new Blob(chunks,{type:clipType||'video/mp4'});$('cv').src=URL.createObjectURL(clipBlob);$('clip').hidden=false;};
+ appMusic(0);try{speechSynthesis.cancel();}catch(e){}
+ rec.start(500);recording=true;$('recBtn').textContent='⏹ Stop';$('recBtn').classList.add('recon');stopTimer=setTimeout(()=>{if(recording)rec.stop();},180000);}
+$('recBtn').onclick=()=>{if(!started)return;if(recording){rec.stop();return;}
+ let n=3;const cd=$('cd');cd.hidden=false;cd.textContent=n;$('recBtn').disabled=true;
+ const t=setInterval(()=>{n--;if(n>0){cd.textContent=n;}else{clearInterval(t);cd.hidden=true;$('recBtn').disabled=false;startRec();}},800);};
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&recording)rec.stop();});
+$('saveBtn').onclick=()=>{if(clipBlob)shareBlob(clipBlob,'planet-face.'+(clipType.includes('mp4')?'mp4':'webm'));};
+$('againBtn').onclick=()=>{$('clip').hidden=true;$('cv').pause();};
+let delArm=false;$('delBtn').onclick=()=>{if(!delArm){delArm=true;$('delBtn').textContent='🗑️ Sure?';setTimeout(()=>{delArm=false;$('delBtn').textContent='🗑️ Delete';},2500);return;}
+ delArm=false;$('delBtn').textContent='🗑️ Delete';clipBlob=null;$('cv').removeAttribute('src');$('clip').hidden=true;};
+
+/* ---------- other buttons ---------- */
+function setMode(m){mode=m;store.set('mode',m);smS=0;$('modeBtn').textContent=m?'🙂 Whole face':'👀 Eyes and mouth';}
+$('modeBtn').onclick=()=>setMode(1-mode);
+$('infoBtn').onclick=()=>{$('credits').hidden=false;};$('credX').onclick=()=>{$('credits').hidden=true;};
+$('camBtn').onclick=()=>{video.style.visibility=video.style.visibility==='hidden'?'':'hidden';$('camBtn').textContent=video.style.visibility==='hidden'?'🙂':'🙈';};
+
+setMode(mode);buildPicker();resize();buildGlobe();addEventListener('resize',resize);requestAnimationFrame(draw);
+window.__pf={get lm(){return lm;}};
+})();
+</script>
+</body>
+</html>

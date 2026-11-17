@@ -1,0 +1,4 @@
+Planet pictures used by games/planet-face.html (all resized; makemake.jpg made by recolouring eris.jpg).
+sun, mercury, earth, mars, jupiter, saturn, saturn-ring, uranus, neptune: Solar System Scope (solarsystemscope.com/textures), CC BY 4.0.
+venus, ceres: Oleg Pluton (Helleformer), CC BY 4.0. pluto: Kexitt and Oleg Pluton, CC BY 4.0. haumea: Snowfall and Oleg Pluton, CC BY 4.0. eris: MrSpace43 and Oleg Pluton, CC BY 4.0 (via the Stellarium project).
+moon: Ruslan Kabatsayev, from LROC WAC data, CC BY-SA 4.0 (via the Stellarium project).

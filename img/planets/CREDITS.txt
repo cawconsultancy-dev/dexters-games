@@ -3,3 +3,4 @@ sun, mercury, earth, mars, jupiter, saturn, saturn-ring, uranus, neptune: Solar 
 venus, ceres: Oleg Pluton (Helleformer), CC BY 4.0. pluto: Kexitt and Oleg Pluton, CC BY 4.0. haumea: Snowfall and Oleg Pluton, CC BY 4.0. eris: MrSpace43 and Oleg Pluton, CC BY 4.0 (via the Stellarium project).
 moon: Ruslan Kabatsayev, from LROC WAC data, CC BY-SA 4.0 (via the Stellarium project).
 Exoplanet pictures (proxima-b, trappist-1e, kepler-22b, kepler-452b, 55-cancri-e, 51-pegasi-b, hd-189733-b, k2-18b, kelt-9b, wasp-12b): painted in code for this game (17/11/2026); artists impressions, no outside images used.
+Moons via the Stellarium project: io, europa, ganymede, mimas: Oleg Pluton, CC BY 4.0. titan: Magenta Meteorite and Oleg Pluton, CC BY 4.0. charon: Kexitt and Oleg Pluton, CC BY 4.0. callisto: John van Vliet (NASA PDS data, modified by RVS), CC BY-SA. enceladus: NASA CICLOPS team, colored by RVS, public domain. triton, phobos: courtesy NASA/JPL-Caltech (David Seal maps).

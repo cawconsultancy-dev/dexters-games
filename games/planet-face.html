@@ -67,6 +67,7 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
  <h1 style="font-size:28px">Picture credits</h1>
  <p>Sun, Mercury, Earth, Mars, Jupiter, Saturn (and its rings), Uranus and Neptune: Solar System Scope (solarsystemscope.com), based on NASA data, licence CC BY 4.0.</p>
  <p>Venus and Ceres: Oleg Pluton (Helleformer), CC BY 4.0. Pluto: Kexitt and Oleg Pluton, CC BY 4.0. Haumea: Snowfall and Oleg Pluton, CC BY 4.0. Eris: MrSpace43 and Oleg Pluton, CC BY 4.0. Makemake: made for this game by recolouring the Eris picture. The Moon: Ruslan Kabatsayev, from NASA Lunar Reconnaissance Orbiter data, CC BY-SA 4.0. These maps came from the Stellarium project.</p>
+ <p>Moons: Io, Europa, Ganymede and Mimas by Oleg Pluton, CC BY 4.0. Titan by Magenta Meteorite and Oleg Pluton, CC BY 4.0. Charon by Kexitt and Oleg Pluton, CC BY 4.0. Callisto by John van Vliet from NASA PDS data, CC BY-SA. Enceladus by NASA (CICLOPS team), public domain. Triton and Phobos courtesy NASA/JPL-Caltech. These maps came from the Stellarium project.</p>
  <p>The 10 exoplanets (Proxima Centauri b, TRAPPIST-1e, Kepler-22b, Kepler-452b, 55 Cancri e, 51 Pegasi b, HD 189733 b, K2-18b, KELT-9b and WASP-12b) were painted for this game. No exoplanet has ever been photographed close up, so they are artists' ideas based on what scientists think each world is like.</p>
  <p>All pictures were resized for this game. Eris, Haumea and Makemake have never been photographed close up, so their pictures are artists' ideas of how they might look.</p>
  <p>Face tracking: MediaPipe Face Mesh by Google, Apache License 2.0.</p>
@@ -94,6 +95,16 @@ const WORLDS=[
  {id:'jupiter',n:'Jupiter',f:'jupiter'},{id:'saturn',n:'Saturn',f:'saturn',ring:true},{id:'uranus',n:'Uranus',f:'uranus'},{id:'neptune',n:'Neptune',f:'neptune'},
  {id:'ceres',n:'Ceres',f:'ceres',gap:true},{id:'pluto',n:'Pluto',f:'pluto',rot:1.6},{id:'haumea',n:'Haumea',f:'haumea',egg:true},{id:'makemake',n:'Makemake',f:'makemake'},{id:'eris',n:'Eris',f:'eris'},
  {id:'moon',n:'The Moon (Luna)',short:'Moon',f:'moon',gap:true},
+ {id:'io',n:'Io',sub:'Moon of Jupiter',f:'io',gap:true},
+ {id:'europa',n:'Europa',sub:'Moon of Jupiter',f:'europa'},
+ {id:'ganymede',n:'Ganymede',sub:'Moon of Jupiter',f:'ganymede'},
+ {id:'callisto',n:'Callisto',sub:'Moon of Jupiter',f:'callisto'},
+ {id:'titan',n:'Titan',sub:'Moon of Saturn',f:'titan'},
+ {id:'enceladus',n:'Enceladus',sub:'Moon of Saturn',f:'enceladus'},
+ {id:'mimas',n:'Mimas',sub:'Moon of Saturn',f:'mimas'},
+ {id:'triton',n:'Triton',sub:'Moon of Neptune',f:'triton'},
+ {id:'charon',n:'Charon',sub:'Moon of Pluto',f:'charon'},
+ {id:'phobos',n:'Phobos',sub:'Moon of Mars',f:'phobos',lumpy:true},
  {id:'proxima-b',n:'Proxima Centauri b',short:'Proxima b',f:'proxima-b',gap:true,exo:true},{id:'trappist-1e',n:'TRAPPIST-1e',f:'trappist-1e',exo:true},
  {id:'kepler-22b',n:'Kepler-22b',f:'kepler-22b',exo:true},{id:'kepler-452b',n:'Kepler-452b',f:'kepler-452b',exo:true},
  {id:'55-cancri-e',n:'55 Cancri e',f:'55-cancri-e',exo:true},{id:'51-pegasi-b',n:'51 Pegasi b',f:'51-pegasi-b',exo:true},
@@ -112,7 +123,7 @@ function resize(){DPR=Math.min(1.5,window.devicePixelRatio||1);W=innerWidth;H=in
  R3.setPixelRatio(DPR);R3.setSize(W,H,false);cam.left=-W/2;cam.right=W/2;cam.top=H/2;cam.bottom=-H/2;cam.updateProjectionMatrix();layout();}
 let PX=0,PY=0,PR=100;
 function trayH(){return $('tray').getBoundingClientRect().height;}
-function layout(){const top=20,bot=trayH()+30,avail=H-top-bot;const w=WORLDS.find(x=>x.id===cur)||WORLDS[0];
+function layout(){const w=WORLDS.find(x=>x.id===cur)||WORLDS[0];const top=20,bot=trayH()+30+(w.sub?40:0),avail=H-top-bot;
  PR=Math.max(60,Math.min(W*.42,avail*.43));if(w.ring)PR=Math.min(PR,W*.42/2.15*1.6,avail*.36);if(w.egg)PR=Math.min(PR,W*.42/1.3);
  PX=W/2;PY=top+avail/2;if(globe){globe.position.set(PX-W/2,H/2-PY,0);globe.scale.setScalar(PR);}drawBg();}
 
@@ -124,7 +135,7 @@ let ringTex=null;
 let globe=null;
 function buildGlobe(){if(globe){scene.remove(globe);}const w=WORLDS.find(x=>x.id===cur);globe=new THREE.Group();
  const mat=(w.sun||w.glow)?new THREE.MeshBasicMaterial({map:tex(w.f)}):new THREE.MeshStandardMaterial({map:tex(w.f),roughness:1,metalness:0});
- const ball=new THREE.Mesh(sphereGeo,mat);ball.rotation.y=w.rot||0;if(w.egg)ball.scale.set(1.3,.68,.95);if(w.egg2)ball.scale.set(1.12,.92,.95);globe.add(ball);globe.userData.ball=ball;
+ const ball=new THREE.Mesh(sphereGeo,mat);ball.rotation.y=w.rot||0;if(w.egg)ball.scale.set(1.3,.68,.95);if(w.egg2)ball.scale.set(1.12,.92,.95);if(w.lumpy)ball.scale.set(1.18,.84,.95);globe.add(ball);globe.userData.ball=ball;
  if(w.ring){if(!ringTex){ringTex=loader.load(P+'saturn-ring.png');ringTex.encoding=THREE.sRGBEncoding;}
   const rg=new THREE.RingGeometry(1.25,2.2,128,1),pos=rg.attributes.position,uv=rg.attributes.uv,v=new THREE.Vector3();
   for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i);uv.setXY(i,(v.length()-1.25)/(2.2-1.25),.5);}
@@ -201,7 +212,8 @@ function draw(now){const dt=Math.min(.05,(now-frameT)/1000);frameT=now;
  if(globe){globe.userData.ball.rotation.y+=dt*.12;R3.render(scene,cam);}
  drawFace();
  ctx.font='700 '+Math.round(Math.max(20,PR*.16))+'px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#fff';ctx.shadowColor='#000a';ctx.shadowBlur=8;
- const below=w.ring?PR*.95:w.egg?PR*.8:PR*1.08;ctx.fillText(w.n,PX,PY+below);ctx.shadowBlur=0;
+ const below=w.ring?PR*.95:w.egg?PR*.8:PR*1.08;ctx.fillText(w.n,PX,PY+below);
+ if(w.sub){ctx.font='600 '+Math.round(Math.max(15,PR*.09))+'px Fredoka,sans-serif';ctx.fillStyle='#ffd23f';ctx.fillText(w.sub,PX,PY+below+Math.max(24,PR*.19));}ctx.shadowBlur=0;
  if(started&&performance.now()-lastSeen>3000){ctx.font='600 20px Fredoka,sans-serif';ctx.fillStyle='#ffd23f';ctx.textBaseline='top';ctx.fillText('Look at the camera',PX,20+Math.max(0,PY-PR-60));}
  if(recording){ctx.font='600 16px Fredoka,sans-serif';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText("Made by Dexter in Dexter's Games",W-14,H-14);
   if(recCtx&&recCan)compose(recCtx,recCan.width,recCan.height);}

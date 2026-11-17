@@ -67,7 +67,7 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
  <h1 style="font-size:28px">Picture credits</h1>
  <p>Sun, Mercury, Earth, Mars, Jupiter, Saturn (and its rings), Uranus and Neptune: Solar System Scope (solarsystemscope.com), based on NASA data, licence CC BY 4.0.</p>
  <p>Venus and Ceres: Oleg Pluton (Helleformer), CC BY 4.0. Pluto: Kexitt and Oleg Pluton, CC BY 4.0. Haumea: Snowfall and Oleg Pluton, CC BY 4.0. Eris: MrSpace43 and Oleg Pluton, CC BY 4.0. Makemake: made for this game by recolouring the Eris picture. The Moon: Ruslan Kabatsayev, from NASA Lunar Reconnaissance Orbiter data, CC BY-SA 4.0. These maps came from the Stellarium project.</p>
- <p>Moons: Io, Europa, Ganymede and Mimas by Oleg Pluton, CC BY 4.0. Titan by Magenta Meteorite and Oleg Pluton, CC BY 4.0. Charon by Kexitt and Oleg Pluton, CC BY 4.0. Callisto by John van Vliet from NASA PDS data, CC BY-SA. Enceladus by NASA (CICLOPS team), public domain. Triton and Phobos courtesy NASA/JPL-Caltech. These maps came from the Stellarium project.</p>
+ <p>Moons: Io, Europa, Ganymede, Mimas and Deimos by Oleg Pluton, CC BY 4.0. Titan by Magenta Meteorite and Oleg Pluton, CC BY 4.0. Charon by Kexitt and Oleg Pluton, CC BY 4.0. Callisto by John van Vliet from NASA PDS data, CC BY-SA. Enceladus by NASA (CICLOPS team), public domain. Triton and Phobos courtesy NASA/JPL-Caltech. These maps came from the Stellarium project.</p>
  <p>The 10 exoplanets (Proxima Centauri b, TRAPPIST-1e, Kepler-22b, Kepler-452b, 55 Cancri e, 51 Pegasi b, HD 189733 b, K2-18b, KELT-9b and WASP-12b) were painted for this game. No exoplanet has ever been photographed close up, so they are artists' ideas based on what scientists think each world is like.</p>
  <p>All pictures were resized for this game. Eris, Haumea and Makemake have never been photographed close up, so their pictures are artists' ideas of how they might look.</p>
  <p>Face tracking: MediaPipe Face Mesh by Google, Apache License 2.0.</p>
@@ -105,6 +105,7 @@ const WORLDS=[
  {id:'triton',n:'Triton',sub:'Moon of Neptune',f:'triton'},
  {id:'charon',n:'Charon',sub:'Moon of Pluto',f:'charon'},
  {id:'phobos',n:'Phobos',sub:'Moon of Mars',f:'phobos',lumpy:true},
+ {id:'deimos',n:'Deimos',sub:'Moon of Mars',f:'deimos',lumpy:true},
  {id:'proxima-b',n:'Proxima Centauri b',short:'Proxima b',f:'proxima-b',gap:true,exo:true},{id:'trappist-1e',n:'TRAPPIST-1e',f:'trappist-1e',exo:true},
  {id:'kepler-22b',n:'Kepler-22b',f:'kepler-22b',exo:true},{id:'kepler-452b',n:'Kepler-452b',f:'kepler-452b',exo:true},
  {id:'55-cancri-e',n:'55 Cancri e',f:'55-cancri-e',exo:true},{id:'51-pegasi-b',n:'51 Pegasi b',f:'51-pegasi-b',exo:true},

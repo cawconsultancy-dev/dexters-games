@@ -12,7 +12,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 html,body{margin:0;height:100%;overflow:hidden;background:#0b1030;color:#fff;font-family:Fredoka,"Arial Rounded MT Bold",Arial,sans-serif;-webkit-user-select:none;user-select:none;touch-action:none}
-canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+canvas.layer{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));width:120px;border-radius:16px;border:3px solid #ffffff99;transform:scaleX(-1);z-index:3;background:#000}
 .top{position:fixed;left:12px;top:calc(12px + env(safe-area-inset-top,0px));z-index:4;display:flex;gap:8px}
 .top button{width:52px;height:52px;border-radius:50%;border:2px solid #ffffff55;background:#ffffff22;color:#fff;font-size:24px;cursor:pointer}
@@ -44,7 +44,7 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="bg" class="layer"></canvas><canvas id="c" class="layer"></canvas>
 <video id="v" playsinline muted autoplay></video>
 <div class="top"><button id="infoBtn" aria-label="Picture credits">ⓘ</button><button id="camBtn" aria-label="Show or hide me">🙈</button></div>
 <div class="tray" id="tray">
@@ -78,11 +78,12 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const cv=$('c'),ctx=cv.getContext('2d'),video=$('v');
+const cv=$('c'),ctx=cv.getContext('2d'),bgc=$('bg'),bctx=bgc.getContext('2d'),video=$('v');
 const store={get(k,d){try{const v=localStorage.getItem('pf_'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem('pf_'+k,JSON.stringify(v));}catch(e){}}};
 function appMusic(l){try{if(parent!==window)parent.postMessage({dg:'music',level:l},location.origin);}catch(e){}}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1800);}
-function say(t){if(recording)return;try{const ss=speechSynthesis;ss.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-GB';ss.speak(u);}catch(e){}}
+/* no spoken names in this game: on iPads, speech while the camera and microphone are on can pause the camera (Craig, 17/11/2026) */
+function say(t){}
 
 /* ---------- the worlds ---------- */
 const P='../img/planets/';
@@ -98,16 +99,16 @@ const mode=1;/* whole face only (Craig, 17/11/2026) */
 /* ---------- canvas sizes ---------- */
 let W=0,H=0,DPR=1;
 const R3=new THREE.WebGLRenderer({antialias:true,alpha:true});
-THREE.ColorManagement.legacyMode=false;R3.outputEncoding=THREE.sRGBEncoding;R3.setClearColor(0x000000,0);
+THREE.ColorManagement.legacyMode=false;R3.outputEncoding=THREE.sRGBEncoding;R3.setClearColor(0x000000,0);R3.domElement.className='layer';document.body.insertBefore(R3.domElement,cv);
 const scene=new THREE.Scene(),cam=new THREE.OrthographicCamera(-1,1,1,-1,-5000,5000);
 scene.add(new THREE.AmbientLight(0xffffff,.42));const sunL=new THREE.DirectionalLight(0xffffff,1.05);sunL.position.set(-1,.8,1.3);scene.add(sunL);
-function resize(){DPR=Math.min(1.5,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);
+function resize(){DPR=Math.min(1.5,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);ctx.setTransform(DPR,0,0,DPR,0,0);bgc.width=cv.width;bgc.height=cv.height;bctx.setTransform(DPR,0,0,DPR,0,0);
  R3.setPixelRatio(DPR);R3.setSize(W,H,false);cam.left=-W/2;cam.right=W/2;cam.top=H/2;cam.bottom=-H/2;cam.updateProjectionMatrix();layout();}
 let PX=0,PY=0,PR=100;
 function trayH(){return $('tray').getBoundingClientRect().height;}
 function layout(){const top=20,bot=trayH()+30,avail=H-top-bot;const w=WORLDS.find(x=>x.id===cur)||WORLDS[0];
  PR=Math.max(60,Math.min(W*.42,avail*.43));if(w.ring)PR=Math.min(PR,W*.42/2.15*1.6,avail*.36);if(w.egg)PR=Math.min(PR,W*.42/1.3);
- PX=W/2;PY=top+avail/2;if(globe){globe.position.set(PX-W/2,H/2-PY,0);globe.scale.setScalar(PR);}}
+ PX=W/2;PY=top+avail/2;if(globe){globe.position.set(PX-W/2,H/2-PY,0);globe.scale.setScalar(PR);}drawBg();}
 
 /* ---------- textures and the globe ---------- */
 const loader=new THREE.TextureLoader(),texCache={},imgCache={};
@@ -167,7 +168,7 @@ function wholeFace(fh){const pts=OVAL.map(px);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
  tctx.globalCompositeOperation='destination-in';tctx.save();tctx.translate((cx-sx)*k,(cy-sy)*k);tctx.scale(fw*k/2,fhh*k/2);
  const g=tctx.createRadialGradient(0,0,0,0,0,1);g.addColorStop(0,'#000');g.addColorStop(.62,'#000');g.addColorStop(1,'#0000');tctx.fillStyle=g;tctx.fillRect(-1,-1,2,2);tctx.restore();tctx.globalCompositeOperation='source-over';
  ctx.save();ctx.translate(PX,PY);ctx.scale(-1/DPR,1/DPR);ctx.drawImage(tmp,-(cx-sx)*k,-(cy-sy)*k);ctx.restore();}
-function drawFace(){if(!lm||!video.videoWidth||performance.now()-lastSeen>900)return;
+function drawFace(){if(!lm||!video.videoWidth||performance.now()-lastSeen>3000)return;
  const top=px(10),chin=px(152),fh=Math.hypot(top[0]-chin[0],top[1]-chin[1]);if(fh<20)return;
  const w=WORLDS.find(x=>x.id===cur);
  ctx.save();ctx.beginPath();if(w.egg)ctx.ellipse(PX,PY,PR*1.3,PR*.68,0,0,Math.PI*2);else ctx.arc(PX,PY,PR,0,Math.PI*2);ctx.clip();
@@ -185,26 +186,35 @@ function drawFace(){if(!lm||!video.videoWidth||performance.now()-lastSeen>900)re
 /* ---------- drawing ---------- */
 const stars=[...Array(140)].map(()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,a:Math.random()*.7+.2}));
 let recording=false,frameT=performance.now();
+function drawBg(){if(!bctx)return;bctx.fillStyle='#0b1030';bctx.fillRect(0,0,W,H);stars.forEach(s=>{bctx.globalAlpha=s.a;bctx.fillStyle='#fff';bctx.beginPath();bctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);bctx.fill();});bctx.globalAlpha=1;
+ const w=WORLDS.find(x=>x.id===cur);if(w&&w.sun){const g=bctx.createRadialGradient(PX,PY,PR*.9,PX,PY,PR*1.7);g.addColorStop(0,'#ffb43ccc');g.addColorStop(1,'#ff8a0000');bctx.fillStyle=g;bctx.fillRect(PX-PR*1.8,PY-PR*1.8,PR*3.6,PR*3.6);}}
+/* the planet draws straight to its own layer; the face and name draw on the top layer. Layers are only joined together for videos and photos. */
+function compose(g,w,h){g.drawImage(bgc,0,0,w,h);g.drawImage(R3.domElement,0,0,w,h);g.drawImage(cv,0,0,w,h);}
 function draw(now){const dt=Math.min(.05,(now-frameT)/1000);frameT=now;
- ctx.fillStyle='#0b1030';ctx.fillRect(0,0,W,H);stars.forEach(s=>{ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);ctx.fill();});ctx.globalAlpha=1;
- const w=WORLDS.find(x=>x.id===cur);
- if(w.sun){const g=ctx.createRadialGradient(PX,PY,PR*.9,PX,PY,PR*1.7);g.addColorStop(0,'#ffb43ccc');g.addColorStop(1,'#ff8a0000');ctx.fillStyle=g;ctx.fillRect(PX-PR*1.8,PY-PR*1.8,PR*3.6,PR*3.6);}
- if(globe){globe.userData.ball.rotation.y+=dt*.12;R3.render(scene,cam);ctx.drawImage(R3.domElement,0,0,W,H);}
+ ctx.clearRect(0,0,W,H);const w=WORLDS.find(x=>x.id===cur);
+ if(globe){globe.userData.ball.rotation.y+=dt*.12;R3.render(scene,cam);}
  drawFace();
  ctx.font='700 '+Math.round(Math.max(20,PR*.16))+'px Fredoka,sans-serif';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillStyle='#fff';ctx.shadowColor='#000a';ctx.shadowBlur=8;
  const below=w.ring?PR*.95:w.egg?PR*.8:PR*1.08;ctx.fillText(w.n,PX,PY+below);ctx.shadowBlur=0;
- if(started&&performance.now()-lastSeen>1500){ctx.font='600 20px Fredoka,sans-serif';ctx.fillStyle='#ffd23f';ctx.textBaseline='top';ctx.fillText('Look at the camera',PX,20+Math.max(0,PY-PR-60));}
- if(recording){ctx.font='600 16px Fredoka,sans-serif';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText("Made by Dexter in Dexter's Games",W-14,H-14);}
- if(recording&&recCtx&&recCan)recCtx.drawImage(cv,0,0,recCan.width,recCan.height);
+ if(started&&performance.now()-lastSeen>3000){ctx.font='600 20px Fredoka,sans-serif';ctx.fillStyle='#ffd23f';ctx.textBaseline='top';ctx.fillText('Look at the camera',PX,20+Math.max(0,PY-PR-60));}
+ if(recording){ctx.font='600 16px Fredoka,sans-serif';ctx.fillStyle='rgba(255,255,255,0.75)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText("Made by Dexter in Dexter's Games",W-14,H-14);
+  if(recCtx&&recCan)compose(recCtx,recCan.width,recCan.height);}
+ if(snapNow){snapNow();snapNow=null;}
  requestAnimationFrame(draw);}
+let snapNow=null;
 
 /* ---------- camera and tracking ---------- */
 let fm=null,stream=null,started=false;
 async function track(){if(video.readyState>=2){try{await fm.send({image:video});}catch(e){}}requestAnimationFrame(track);}
+async function openCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:true});}
+ catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});toast('No microphone, videos will be silent');}catch(e2){return false;}}
+ video.srcObject=stream;try{await video.play();}catch(e){}return true;}
+/* if the iPad pauses or stops the camera, start it again */
+let reopening=false;setInterval(async()=>{if(!started||reopening||recording)return;const t=stream&&stream.getVideoTracks()[0];
+ if(!t||t.readyState==='ended'){reopening=true;try{if(stream)stream.getTracks().forEach(x=>x.stop());}catch(e){}await openCamera();reopening=false;return;}
+ if(video.paused){try{await video.play();}catch(e){}}},1000);
 $('go').onclick=async()=>{$('err').textContent='Starting the camera…';
- try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:true});}
- catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});toast('No microphone, videos will be silent');}catch(e2){$('err').textContent='The camera is not allowed. Ask a grown-up to allow the camera in Settings.';return;}}
- video.srcObject=stream;try{await video.play();}catch(e){}
+ if(!await openCamera()){$('err').textContent='The camera is not allowed. Ask a grown-up to allow the camera in Settings.';return;}
  $('err').textContent='Getting the face finder ready…';
  fm=new FaceMesh({locateFile:f=>'lib/facemesh/'+f});
  fm.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5,selfieMode:false});
@@ -216,9 +226,10 @@ $('go').onclick=async()=>{$('err').textContent='Starting the camera…';
 async function shareBlob(blob,name){const file=new File([blob],name,{type:blob.type});
  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file]});return;}catch(e){if(e&&e.name==='AbortError')return;}}
  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();}
-$('snapBtn').onclick=()=>{if(!started)return;const f=document.createElement('canvas');f.width=cv.width;f.height=cv.height;const g=f.getContext('2d');g.drawImage(cv,0,0);
+$('snapBtn').onclick=()=>{if(!started)return;snapNow=()=>{const f=document.createElement('canvas');f.width=cv.width;f.height=cv.height;const g=f.getContext('2d');compose(g,f.width,f.height);
  g.font='600 '+Math.round(16*DPR)+'px Fredoka,sans-serif';g.fillStyle='rgba(255,255,255,0.75)';g.textAlign='right';g.fillText("Made by Dexter in Dexter's Games",f.width-14*DPR,f.height-14*DPR);
- cv.style.filter='brightness(2)';setTimeout(()=>cv.style.filter='',120);f.toBlob(b=>{if(b)shareBlob(b,'planet-face.jpg');},'image/jpeg',.92);};
+ f.toBlob(b=>{if(b)shareBlob(b,'planet-face.jpg');},'image/jpeg',.92);};
+ const fl=document.createElement('div');fl.style.cssText='position:fixed;inset:0;background:#fff;z-index:20;opacity:.8;transition:opacity .3s;pointer-events:none';document.body.appendChild(fl);setTimeout(()=>{fl.style.opacity=0;},30);setTimeout(()=>fl.remove(),400);};
 
 /* ---------- video recording (stays on the iPad) ---------- */
 let rec=null,chunks=[],clipBlob=null,clipType='',stopTimer=0,recCan=null,recCtx=null,recStream=null;
@@ -228,7 +239,7 @@ function finishRec(){if(!recording&&!rec)return;recording=false;clearTimeout(sto
  clipBlob=new Blob(chunks,{type:clipType||'video/mp4'});$('cv').src=URL.createObjectURL(clipBlob);$('clip').hidden=false;}
 function startRec(){if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){toast('This iPad cannot record videos');return;}
  let rw=cv.width,rh=cv.height;const kk=Math.min(1,1600/Math.max(rw,rh));rw=Math.round(rw*kk/2)*2;rh=Math.round(rh*kk/2)*2;
- recCan=document.createElement('canvas');recCan.width=rw;recCan.height=rh;recCtx=recCan.getContext('2d');recCtx.drawImage(cv,0,0,rw,rh);
+ recCan=document.createElement('canvas');recCan.width=rw;recCan.height=rh;recCtx=recCan.getContext('2d');recCtx.fillStyle='#0b1030';recCtx.fillRect(0,0,rw,rh);
  recStream=recCan.captureStream(30);const tr=[...recStream.getVideoTracks()];if(stream)tr.push(...stream.getAudioTracks());const ms=new MediaStream(tr);
  const types=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
  clipType=types.find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'';

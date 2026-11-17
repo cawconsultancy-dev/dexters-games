@@ -206,15 +206,20 @@ let snapNow=null;
 /* ---------- camera and tracking ---------- */
 let fm=null,stream=null,started=false;
 async function track(){if(video.readyState>=2){try{await fm.send({image:video});}catch(e){}}requestAnimationFrame(track);}
-async function openCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:true});}
- catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});toast('No microphone, videos will be silent');}catch(e2){return false;}}
+async function openCamera(){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});}
+ catch(e){try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});}catch(e2){return false;}}
  video.srcObject=stream;try{await video.play();}catch(e){}return true;}
+let micStream=null;
+async function ensureMic(){const t=micStream&&micStream.getAudioTracks()[0];if(t&&t.readyState==='live')return true;micStream=null;
+ try{micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});return true;}
+ catch(e){toast('Microphone not allowed, so no sound');return false;}}
 /* if the iPad pauses or stops the camera, start it again */
 let reopening=false;setInterval(async()=>{if(!started||reopening||recording)return;const t=stream&&stream.getVideoTracks()[0];
  if(!t||t.readyState==='ended'){reopening=true;try{if(stream)stream.getTracks().forEach(x=>x.stop());}catch(e){}await openCamera();reopening=false;return;}
  if(video.paused){try{await video.play();}catch(e){}}},1000);
 $('go').onclick=async()=>{$('err').textContent='Starting the camera…';
  if(!await openCamera()){$('err').textContent='The camera is not allowed. Ask a grown-up to allow the camera in Settings.';return;}
+ await ensureMic();
  $('err').textContent='Getting the face finder ready…';
  fm=new FaceMesh({locateFile:f=>'lib/facemesh/'+f});
  fm.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5,selfieMode:false});
@@ -237,10 +242,10 @@ function finishRec(){if(!recording&&!rec)return;recording=false;clearTimeout(sto
  if(recStream){recStream.getVideoTracks().forEach(t=>{try{t.stop();}catch(e){}});recStream=null;}rec=null;recCan=null;
  if(!chunks.length){toast('The video did not save, try again');return;}
  clipBlob=new Blob(chunks,{type:clipType||'video/mp4'});$('cv').src=URL.createObjectURL(clipBlob);$('clip').hidden=false;}
-function startRec(){if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){toast('This iPad cannot record videos');return;}
+async function startRec(){if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){toast('This iPad cannot record videos');return;}
  let rw=cv.width,rh=cv.height;const kk=Math.min(1,1600/Math.max(rw,rh));rw=Math.round(rw*kk/2)*2;rh=Math.round(rh*kk/2)*2;
  recCan=document.createElement('canvas');recCan.width=rw;recCan.height=rh;recCtx=recCan.getContext('2d');recCtx.fillStyle='#0b1030';recCtx.fillRect(0,0,rw,rh);
- recStream=recCan.captureStream(30);const tr=[...recStream.getVideoTracks()];if(stream)tr.push(...stream.getAudioTracks());const ms=new MediaStream(tr);
+ await ensureMic();recStream=recCan.captureStream(30);const tr=[...recStream.getVideoTracks()];if(micStream)tr.push(...micStream.getAudioTracks());const ms=new MediaStream(tr);
  const types=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
  clipType=types.find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'';
  try{rec=new MediaRecorder(ms,clipType?{mimeType:clipType,videoBitsPerSecond:4000000}:{});}catch(e){try{rec=new MediaRecorder(ms);clipType='';}catch(e2){rec=null;}}

@@ -67,6 +67,7 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
  <h1 style="font-size:28px">Picture credits</h1>
  <p>Sun, Mercury, Earth, Mars, Jupiter, Saturn (and its rings), Uranus and Neptune: Solar System Scope (solarsystemscope.com), based on NASA data, licence CC BY 4.0.</p>
  <p>Venus and Ceres: Oleg Pluton (Helleformer), CC BY 4.0. Pluto: Kexitt and Oleg Pluton, CC BY 4.0. Haumea: Snowfall and Oleg Pluton, CC BY 4.0. Eris: MrSpace43 and Oleg Pluton, CC BY 4.0. Makemake: made for this game by recolouring the Eris picture. The Moon: Ruslan Kabatsayev, from NASA Lunar Reconnaissance Orbiter data, CC BY-SA 4.0. These maps came from the Stellarium project.</p>
+ <p>The 10 exoplanets (Proxima Centauri b, TRAPPIST-1e, Kepler-22b, Kepler-452b, 55 Cancri e, 51 Pegasi b, HD 189733 b, K2-18b, KELT-9b and WASP-12b) were painted for this game. No exoplanet has ever been photographed close up, so they are artists' ideas based on what scientists think each world is like.</p>
  <p>All pictures were resized for this game. Eris, Haumea and Makemake have never been photographed close up, so their pictures are artists' ideas of how they might look.</p>
  <p>Face tracking: MediaPipe Face Mesh by Google, Apache License 2.0.</p>
  <button class="big" id="credX">OK</button>
@@ -92,7 +93,12 @@ const WORLDS=[
  {id:'mercury',n:'Mercury',f:'mercury',gap:true},{id:'venus',n:'Venus',f:'venus'},{id:'earth',n:'Earth',f:'earth',rot:-1.6},{id:'mars',n:'Mars',f:'mars'},
  {id:'jupiter',n:'Jupiter',f:'jupiter'},{id:'saturn',n:'Saturn',f:'saturn',ring:true},{id:'uranus',n:'Uranus',f:'uranus'},{id:'neptune',n:'Neptune',f:'neptune'},
  {id:'ceres',n:'Ceres',f:'ceres',gap:true},{id:'pluto',n:'Pluto',f:'pluto',rot:1.6},{id:'haumea',n:'Haumea',f:'haumea',egg:true},{id:'makemake',n:'Makemake',f:'makemake'},{id:'eris',n:'Eris',f:'eris'},
- {id:'moon',n:'The Moon (Luna)',short:'Moon',f:'moon',gap:true}];
+ {id:'moon',n:'The Moon (Luna)',short:'Moon',f:'moon',gap:true},
+ {id:'proxima-b',n:'Proxima Centauri b',short:'Proxima b',f:'proxima-b',gap:true,exo:true},{id:'trappist-1e',n:'TRAPPIST-1e',f:'trappist-1e',exo:true},
+ {id:'kepler-22b',n:'Kepler-22b',f:'kepler-22b',exo:true},{id:'kepler-452b',n:'Kepler-452b',f:'kepler-452b',exo:true},
+ {id:'55-cancri-e',n:'55 Cancri e',f:'55-cancri-e',exo:true},{id:'51-pegasi-b',n:'51 Pegasi b',f:'51-pegasi-b',exo:true},
+ {id:'hd-189733-b',n:'HD 189733 b',f:'hd-189733-b',exo:true},{id:'k2-18b',n:'K2-18b',f:'k2-18b',exo:true},
+ {id:'kelt-9b',n:'KELT-9b',f:'kelt-9b',exo:true,glow:'#ffd27a'},{id:'wasp-12b',n:'WASP-12b',f:'wasp-12b',exo:true,egg2:true}];
 let cur=store.get('world','earth');if(!WORLDS.find(w=>w.id===cur))cur='earth';
 const mode=1;/* whole face only (Craig, 17/11/2026) */
 
@@ -117,8 +123,8 @@ const sphereGeo=new THREE.SphereGeometry(1,64,48);
 let ringTex=null;
 let globe=null;
 function buildGlobe(){if(globe){scene.remove(globe);}const w=WORLDS.find(x=>x.id===cur);globe=new THREE.Group();
- const mat=w.sun?new THREE.MeshBasicMaterial({map:tex(w.f)}):new THREE.MeshStandardMaterial({map:tex(w.f),roughness:1,metalness:0});
- const ball=new THREE.Mesh(sphereGeo,mat);ball.rotation.y=w.rot||0;if(w.egg)ball.scale.set(1.3,.68,.95);globe.add(ball);globe.userData.ball=ball;
+ const mat=(w.sun||w.glow)?new THREE.MeshBasicMaterial({map:tex(w.f)}):new THREE.MeshStandardMaterial({map:tex(w.f),roughness:1,metalness:0});
+ const ball=new THREE.Mesh(sphereGeo,mat);ball.rotation.y=w.rot||0;if(w.egg)ball.scale.set(1.3,.68,.95);if(w.egg2)ball.scale.set(1.12,.92,.95);globe.add(ball);globe.userData.ball=ball;
  if(w.ring){if(!ringTex){ringTex=loader.load(P+'saturn-ring.png');ringTex.encoding=THREE.sRGBEncoding;}
   const rg=new THREE.RingGeometry(1.25,2.2,128,1),pos=rg.attributes.position,uv=rg.attributes.uv,v=new THREE.Vector3();
   for(let i=0;i<pos.count;i++){v.fromBufferAttribute(pos,i);uv.setXY(i,(v.length()-1.25)/(2.2-1.25),.5);}
@@ -129,7 +135,7 @@ function buildGlobe(){if(globe){scene.remove(globe);}const w=WORLDS.find(x=>x.id
 /* ---------- planet picker ---------- */
 function thumb(c,w){const g=c.getContext('2d'),s=c.width;const im=new Image();im.onload=()=>{g.save();g.beginPath();g.arc(s/2,s/2,s/2,0,Math.PI*2);g.clip();
   const sx=im.width*.3,sw=im.width*.4;g.drawImage(im,sx,0,sw,im.height,0,0,s,s);
-  if(!w.sun){const gr=g.createRadialGradient(s*.35,s*.32,s*.1,s/2,s/2,s*.55);gr.addColorStop(0,'#fff0');gr.addColorStop(.7,'#0002');gr.addColorStop(1,'#0008');g.fillStyle=gr;g.fillRect(0,0,s,s);}
+  if(!w.sun&&!w.glow){const gr=g.createRadialGradient(s*.35,s*.32,s*.1,s/2,s/2,s*.55);gr.addColorStop(0,'#fff0');gr.addColorStop(.7,'#0002');gr.addColorStop(1,'#0008');g.fillStyle=gr;g.fillRect(0,0,s,s);}
   g.restore();};im.src=P+w.f+'.jpg';}
 function buildPicker(){$('pick').innerHTML=WORLDS.map(w=>`<button class="pl${w.gap?' gap':''}${w.id===cur?' on':''}" data-w="${w.id}"><canvas width="116" height="116"></canvas>${w.short||w.n.replace('The ','')}</button>`).join('');
  $('pick').querySelectorAll('.pl').forEach(b=>{const w=WORLDS.find(x=>x.id===b.dataset.w);thumb(b.querySelector('canvas'),w);
@@ -187,7 +193,7 @@ function drawFace(){if(!lm||!video.videoWidth||performance.now()-lastSeen>3000)r
 const stars=[...Array(140)].map(()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,a:Math.random()*.7+.2}));
 let recording=false,frameT=performance.now();
 function drawBg(){if(!bctx)return;bctx.fillStyle='#0b1030';bctx.fillRect(0,0,W,H);stars.forEach(s=>{bctx.globalAlpha=s.a;bctx.fillStyle='#fff';bctx.beginPath();bctx.arc(s.x*W,s.y*H,s.r,0,Math.PI*2);bctx.fill();});bctx.globalAlpha=1;
- const w=WORLDS.find(x=>x.id===cur);if(w&&w.sun){const g=bctx.createRadialGradient(PX,PY,PR*.9,PX,PY,PR*1.7);g.addColorStop(0,'#ffb43ccc');g.addColorStop(1,'#ff8a0000');bctx.fillStyle=g;bctx.fillRect(PX-PR*1.8,PY-PR*1.8,PR*3.6,PR*3.6);}}
+ const w=WORLDS.find(x=>x.id===cur);if(w&&(w.sun||w.glow)){const g=bctx.createRadialGradient(PX,PY,PR*.9,PX,PY,PR*(w.sun?1.7:1.45));g.addColorStop(0,w.sun?'#ffb43ccc':'#ffd27a99');g.addColorStop(1,'#ff8a0000');bctx.fillStyle=g;bctx.fillRect(PX-PR*1.8,PY-PR*1.8,PR*3.6,PR*3.6);}}
 /* the planet draws straight to its own layer; the face and name draw on the top layer. Layers are only joined together for videos and photos. */
 function compose(g,w,h){g.drawImage(bgc,0,0,w,h);g.drawImage(R3.domElement,0,0,w,h);g.drawImage(cv,0,0,w,h);}
 function draw(now){const dt=Math.min(.05,(now-frameT)/1000);frameT=now;

@@ -335,7 +335,7 @@ const VCLIPS={MAX:12,open(){return new Promise((res,rej)=>{const r=indexedDB.ope
  async add(c){await this.run(s=>s.add(c));const all=await this.all();const extra=all.length-this.MAX;if(extra>0)await this.run(s=>all.slice(0,extra).forEach(x=>s.delete(x.id)));}};
 function compact(d,sr){let x=d,s=sr;if(sr>24000){const h=Math.floor(d.length/2);x=new Float32Array(h);for(let i=0;i<h;i++)x[i]=(d[2*i]+d[2*i+1])/2;s=sr/2;}const o=new Int16Array(x.length);for(let i=0;i<x.length;i++)o[i]=Math.max(-32767,Math.min(32767,Math.round(x[i]*32767)));return {sr:s,data:o};}
 $('keepSong').onclick=async()=>{if(!lastSong)return;if(!window.indexedDB){toast('This device cannot keep sounds');return;}$('keepSong').disabled=true;
- try{const cp=compact(lastSong.data,lastSong.sr);await VCLIPS.add({voice:'looprocket',emoji:'🚀',name:'Loop Rocket song',sr:cp.sr,data:cp.data,t:Date.now()});toast('🚀 Saved for your studios!');say('Saved! Now you can use your song in Space Studio 3D, Animal Studio and Planet Face');}
+ try{const cp=compact(lastSong.data,lastSong.sr);await VCLIPS.add({voice:'looprocket',emoji:'🚀',name:'Loop Rocket song',sr:cp.sr,data:cp.data,t:Date.now()});toast('🚀 Saved for your studios!');say('Saved! Now you can use your song in all your studios');}
  catch(e){toast('Could not save, try again');$('keepSong').disabled=false;}};
 $('saveSong').onclick=async()=>{if(!lastSong)return;const file=new File([wav(lastSong.data,lastSong.sr)],'dexters-loop-rocket.wav',{type:'audio/wav'});
  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'My Loop Rocket song'});toast('Sent!');return;}}catch(e){if(e.name==='AbortError')return;}

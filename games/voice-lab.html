@@ -375,7 +375,7 @@ async function saveIt(){const r=await renderCur();if(!r)return;const ab=r.ab;
 /* keep clips small on the iPad: half the sample rate above 24 kHz and 16-bit numbers (up to 3 minutes each) */
 function compact(d,sr){let x=d,s=sr;if(sr>24000){const h=Math.floor(d.length/2);x=new Float32Array(h);for(let i=0;i<h;i++)x[i]=(d[2*i]+d[2*i+1])/2;s=sr/2;}const o=new Int16Array(x.length);for(let i=0;i<x.length;i++)o[i]=Math.max(-32767,Math.min(32767,Math.round(x[i]*32767)));return {sr:s,data:o};}
 let keeping=false;async function keepIt(){if(keeping||!buf)return;if(!window.indexedDB){toast('This device cannot keep sounds');return;}keeping=true;$('keepb').disabled=true;
- try{const r=await renderCur();if(r){const v=VOICES.find(x=>x[0]===cur);const cp=compact(r.data,r.sr);await VCLIPS.add({voice:cur,emoji:v[1],name:v[2],sr:cp.sr,data:cp.data,t:Date.now()});toast(v[1]+' Saved for your studios!');say('Saved! Now you can use it in Space Studio 3D, Animal Studio and Planet Face');sfx.good();}}
+ try{const r=await renderCur();if(r){const v=VOICES.find(x=>x[0]===cur);const cp=compact(r.data,r.sr);await VCLIPS.add({voice:cur,emoji:v[1],name:v[2],sr:cp.sr,data:cp.data,t:Date.now()});toast(v[1]+' Saved for your studios!');say('Saved! Now you can use it in all your studios');sfx.good();}}
  catch(e){toast('Could not save, try again');}keeping=false;$('keepb').disabled=!buf;}
 /* ---------- UI ---------- */
 function renderVoices(){$('vg').innerHTML=VOICES.map(v=>'<button class="vb'+(buf&&v[0]===cur?' on':'')+'" data-v="'+v[0]+'"'+(buf?'':' disabled')+'><i>'+v[1]+'</i>'+v[2]+'</button>').join('');}

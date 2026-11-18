@@ -5,3 +5,4 @@ moon: Ruslan Kabatsayev, from LROC WAC data, CC BY-SA 4.0 (via the Stellarium pr
 Exoplanet pictures (proxima-b, trappist-1e, kepler-22b, kepler-452b, 55-cancri-e, 51-pegasi-b, hd-189733-b, k2-18b, kelt-9b, wasp-12b): painted in code for this game (17/11/2026); artists impressions, no outside images used.
 Moons via the Stellarium project: io, europa, ganymede, mimas: Oleg Pluton, CC BY 4.0. titan: Magenta Meteorite and Oleg Pluton, CC BY 4.0. charon: Kexitt and Oleg Pluton, CC BY 4.0. callisto: John van Vliet (NASA PDS data, modified by RVS), CC BY-SA. enceladus: NASA CICLOPS team, colored by RVS, public domain. triton, phobos: courtesy NASA/JPL-Caltech (David Seal maps).
 deimos: Oleg Pluton, CC BY 4.0 (via the Stellarium project).
+More exoplanets painted in code (18/11/2026): kepler-186f, kepler-16b, gliese-581c, toi-700-d, lhs-1140-b, hd-209458-b, wasp-76b, gj-1214-b, kepler-10b, kepler-1649c; artists impressions, no outside images used.

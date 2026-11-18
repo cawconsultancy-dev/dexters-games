@@ -23,6 +23,14 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
 .pl canvas{width:58px;height:58px;border-radius:50%;box-shadow:0 0 0 3px #ffffff22}
 .pl.on canvas{box-shadow:0 0 0 4px #ffd23f,0 0 16px #ffd23f99}
 .pl.gap{margin-left:14px}
+.vclips{display:flex;gap:8px;align-items:center;overflow-x:auto;max-width:100%;padding:4px 6px;scrollbar-width:none}
+.vclips::-webkit-scrollbar{display:none}
+.vclips[hidden]{display:none}
+.vlab{flex:none;color:#ffd23f;font:700 15px Fredoka,sans-serif}
+.vc{flex:none;border:none;border-radius:16px;background:#ffffff22;color:#fff;font:700 15px Fredoka,sans-serif;padding:6px 10px;min-height:48px;display:flex;align-items:center;gap:4px;cursor:pointer;box-shadow:0 0 0 2px #ffffff33}
+.vc i{font-style:normal;font-size:24px}
+.vc.on{background:#ffd23f;color:#2a1a00;box-shadow:0 0 0 3px #fff}
+.vc.del{background:#e6394655}
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .tb{border:none;border-radius:20px;background:#fff;color:#2a1a55;font:700 19px Fredoka,sans-serif;padding:10px 18px;min-height:56px;box-shadow:0 4px 0 #b9a8e0;cursor:pointer}
 .tb.rec{background:#e63946;color:#fff;box-shadow:0 4px 0 #8c1c25}
@@ -49,6 +57,7 @@ video#v{position:fixed;right:12px;top:calc(12px + env(safe-area-inset-top,0px));
 <div class="top"><button id="infoBtn" aria-label="Picture credits">ⓘ</button><button id="camBtn" aria-label="Show or hide me">🙈</button></div>
 <div class="tray" id="tray">
  <div class="pick" id="pick"></div>
+ <div class="vclips" id="vclips" hidden></div>
  <div class="row">
   <button class="tb" id="snapBtn">📸 Photo</button>
   <button class="tb rec" id="recBtn">⏺ Record</button>
@@ -189,7 +198,7 @@ function px(i){return [lm[i].x*video.videoWidth,lm[i].y*video.videoHeight];}
 /* whole face: the same soft oval fade as the test page that worked on the iPad, centred on the planet */
 function wholeFace(fh){const pts=OVAL.map(px);let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;pts.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);});
  const cx=(x0+x1)/2,cy=(y0+y1)/2,fw=(x1-x0)*1.12,fhh=(y1-y0)*1.1;if(fw<10||fhh<10)return;
- const target=(PR*1.2)/(y1-y0);smS=smS?smS*.75+target*.25:target;const s=smS;
+ const target=(PR*1.2)/(y1-y0)*(1+.14*clipLv);smS=smS?smS*.75+target*.25:target;const s=smS;
  const sx=Math.max(0,cx-fw/2),sy=Math.max(0,cy-fhh/2),sw=Math.min(video.videoWidth-sx,fw),sh=Math.min(video.videoHeight-sy,fhh);
  const k=s*DPR,tw=Math.ceil(sw*k),th=Math.ceil(sh*k);if(tw<4||th<4||tw>3000||th>3000)return;tmp.width=tw;tmp.height=th;
  tctx.drawImage(video,sx,sy,sw,sh,0,0,tw,th);
@@ -267,26 +276,52 @@ $('snapBtn').onclick=()=>{if(!started)return;snapNow=()=>{const f=document.creat
 
 /* ---------- video recording (stays on the iPad) ---------- */
 let rec=null,chunks=[],clipBlob=null,clipType='',stopTimer=0,recCan=null,recCtx=null,recStream=null;
-function finishRec(){if(!recording&&!rec)return;recording=false;clearTimeout(stopTimer);appMusic(.45);$('recBtn').textContent='⏺ Record';$('recBtn').classList.remove('recon');
+function finishRec(){if(!recording&&!rec)return;recording=false;stopClip();unmix();renderClips();clearTimeout(stopTimer);appMusic(.45);$('recBtn').textContent='⏺ Record';$('recBtn').classList.remove('recon');
  if(recStream){recStream.getVideoTracks().forEach(t=>{try{t.stop();}catch(e){}});recStream=null;}rec=null;recCan=null;
  if(!chunks.length){toast('The video did not save, try again');return;}
  clipBlob=new Blob(chunks,{type:clipType||'video/mp4'});$('cv').src=URL.createObjectURL(clipBlob);$('clip').hidden=false;}
 async function startRec(){if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){toast('This iPad cannot record videos');return;}
  let rw=cv.width,rh=cv.height;const kk=Math.min(1,1600/Math.max(rw,rh));rw=Math.round(rw*kk/2)*2;rh=Math.round(rh*kk/2)*2;
  recCan=document.createElement('canvas');recCan.width=rw;recCan.height=rh;recCtx=recCan.getContext('2d');recCtx.fillStyle='#0b1030';recCtx.fillRect(0,0,rw,rh);
- await ensureMic();recStream=recCan.captureStream(30);const tr=[...recStream.getVideoTracks()];if(micStream)tr.push(...micStream.getAudioTracks());const ms=new MediaStream(tr);
+ await ensureMic();recStream=recCan.captureStream(30);const tr=[...recStream.getVideoTracks()];mixForRec();if(recDst)tr.push(...recDst.stream.getAudioTracks());else if(micStream)tr.push(...micStream.getAudioTracks());const ms=new MediaStream(tr);
  const types=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
  clipType=types.find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||'';
  try{rec=new MediaRecorder(ms,clipType?{mimeType:clipType,videoBitsPerSecond:4000000}:{});}catch(e){try{rec=new MediaRecorder(ms);clipType='';}catch(e2){rec=null;}}
- if(!rec){toast('This iPad cannot record videos');recCan=null;return;}
+ if(!rec){unmix();toast('This iPad cannot record videos');recCan=null;return;}
  chunks=[];rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};rec.onstop=finishRec;rec.onerror=()=>{try{rec.stop();}catch(e){finishRec();}};
  appMusic(0);try{speechSynthesis.cancel();}catch(e){}
- rec.start(1000);recording=true;$('recBtn').textContent='⏹ Stop';$('recBtn').classList.add('recon');stopTimer=setTimeout(stopRec,180000);}
+ rec.start(1000);recording=true;renderClips();$('recBtn').textContent='⏹ Stop';$('recBtn').classList.add('recon');stopTimer=setTimeout(stopRec,180000);}
 function stopRec(){if(!recording)return;const r=rec;if(r&&r.state!=='inactive'){try{r.requestData();}catch(e){}try{r.stop();}catch(e){finishRec();}setTimeout(()=>{if(recording)finishRec();},2500);}else finishRec();}
-$('recBtn').onclick=()=>{if(!started)return;if(recording){stopRec();return;}
+$('recBtn').onclick=()=>{if(!started)return;if(recording){stopRec();return;}if(CL.length)clipCtx();
  let n=3;const cd=$('cd');cd.hidden=false;cd.textContent=n;$('recBtn').disabled=true;
  const t=setInterval(()=>{n--;if(n>0){cd.textContent=n;}else{clearInterval(t);cd.hidden=true;$('recBtn').disabled=false;startRec();}},800);};
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&recording)stopRec();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&recording)stopRec();if(document.hidden)stopClip();else loadClips();});
+
+/* ---------- funny voices from Voice Lab (the same clips Space Studio 3D uses, kept on this device only) ---------- */
+const VCLIPS={open(){return new Promise((res,rej)=>{const r=indexedDB.open('dexters-voice-clips',1);r.onupgradeneeded=()=>{r.result.createObjectStore('clips',{keyPath:'id',autoIncrement:true});};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
+ async all(){const db=await this.open();return new Promise((res,rej)=>{const q=db.transaction('clips','readonly').objectStore('clips').getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error);});},
+ async del(id){const db=await this.open();return new Promise((res,rej)=>{const tx=db.transaction('clips','readwrite');tx.objectStore('clips').delete(id);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);});}};
+let AC=null,CL=[],clipBufs={},clipPlaying=null,clipAn=null,clipA=null,recDst=null,micSrc=null,clipDel=false;
+async function loadClips(){if(!window.indexedDB)return;try{CL=(await VCLIPS.all()).reverse();}catch(e){CL=[];}renderClips();}
+function renderClips(){const el=$('vclips');if(!el)return;const del=clipDel&&!recording;
+ el.innerHTML=CL.length?'<span class="vlab">🎭 Funny voices</span>'+CL.map((c,i)=>'<button class="vc'+(clipPlaying&&clipPlaying.id===c.id?' on':'')+(del?' del':'')+'" data-clip="'+c.id+'" aria-label="'+c.name+'"><i>'+c.emoji+'</i>'+(del?'❌':(CL.length-i))+'</button>').join('')+(recording?'':'<button class="vc" id="vcdel">'+(del?'✅ Done':'🗑️')+'</button>'):'';
+ const was=el.hidden;el.hidden=!CL.length;if(was!==el.hidden)layout();}
+function clipCtx(){if(!AC||AC.state==='closed')AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state!=='running'){try{AC.resume();}catch(e){}}return AC;}
+function stopClip(){if(clipPlaying){const s=clipPlaying.s;clipPlaying=null;try{s.onended=null;s.stop();}catch(e){}}}
+function playClip(id){const c=CL.find(x=>x.id===id);if(!c)return;const ac=clipCtx();stopClip();
+ if(!clipBufs[id]){const fd=c.data instanceof Int16Array?Float32Array.from(c.data,v=>v/32768):c.data;const b=ac.createBuffer(1,fd.length,c.sr);b.getChannelData(0).set(fd);clipBufs[id]=b;}
+ if(!clipAn||clipAn.context!==ac){clipAn=ac.createAnalyser();clipAn.fftSize=1024;clipAn.smoothingTimeConstant=.2;clipA=new Float32Array(clipAn.fftSize);}
+ const s=ac.createBufferSource();s.buffer=clipBufs[id];s.connect(ac.destination);s.connect(clipAn);if(recDst)s.connect(recDst);
+ s.onended=()=>{if(clipPlaying&&clipPlaying.s===s){clipPlaying=null;renderClips();}};s.start();clipPlaying={id,s};renderClips();}
+let clipLv=0;function clipLevel(){if(!clipPlaying||!clipAn){clipLv*=.6;return;}clipAn.getFloatTimeDomainData(clipA);let sm=0;for(let i=0;i<clipA.length;i++)sm+=clipA[i]*clipA[i];const tg=Math.max(0,Math.min(1,(Math.sqrt(sm/clipA.length)-.01)*4.5));clipLv=clipLv*.5+tg*.5;}
+(function lvLoop(){clipLevel();requestAnimationFrame(lvLoop);})();
+/* while recording, the microphone and the funny voices go into the video together */
+function mixForRec(){recDst=null;micSrc=null;if(!CL.length)return;try{const ac=clipCtx();recDst=ac.createMediaStreamDestination();if(micStream){micSrc=ac.createMediaStreamSource(micStream);micSrc.connect(recDst);}}catch(e){recDst=null;micSrc=null;}}
+function unmix(){try{if(micSrc)micSrc.disconnect();}catch(e){}micSrc=null;recDst=null;}
+$('vclips').onclick=e=>{if(e.target.closest('#vcdel')){clipDel=!clipDel;renderClips();return;}const b=e.target.closest('[data-clip]');if(!b)return;const id=+b.dataset.clip;
+ if(clipDel&&!recording){if(clipPlaying&&clipPlaying.id===id)stopClip();delete clipBufs[id];VCLIPS.del(id).then(loadClips).catch(()=>{});return;}
+ if(clipPlaying&&clipPlaying.id===id){stopClip();renderClips();return;}playClip(id);};
+loadClips();
 $('saveBtn').onclick=()=>{if(clipBlob)shareBlob(clipBlob,'planet-face.'+(clipType.includes('mp4')?'mp4':'webm'));};
 $('againBtn').onclick=()=>{$('clip').hidden=true;$('cv').pause();};
 let delArm=false;$('delBtn').onclick=()=>{if(!delArm){delArm=true;$('delBtn').textContent='🗑️ Sure?';setTimeout(()=>{delArm=false;$('delBtn').textContent='🗑️ Delete';},2500);return;}

@@ -269,7 +269,7 @@ function update(dt){
  if(me.falling>0){me.falling-=dt;me.vy-=30*dt;me.y+=me.vy*dt;me.z+=sp*.4*dt;if(me.falling<=0){me.z=me.lastSafeZ;me.x=me.tx=0;me.y=0;me.vy=0;me.air=false;hurt('fall');me.inv=1.5;}placePlayer(dt,0);return;}
  /* steering */
  if(keyL)me.tx+=9*dt;if(keyR)me.tx-=9*dt;me.tx=clamp(me.tx,-HALF+me.r+.15,HALF-me.r-.15);me.x+=(me.tx-me.x)*Math.min(1,dt*10);
- {const cs=sectionAt(me.z);if(cs&&cs.type==='cannon'&&!me.air){if(me.z<cs.mouth){me.tx+=(0-me.tx)*Math.min(1,dt*3);}if(me.z>=cs.mouth-1.2){me.cannon={phase:'load',t:0,s:cs};sfx.rumble();return;}}}
+ {const cs=sectionAt(me.z);if(cs&&cs.type==='cannon'&&!me.air){if(me.z<cs.mouth&&!cs.fired){me.tx+=(0-me.tx)*Math.min(1,dt*3);}/* fire once only: after landing he is still in this stretch, so it must not load him again */if(!cs.fired&&me.z>=cs.mouth-1.2&&me.z<cs.gap[0]){cs.fired=true;me.cannon={phase:'load',t:0,s:cs};sfx.rumble();return;}}}
  const prevZ=me.z;me.z+=sp*dt;
  /* floor, ramps and jumps */
  const gnd=groundAt(me.x,me.z),s=sectionAt(me.z);

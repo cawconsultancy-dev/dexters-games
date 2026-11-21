@@ -27,15 +27,18 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Fredoka,"Arial Rounde
 .player .info{flex:1;min-width:0}
 .player .score{font-size:13px;color:#ffe9a0;font-weight:600}
 .boardbox{position:relative;flex:none}
-.board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:12px;overflow:hidden;box-shadow:0 0 0 8px #6b4a2e,0 0 0 11px #3e2a18,0 20px 50px #0008;touch-action:none}
-.sq{position:relative;display:grid;place-items:center;cursor:pointer}
+.board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);border-radius:12px;overflow:hidden;box-shadow:0 0 0 8px #6b4a2e,0 0 0 11px #3e2a18,0 20px 50px #0008;touch-action:none}
+.sq{position:relative;display:grid;place-items:center;cursor:pointer;min-width:0;min-height:0;overflow:hidden}
 .sq.l{background:#f0d9b5}.sq.d{background:#b58863}
 .sq.last.l{background:#f7ec7a}.sq.last.d{background:#dcc34b}
 .sq.sel{box-shadow:inset 0 0 0 5px #3ee07a}
 .sq.chk{background:radial-gradient(circle,#ff4d4d 0,#ff4d4d99 45%,transparent 75%)!important}
-.sq .mv{position:absolute;width:30%;height:30%;border-radius:50%;background:#1a7a3a88;pointer-events:none}
+.sq.can::after{content:'';position:absolute;inset:0;background:#4dff8a66;box-shadow:inset 0 0 0 4px #2fd96a;animation:glow 1.2s ease-in-out infinite;pointer-events:none}
+.sq.cantake::after{content:'';position:absolute;inset:0;background:#ff8a3d66;box-shadow:inset 0 0 0 4px #ff5a1f;animation:glow 1.2s ease-in-out infinite;pointer-events:none}
+@keyframes glow{50%{opacity:.6}}
+.sq .mv{position:absolute;width:22%;height:22%;border-radius:50%;background:#1a7a3aaa;pointer-events:none;z-index:1}
 .sq .cp{position:absolute;inset:6%;border-radius:50%;border:5px solid #1a7a3a99;pointer-events:none}
-.sq svg{width:88%;height:88%;pointer-events:none;filter:drop-shadow(0 3px 2px #0005);transition:transform .12s}
+.sq svg{width:88%;height:88%;max-width:100%;max-height:100%;pointer-events:none;filter:drop-shadow(0 3px 2px #0005);transition:transform .12s}
 .sq.sel svg{transform:scale(1.12) translateY(-4%)}
 .sq .cf,.sq .cr{position:absolute;font-size:11px;font-weight:700;opacity:.75;pointer-events:none}
 .sq .cf{right:4px;bottom:2px}.sq .cr{left:4px;top:2px}
@@ -71,6 +74,17 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Fredoka,"Arial Rounde
 .space .board{box-shadow:0 0 0 8px #7a8cff,0 0 0 11px #2a2f6e,0 0 40px #7a8cff88,0 20px 50px #000a}
 .space .sq.d::before{content:'';position:absolute;width:3px;height:3px;border-radius:50%;background:#fff8;top:22%;left:30%;box-shadow:18px 14px 0 -1px #fff6,6px 30px 0 -1px #fff5}
 .space .player .dot.b{background:#ff7a3d}.space .player .dot.w{background:#7af0ff}
+.boom{position:fixed;z-index:35;pointer-events:none}
+.boom .fl{position:absolute;inset:-30%;border-radius:50%}
+.boom .sw{position:absolute;inset:0;border-radius:50%;border:5px solid}
+.boom .pt{position:absolute;left:50%;top:50%;border-radius:50%}
+.boom .pc{position:absolute;inset:6%}
+.boom .pc svg{width:100%;height:100%}
+.space .sq.can::after{background:#7af0ff55;box-shadow:inset 0 0 0 4px #7af0ff}
+.space .sq.cantake::after{background:#ff7a3d66;box-shadow:inset 0 0 0 4px #ff7a3d}
+.mode button.lv{flex:1;border:3px solid #e3e6ff;border-radius:14px;background:#f5f6ff;padding:8px;font:700 16px Fredoka,sans-serif;color:#22224a;cursor:pointer}
+.mode button.lv.on{border-color:#6b6bff;background:#ffd23f}
+.mode .row{display:flex;gap:8px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -91,12 +105,18 @@ html,body{margin:0;height:100%;overflow:hidden;font-family:Fredoka,"Arial Rounde
   <button class="btn on" id="helpBtn">💡 Show moves</button>
   <button class="btn" id="flipBtn">🔄 Turn board</button>
   <button class="btn" id="autoBtn">🔁 Turn each go</button>
+  <button class="btn" id="modeBtn">👥 Players</button>
   <button class="btn" id="newBtn">🆕 New game</button>
  </div>
 </div>
 
 <div class="ov" id="promo" hidden><div class="card"><h1>Well done!</h1><p>Your pawn reached the end. What should it become?</p><div class="pro" id="proBox"></div></div></div>
 <div class="ov" id="end" hidden><div class="card"><div class="big" id="endIcon">🏆</div><h1 id="endTitle">Checkmate!</h1><p id="endText"></p><button class="go" id="againBtn">♟️ Play again</button><button class="alt" id="lookBtn">👀 Look at the board</button></div></div>
+<div class="ov mode" id="modeOv" hidden><div class="card"><div class="big">♟️</div><h1>Who is playing?</h1>
+ <button class="go" id="m1">🤖 1 player: play the computer</button>
+ <div class="row"><button class="lv" data-l="easy">🐣 Easy</button><button class="lv" data-l="medium">🙂 Medium</button><button class="lv" data-l="hard">🧠 Hard</button></div>
+ <button class="go" id="m2" style="background:linear-gradient(180deg,#6b9bff,#3a6be0);box-shadow:0 5px 0 #1f3f9e">👨‍👦 2 players: take turns</button>
+ <p style="margin-top:12px;font-size:15px">In 1 player you are White and the computer is Black.</p></div></div>
 <div class="ov" id="confirm" hidden><div class="card"><h1>New game?</h1><p>This game will be cleared.</p><button class="go" id="yesNew">Yes, new game</button><button class="alt" id="noNew">No, keep playing</button></div></div>
 
 <script>
@@ -185,11 +205,13 @@ function knock(f,vol,len){if(!AC)return;const t=AC.currentTime,o=AC.createOscill
 function piano(f,vol,delay,len){if(!AC)return;const t=AC.currentTime+(delay||0),L=len||1.5,out=AC.createGain();out.gain.value=vol;out.connect(AC.destination);
  [[1,1,1],[2,.5,.7],[3,.25,.5],[4,.12,.35],[5,.06,.25]].forEach(([n,a,d])=>{const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f*n*Math.sqrt(1+.00012*n*n);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(a*.5,t+.004);g.gain.exponentialRampToValueAtTime(a*.15,t+.1*d+.05);g.gain.exponentialRampToValueAtTime(.0001,t+L*d+.1);o.connect(g);g.connect(out);o.start(t);o.stop(t+L*d+.15);});}
 const mtof=m=>440*Math.pow(2,(m-69)/12);
-const sfx={move(){knock(420,.25,.09);},take(){knock(260,.35,.16);knock(520,.15,.08);},
+const sfx={boom(){if(!AC)return;const t=AC.currentTime,n=AC.sampleRate*.6,b=AC.createBuffer(1,n,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type='lowpass';f.frequency.setValueAtTime(SET==='space'?3000:1800,t);f.frequency.exponentialRampToValueAtTime(200,t+.5);g.gain.value=SET==='space'?.7:.45;s.connect(f);f.connect(g);g.connect(AC.destination);s.start(t);knock(120,.5,.4);},
+ move(){knock(420,.25,.09);},take(){knock(260,.35,.16);knock(520,.15,.08);},
  check(){[72,76].forEach((n,i)=>piano(mtof(n),.35,i*.1));},castle(){knock(420,.25,.09);setTimeout(()=>knock(470,.25,.09),120);},
  win(){[60,64,67,72,67,72,76].forEach((n,i)=>piano(mtof(n),.4,i*.13,i===6?2.5:1.2));},draw(){[60,64,67].forEach((n,i)=>piano(mtof(n),.35,i*.15,2));},promo(){[67,71,74,79].forEach((n,i)=>piano(mtof(n),.35,i*.08));}};
 
 /* ================= screen ================= */
+let mode=store.get('mode',null),lvl=store.get('lvl','easy'),thinking=false;
 let sel=-1,moves=[],help=store.get('help',true),flipped=store.get('flip',false),autoFlip=store.get('auto',false),last=null,busy=false,ended=false;
 const boardEl=$('board');
 function sizeBoard(){const portrait=innerWidth<=820||innerHeight>innerWidth;const availW=innerWidth-(portrait?40:520),availH=innerHeight-(portrait?330:190);const s=Math.max(240,Math.floor(Math.min(availW,availH,720)/8)*8);boardEl.style.width=boardEl.style.height=s+'px';}
@@ -198,7 +220,7 @@ function view(i){return flipped?63-i:i;}
 function render(){const b=G.b,inChk=!ended&&inCheck(G,G.turn),ks=kingSq(b,G.turn);let h='';
  for(let v=0;v<64;v++){const i=view(v),[r,f]=rf(i),light=(r+f)%2===0,p=b[i];let cls='sq '+(light?'l':'d');
   if(last&&(i===last.from||i===last.to))cls+=' last';if(i===sel)cls+=' sel';if(inChk&&i===ks)cls+=' chk';
-  let inner=p?pieceSVG(p.t,p.c):'';const m=moves.find(x=>x.to===i);if(m&&help)inner+=b[i]||m.ep?'<span class="cp"></span>':'<span class="mv"></span>';
+  let inner=p?pieceSVG(p.t,p.c):'';const m=moves.find(x=>x.to===i);if(m&&help){cls+=b[i]||m.ep?' cantake':' can';inner+=b[i]||m.ep?'':'<span class="mv"></span>';}
   const vr=v>>3,vf=v&7;if(vf===0)inner+=`<span class="cr">${8-r}</span>`;if(vr===7)inner+=`<span class="cf">${'abcdefgh'[f]}</span>`;
   h+=`<div class="${cls}" data-i="${i}">${inner}</div>`;}
  boardEl.innerHTML=h;
@@ -209,12 +231,12 @@ function render(){const b=G.b,inChk=!ended&&inCheck(G,G.turn),ks=kingSq(b,G.turn
  /* side panels: whoever plays black sits at the top when the board is the normal way round */
  const top=$('sideTop'),pB=$('pB'),pW=$('pW');const wantTop=flipped?pW:pB,wantBot=flipped?pB:pW;if(top.firstElementChild!==wantTop){top.insertBefore(wantTop,top.firstChild);document.querySelector('.main>.side:last-child').appendChild(wantBot);}
  $('hist').innerHTML=G.moves.map((m,i)=>(i%2===0?'<b>'+(i/2+1)+'.</b> ':'')+m.san).join(' ');$('hist').scrollTop=1e5;}
-function nameOf(c){return (c==='w'?$('nW'):$('nB')).value.trim()||(c==='w'?'White':'Black');}
+function nameOf(c){if(c==='b'&&mode==='one')return 'Computer';return (c==='w'?$('nW'):$('nB')).value.trim()||(c==='w'?'White':'Black');}
 function say(html,warn,piece){const el=$('msg');el.classList.toggle('warn',!!warn);el.innerHTML=(piece?`<span class="pc">${pieceSVG(piece.t,piece.c)}</span>`:'')+'<span>'+html+'</span>';}
 function turnMsg(){if(ended)return;const c=G.turn,who=nameOf(c);if(inCheck(G,c))say(`<b>Check!</b> ${who}, your King is under attack. Move him, block, or take the attacker.`,true);
  else say(`${who}'s turn (${c==='w'?'white':'black'}). Tap a piece to see where it can go.`);}
 
-function tap(i){if(busy||ended)return;audioInit();const p=G.b[i];
+function tap(i){if(busy||ended||thinking||(mode==='one'&&G.turn==='b'))return;audioInit();const p=G.b[i];
  const m=moves.find(x=>x.to===i);
  if(sel>=0&&m){doMove(m);return;}
  if(p&&p.c===G.turn){if(sel===i){sel=-1;moves=[];render();turnMsg();return;}sel=i;moves=legal(G,i);
@@ -226,10 +248,12 @@ boardEl.addEventListener('pointerdown',e=>{const s=e.target.closest('.sq');if(s)
 function sanOf(g,m,promoTo,after){const p=g.b[m.from];if(m.castle)return m.castle==='K'?'O-O':'O-O-O';
  const cap=g.b[m.to]||m.ep;let s=p.t==='p'?(cap?'abcdefgh'[m.from&7]+'x':''):p.t.toUpperCase()+(cap?'x':'');s+=sqName(m.to);if(m.promo)s+='='+(promoTo||'q').toUpperCase();
  const n=Object.assign({},after,{moves:[]});if(inCheck(n,n.turn))s+=allLegal(n).length?'+':'#';return s;}
-async function doMove(m){let promoTo=null;if(m.promo){promoTo=await askPromo(G.turn);}
+async function doMove(m,forced){let promoTo=null;if(m.promo){promoTo=forced||await askPromo(G.turn);}
  busy=true;const p=G.b[m.from],before=JSON.stringify(G);
  /* slide the piece across the board */
+ const victimSq=m.ep?m.to+(p.c==='w'?8:-8):m.to,victim=G.b[victimSq];
  await flyPiece(m.from,m.to,p);
+ if(victim)explode(victimSq,victim);
  const n=apply(G,m,promoTo),san=sanOf(G,m,promoTo,n);
  const capW=G.capW.slice(),capB=G.capB.slice();if(n.cap)(p.c==='w'?capW:capB).push(n.cap.t);
  G={b:n.b,turn:n.turn,cas:n.cas,ep:n.ep,half:n.half,moves:G.moves.concat([{san,prev:before,from:m.from,to:m.to}]),capW,capB,seen:Object.assign({},G.seen)};
@@ -238,10 +262,23 @@ async function doMove(m){let promoTo=null;if(m.promo){promoTo=await askPromo(G.t
  if(m.castle)sfx.castle();else if(n.cap)sfx.take();else sfx.move();if(m.promo)sfx.promo();
  store.set('game',G);store.set('last',last);
  if(autoFlip){flipped=G.turn==='b';store.set('flip',flipped);}
- render();checkEnd(m,n,p,promoTo);}
+ render();checkEnd(m,n,p,promoTo);if(mode==='one'&&!ended&&G.turn==='b')computerTurn();}
 function flyPiece(from,to,p){return new Promise(res=>{const a=boardEl.querySelector(`[data-i="${from}"]`),b=boardEl.querySelector(`[data-i="${to}"]`);if(!a||!b){res();return;}
  const ra=a.getBoundingClientRect(),rb=b.getBoundingClientRect();const f=document.createElement('div');f.className='fly';f.innerHTML=pieceSVG(p.t,p.c);f.style.cssText=`left:${ra.left}px;top:${ra.top}px;width:${ra.width}px;height:${ra.height}px`;
- const svg=a.querySelector('svg');if(svg)svg.style.visibility='hidden';document.body.appendChild(f);requestAnimationFrame(()=>{f.style.left=rb.left+'px';f.style.top=rb.top+'px';});setTimeout(()=>{f.remove();res();},240);});}
+ const svg=a.querySelector('svg');if(svg)svg.style.visibility='hidden';const vs=b.querySelector('svg');if(vs)setTimeout(()=>{vs.style.visibility='hidden';},200);document.body.appendChild(f);requestAnimationFrame(()=>{f.style.left=rb.left+'px';f.style.top=rb.top+'px';});setTimeout(()=>{f.remove();res();},240);});}
+function explode(sq,piece){const el=boardEl.querySelector(`[data-i="${sq}"]`);if(!el)return;const r=el.getBoundingClientRect(),sp=SET==='space';
+ const box=document.createElement('div');box.className='boom';box.style.cssText=`left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`;document.body.appendChild(box);
+ const pc=document.createElement('div');pc.className='pc';pc.innerHTML=pieceSVG(piece.t,piece.c);box.appendChild(pc);
+ pc.animate([{transform:'scale(1) rotate(0)',opacity:1,filter:'brightness(1)'},{transform:'scale(1.35) rotate(25deg)',opacity:1,filter:'brightness(2.5)',offset:.35},{transform:'scale(.2) rotate(120deg)',opacity:0,filter:'brightness(3)'}],{duration:520,easing:'ease-in',fill:'forwards'});
+ const fl=document.createElement('div');fl.className='fl';fl.style.background=sp?'radial-gradient(circle,#fff 0,#ffe14d 25%,#ff7a2e 50%,#ff3d5a00 72%)':'radial-gradient(circle,#fff 0,#ffd27a 30%,#ffb35a00 70%)';box.appendChild(fl);
+ fl.animate([{transform:'scale(.2)',opacity:1},{transform:'scale(1.25)',opacity:.95,offset:.3},{transform:'scale(1.6)',opacity:0}],{duration:650,delay:180,easing:'ease-out',fill:'forwards'});
+ const sw=document.createElement('div');sw.className='sw';sw.style.borderColor=sp?'#7af0ff':'#ffffff';box.appendChild(sw);
+ sw.animate([{transform:'scale(.3)',opacity:1},{transform:'scale(2.4)',opacity:0}],{duration:700,delay:200,easing:'ease-out',fill:'forwards'});
+ const cols=sp?['#ffe14d','#ff7a2e','#ff3d5a','#7af0ff','#ffffff','#b58bff']:(piece.c==='w'?['#ffffff','#e3e6f5','#ffd27a']:['#34344a','#6a6a8a','#ffd27a']);
+ const n=sp?34:22;for(let k=0;k<n;k++){const d=document.createElement('div');d.className='pt';const s=(sp?5:4)+Math.random()*(sp?9:6);d.style.cssText+=`width:${s}px;height:${s}px;margin:${-s/2}px;background:${cols[k%cols.length]};box-shadow:0 0 ${sp?8:3}px ${cols[k%cols.length]}`;
+  if(sp&&k%5===0){d.style.borderRadius='2px';d.style.transform='rotate(45deg)';}box.appendChild(d);const a=Math.random()*Math.PI*2,dist=r.width*(.6+Math.random()*1.1);
+  d.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${Math.cos(a)*dist}px,${Math.sin(a)*dist+(sp?0:r.width*.4)}px) scale(.3)`,opacity:0}],{duration:600+Math.random()*500,delay:150,easing:'cubic-bezier(.2,.7,.4,1)',fill:'forwards'});}
+ sfx.boom();setTimeout(()=>box.remove(),1400);}
 function askPromo(c){return new Promise(res=>{const box=$('proBox');box.innerHTML=['q','r','b','n'].map(t=>`<button data-t="${t}" aria-label="${NAME[t]}">${pieceSVG(t,c)}</button>`).join('');$('promo').hidden=false;
  box.onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;$('promo').hidden=true;res(b.dataset.t);};});}
 function checkEnd(m,n,p,promoTo){const c=G.turn,list=allLegal(G),chk=inCheck(G,c);
@@ -255,8 +292,34 @@ function checkEnd(m,n,p,promoTo){const c=G.turn,list=allLegal(G),chk=inCheck(G,c
  turnMsg();if(extra&&!chk){const el=$('msg');el.querySelector('span:last-child').innerHTML=extra+el.querySelector('span:last-child').innerHTML;}}
 function showEnd(icon,title,text){$('endIcon').textContent=icon;$('endTitle').textContent=title;$('endText').textContent=text;setTimeout(()=>{$('end').hidden=false;},700);}
 
+/* ================= the computer player ================= */
+/* Easy makes friendly mistakes, Medium looks one move ahead for both sides, Hard looks three moves ahead */
+const PST_C=[0,1,2,3,3,2,1,0];
+function evalB(b){let s=0;for(let i=0;i<64;i++){const p=b[i];if(!p)continue;const [r,f]=rf(i);let v=VAL[p.t]*100;
+  if(p.t==='n'||p.t==='b')v+=(PST_C[r]+PST_C[f])*4;if(p.t==='p')v+=(p.c==='w'?6-r:r-1)*6+(f>=2&&f<=5?4:0);if(p.t==='q')v+=(PST_C[r]+PST_C[f])*2;
+  s+=p.c==='b'?v:-v;}return s;}
+function child(g,m){const a=apply(g,m,'q');return {b:a.b,turn:a.turn,cas:a.cas,ep:a.ep,half:a.half,cap:a.cap};}
+function search(g,d,alpha,beta){const list=allLegal(g);if(!list.length)return inCheck(g,g.turn)?(g.turn==='b'?-99999-d:99999+d):0;
+ if(d===0){return evalB(g.b);}
+ list.sort((x,y)=>(g.b[y.to]?VAL[g.b[y.to].t]:0)-(g.b[x.to]?VAL[g.b[x.to].t]:0));
+ if(g.turn==='b'){let best=-1e9;for(const m of list){best=Math.max(best,search(child(g,m),d-1,alpha,beta));alpha=Math.max(alpha,best);if(alpha>=beta)break;}return best;}
+ let best=1e9;for(const m of list){best=Math.min(best,search(child(g,m),d-1,alpha,beta));beta=Math.min(beta,best);if(alpha>=beta)break;}return best;}
+function pickMove(){const list=allLegal(G);if(!list.length)return null;
+ if(lvl==='easy'){/* mostly random, but grabs a free piece sometimes */const caps=list.filter(m=>G.b[m.to]);if(caps.length&&Math.random()<.5)return caps[Math.floor(Math.random()*caps.length)];return list[Math.floor(Math.random()*list.length)];}
+ const depth=lvl==='medium'?1:2;let best=-1e9,bestMs=[];
+ for(const m of list){const v=search(child(G,m),depth,-1e9,1e9)+Math.random()*(lvl==='medium'?30:6);if(v>best){best=v;bestMs=[m];}}
+ return bestMs[0];}
+function computerTurn(){thinking=true;say('🤖 The computer is thinking…');render();
+ setTimeout(()=>{const m=pickMove();thinking=false;if(m)doMove(m,'q');},700);}
+function showMode(){$('modeOv').hidden=false;document.querySelectorAll('.mode .lv').forEach(b=>b.classList.toggle('on',b.dataset.l===lvl));}
+document.querySelectorAll('.mode .lv').forEach(b=>b.onclick=()=>{lvl=b.dataset.l;store.set('lvl',lvl);showMode();});
+function setMode(md){mode=md;store.set('mode',mode);$('modeOv').hidden=true;$('nB').disabled=mode==='one';$('nB').value=mode==='one'?'Computer 🤖':store.get('nameB','Dad');newGame();
+ say(mode==='one'?`You are White against the ${lvl} computer. Tap a piece to start!`:'Two players: take turns on the tablet. White goes first.');}
+$('m1').onclick=()=>setMode('one');$('m2').onclick=()=>setMode('two');
+$('modeBtn').onclick=showMode;
+
 /* ================= buttons ================= */
-$('undoBtn').onclick=()=>{if(!G.moves.length||busy)return;const prev=JSON.parse(G.moves[G.moves.length-1].prev);G=prev;ended=false;sel=-1;moves=[];
+$('undoBtn').onclick=()=>{if(!G.moves.length||busy||thinking)return;let prev=JSON.parse(G.moves[G.moves.length-1].prev);if(mode==='one'&&prev.turn==='b'&&prev.moves.length)prev=JSON.parse(prev.moves[prev.moves.length-1].prev);G=prev;ended=false;sel=-1;moves=[];
  const lm=G.moves[G.moves.length-1];last=lm?{from:lm.from,to:lm.to}:null;store.set('game',G);store.set('last',last);if(autoFlip){flipped=G.turn==='b';store.set('flip',flipped);}knock(300,.15,.08);render();turnMsg();};
 $('helpBtn').onclick=()=>{help=!help;store.set('help',help);render();};
 $('flipBtn').onclick=()=>{flipped=!flipped;store.set('flip',flipped);render();};
@@ -266,13 +329,15 @@ $('yesNew').onclick=()=>{$('confirm').hidden=true;newGame();};$('noNew').onclick
 $('againBtn').onclick=()=>{$('end').hidden=true;newGame();};$('lookBtn').onclick=()=>{$('end').hidden=true;};
 function newGame(){G=fresh();G.seen[posKey(G)]=1;ended=false;sel=-1;moves=[];last=null;store.set('game',G);store.set('last',null);if(autoFlip){flipped=false;store.set('flip',false);}render();turnMsg();}
 $('nW').value=store.get('nameW','Dexter');$('nB').value=store.get('nameB','Dad');
-$('nW').oninput=()=>{store.set('nameW',$('nW').value);turnMsg();};$('nB').oninput=()=>{store.set('nameB',$('nB').value);turnMsg();};
+$('nW').oninput=()=>{store.set('nameW',$('nW').value);turnMsg();};$('nB').oninput=()=>{if(mode==='one')return;store.set('nameB',$('nB').value);turnMsg();};
 
 /* carry on a saved game */
 G=store.get('game',null);if(!G||!G.b||G.b.length!==64){G=fresh();G.seen[posKey(G)]=1;}
 last=store.get('last',null);
 {const list=allLegal(G);if(!list.length||insufficient(G.b))ended=true;}
-sizeBoard();render();if(ended)say('This game has finished. Press <b>New game</b> to play again.');else turnMsg();
+if(mode==='one'){$('nB').disabled=true;$('nB').value='Computer 🤖';}
+sizeBoard();render();if(!mode)showMode();else if(mode==='one'&&!ended&&G.turn==='b')computerTurn();
+if(ended)say('This game has finished. Press <b>New game</b> to play again.');else turnMsg();
 window.__chess={get G(){return G;},tap,legal,allLegal,fresh,apply,newGame,set G(v){G=v;}};
 })();
 </script>

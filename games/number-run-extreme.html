@@ -101,7 +101,7 @@ const sfx={
  boing(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(520,t);o.frequency.exponentialRampToValueAtTime(160,t+.22);g.gain.setValueAtTime(.18,t);g.gain.exponentialRampToValueAtTime(.0005,t+.28);o.connect(g);g.connect(master);o.start(t);o.stop(t+.3);},
  jump(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='triangle';o.frequency.setValueAtTime(300,t);o.frequency.exponentialRampToValueAtTime(900,t+.3);g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.0005,t+.35);o.connect(g);g.connect(master);o.start(t);o.stop(t+.4);},
  fall(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.frequency.setValueAtTime(700,t);o.frequency.exponentialRampToValueAtTime(80,t+.8);g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.0005,t+.9);o.connect(g);g.connect(master);o.start(t);o.stop(t+.95);},
- step(i){const n=60+[0,2,4,5,7,9,11,12,14,16,17,19,21,23][i%14];piano(mtof(n),.6);piano(mtof(n-12),.22);},
+ step(i){const n=60+[0,2,4,5,7,9,11,12,14,16,17,19,21,23,24,26,28,29,31][i%19];piano(mtof(n),.6);piano(mtof(n-12),.22);},
  boom(){noise(.9,.9,900);noise(.4,.8,200);note(60,.6,'sine',.9);note(45,.8,'sine',.7);[0,4,7,12,16].forEach((s,i)=>piano(mtof(60+s),.35,.08*i+.1));},
  rumble(){if(!AC)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(50,t);o.frequency.linearRampToValueAtTime(110,t+.9);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.18,t+.8);g.gain.linearRampToValueAtTime(0,t+.92);const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=400;o.connect(f);f.connect(g);g.connect(master);o.start(t);o.stop(t+1);noise(.9,.15,300);},
  fanfare(){[0,4,7,12,7,12].forEach((s,i)=>piano(mtof(72+s),.45,i*.14,i===5?2.4:1.4));[48,55,60,64].forEach(n=>piano(mtof(n),.25,.7,2.6));}};
@@ -179,7 +179,7 @@ const rOf=v=>.55;
 const sphereG=new T.SphereGeometry(1,40,28),boxG=new T.BoxGeometry(1,1,1);
 const ballMats={};function ballMat(v){const k=colOf(v);if(!ballMats[k]){const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');g.fillStyle=k;g.fillRect(0,0,256,128);g.fillStyle='rgba(255,255,255,.75)';g.fillRect(0,54,256,20);g.fillStyle='rgba(0,0,0,.08)';for(let i=0;i<8;i++)g.fillRect(i*32,0,4,128);
   const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;ballMats[k]=new T.MeshPhysicalMaterial({map:t,roughness:.22,metalness:0,clearcoat:1,clearcoatRoughness:.1,envMapIntensity:.55});}return ballMats[k];}
-const numTex={};function numTexOf(txt,col){const key=txt+col;if(numTex[key])return numTex[key];const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');const fs=txt.length>3?84-(txt.length-4)*10:96;
+const numTex={};function numTexOf(txt,col){const key=txt+col;if(numTex[key])return numTex[key];const c=document.createElement('canvas');c.width=256;c.height=128;const g=c.getContext('2d');const fs=txt.length>3?Math.max(40,84-(txt.length-4)*11):96;
  g.font='700 '+fs+'px Fredoka,"Arial Rounded MT Bold",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.lineJoin='round';g.lineWidth=16;g.strokeStyle='rgba(30,20,60,.85)';g.strokeText(txt,128,70);g.fillStyle=col||'#fff';g.fillText(txt,128,70);
  const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.anisotropy=4;return numTex[key]=t;}
 function numSprite(v,col){const s=new T.Sprite(new T.SpriteMaterial({map:numTexOf(String(v),col),transparent:true,depthWrite:false}));s.renderOrder=5;return s;}
@@ -207,7 +207,7 @@ function buildCourse(lv){if(world)scene.remove(world);world=new T.Group();scene.
  const cannonAt=Math.floor(nSec/2)-(nSec%2?0:1);let lastObs='';for(let i=0;i<nSec;i++){let t=pick(unlock);if(t===lastObs)t=pick(unlock);if(i%3===1)t='wall';if(i===cannonAt||(lv>=6&&i===nSec-2))t='cannon';lastObs=t;
   if(t==='cannon')addSec('cannon',40);else if(t==='jump')addSec('jump',22);else if(t==='bridge')addSec('bridge',18);else addSec(t,t==='wall'?10:18);
   addSec('balls',22);}
- addSec('bonus',34);addSec('run',6);finishZ=courseLen;addSec('finish',40);
+ addSec('bonus',34);addSec('run',6);finishZ=courseLen;addSec('finish',54);
  for(const s of secs)buildSec(s,lv);}
 function buildSec(s,lv){const len=s.z1-s.z0,A=theme[0],B=theme[1];
  if(s.type==='bridge'){s.floor=false;tile(s.z0,3,TW,0,0,A,B,true);tile(s.z1-3,3,TW,0,0,A,B,true);s.bw=lv<6?2.4:1.9;s.bx=(RND()<.5?-1:1)*(lv<6?0:1.2);
@@ -230,7 +230,7 @@ function buildSec(s,lv){const len=s.z1-s.z0,A=theme[0],B=theme[1];
   for(const sx of[-1,1]){const r=new T.Mesh(new T.BoxGeometry(.25,.5,5.2),mat('#ffd23f'));r.position.set(sx*2.1,.25,s.z0+2.8);r.rotation.y=sx*.42;world.add(r);}
   return;}
  if(s.type==='finish'){tile(s.z0,4,TW,0,0,A,B,false);const sc=['#ff5d8f','#ffb52e','#ffe14d','#4ecdc4','#5b9cff','#8e7cff'];
-  for(let i=0;i<14;i++){const v=Math.pow(2,i+2),y=(i+1)*.75,z=s.z0+4+i*2.4;const st=new T.Mesh(boxG,mat(colOf(v),{roughness:.35}));st.scale.set(TW,y,2.4);st.position.set(0,y/2,z+1.2);st.receiveShadow=true;st.castShadow=true;world.add(st);
+  for(let i=0;i<19;i++){const v=Math.pow(2,i+2),y=(i+1)*.75,z=s.z0+4+i*2.4;const st=new T.Mesh(boxG,mat(colOf(v),{roughness:.35}));st.scale.set(TW,y,2.4);st.position.set(0,y/2,z+1.2);st.receiveShadow=true;st.castShadow=true;world.add(st);
    const lb=label(String(v),'#ffffff',2.4,1.2);lb.position.set(0,y-.38,z-.01);lb.rotation.y=Math.PI;world.add(lb);stepsArr.push({v,y,z:z+1.2,mesh:st});}
   return;}
  tile(s.z0,len,TW,0,0,A,B,true);
@@ -239,7 +239,7 @@ function buildSec(s,lv){const len=s.z1-s.z0,A=theme[0],B=theme[1];
  /* a chain: balls one behind another in a line, each double the last, so he can climb back up quickly */
  const addChain=(z,x,n)=>{const row={kind:'row',z,balls:[],chain:true};for(let k=0;k<n;k++){const b={kind:'ball',x,z:z+k*3,v:0,row};row.balls.push(b);items.push(b);}items.push(row);};
  if(s.type==='balls'){addRow(s.z0+3);addRow(s.z0+8.5);addChain(s.z0+13,pick([-2.3,2.3]),3);}
- if(s.type==='bonus'){addRow(s.z0+3);addChain(s.z0+8,-2.3,5);addChain(s.z0+8,2.3,5);addRow(s.z0+25);}
+ if(s.type==='bonus'){addRow(s.z0+3);addChain(s.z0+8,-2.3,5);addChain(s.z0+8,2.3,5);items[items.length-1].good=true;addRow(s.z0+25);}
  if(['spikes','slider','hammer','spinner'].includes(s.type))addRow(s.z0+15);
  if(s.type==='wall'){const z=s.z0+5,n=2,w=TW/n;const wall={kind:'wall',z,segs:[],n};for(let i=0;i<n;i++){wall.segs.push({x:-HALF+w*(i+.5),w,v:0,cubes:[],broken:false});}items.push(wall);s.wall=wall;}
  if(s.type==='spikes'){const z=s.z0+6,side=RND()<.5?-1:1,w=lv<4?TW*.55:TW*.65;const g=new T.Group();const base=new T.Mesh(boxG,mat('#ff4d5e'));base.scale.set(w,.12,1.6);g.add(base);
@@ -265,20 +265,25 @@ function predicted(upto){let c=me.v;const ahead=items.filter(i=>i.kind==='row'&&
  for(const r of ahead){if(r.balls.some(b=>!b.dead&&b.v===c)){c*=r.chain?Math.pow(2,r.balls.filter(b=>!b.dead).length):2;break;}}return c;}
 let rowsSeen=0;
 /* behind: well under where a good run would be at this point of the course */
+/* what a good game would have reached at this point: low at the start, about a million at the end of the later levels */
+function goodAt(z){const p=clamp(z/Math.max(1,finishZ),0,1),top=Math.min(20,9+level);return Math.pow(2,Math.max(1,Math.round(1+p*(top-1))));}
 function behind(){const p=clamp(me.z/Math.max(1,finishZ),0,1);return me.v*4<=Math.pow(2,1+p*Math.log2(goal()*2));}
-function assignRow(row,re){const c=predicted(row.z);let near=[c/2,c*2].filter(v=>v>=2),far=[c/4,c*4].filter(v=>v>=2);if(!re)rowsSeen++;
+function assignRow(row,re){const c=predicted(row.z);let near=[c/2,c*2].filter(v=>v>=2&&v<=1048576),far=[c/4,c*4].filter(v=>v>=2&&v<=1048576);if(!re)rowsSeen++;
  const opts=[];while(opts.length<4&&(near.length||far.length)){const src=near.length?near:far;opts.push(src.splice(Math.floor(RND()*src.length),1)[0]);}
  /* a matching ball in most rows, but none once he is well past the goal, so a level tops out a few steps past its goal */
- const match=c<16384;row.match=match;
- if(row.chain){const vals=row.balls.map((b,k)=>match?c*Math.pow(2,k):Math.max(2,c/2));row.balls.forEach((b,i)=>{if(b.dead)return;b.v=vals[i];if(re&&b.mesh){b.r=rOf(b.v);b.mesh.material=ballMat(b.v);b.mesh.scale.setScalar(b.r);setNum(b.num,b.v);b.num.scale.set(b.r*2,b.r,1);}else showBall(b);});row.assigned=true;return;}
- const vals=match?[c]:[opts.splice(Math.floor(RND()*opts.length),1)[0]||c*2];if(match&&behind()&&row.balls.length>2)vals.push(c);
+ const match=c<1048576;/* top step is 1,048,576 */row.match=match;
+ if(row.chain){const c0=row.good?Math.max(c,goodAt(row.z)/4):c;const vals=row.balls.map((b,k)=>match&&c0*Math.pow(2,k)<=1048576?c0*Math.pow(2,k):Math.max(2,c/2));row.balls.forEach((b,i)=>{if(b.dead)return;b.v=vals[i];if(re&&b.mesh){b.r=rOf(b.v);b.mesh.material=ballMat(b.v);b.mesh.scale.setScalar(b.r);setNum(b.num,b.v);b.num.scale.set(b.r*2,b.r,1);}else showBall(b);});row.assigned=true;return;}
+ const vals=match?[c]:[opts.splice(Math.floor(RND()*opts.length),1)[0]||c*2];
+ /* from a third of the way in: as well as his own number, a ball at what a good game would have by now and one in between, so good and bad games both keep climbing */
+ const E=goodAt(row.z);if(row.z>finishZ*.3&&E>c*2){vals.push(E);if(row.balls.length>2){const lo=Math.log2(c)+1,hi=Math.log2(E)-1;vals.push(Math.pow(2,Math.round(lo+RND()*Math.max(0,hi-lo))));}}
+ else if(match&&behind()&&row.balls.length>2)vals.push(c);
  while(vals.length<row.balls.length){const o=opts.splice(Math.floor(RND()*opts.length),1)[0];vals.push(o||c*2);}
  vals.sort(()=>RND()-.5);row.balls.forEach((b,i)=>{if(b.dead)return;if(re&&b.mesh){b.v=vals[i];b.r=rOf(b.v);b.mesh.material=ballMat(b.v);b.mesh.scale.setScalar(b.r);setNum(b.num,b.v);b.num.scale.set(b.r*2,b.r,1);}else{b.v=vals[i];showBall(b);}});row.assigned=true;}
 /* when his number changes, the numbers further down the track change to suit it */
 function reassignAhead(){for(const it of items){if(it.kind==='row'&&it.assigned&&!it.passed&&it.z-me.z>14&&it.balls.every(b=>!b.dead&&!b.bounced))assignRow(it,true);
-  if(it.kind==='wall'&&it.assigned&&!it.done&&it.z-me.z>14&&it.segs.every(g=>!g.broken)){const c=predicted(it.z);let vals=it.n===2?[Math.max(2,c),c*4]:[Math.max(2,c),c*2,c*4];vals.sort(()=>RND()-.5);
+  if(it.kind==='wall'&&it.assigned&&!it.done&&it.z-me.z>14&&it.segs.every(g=>!g.broken)){const c=predicted(it.z);let vals=it.n===2?[Math.max(2,c),Math.min(1048576,c*4)]:[Math.max(2,c),Math.min(1048576,c*2),Math.min(1048576,c*4)];vals.sort(()=>RND()-.5);
    it.segs.forEach((g,i)=>{g.v=vals[i];g.lab.material.map=numTexOf(String(g.v),'#ffffff');g.lab.material.needsUpdate=true;const col=new T.Color(colOf(g.v)).lerp(new T.Color('#ffffff'),.12);g.cubes.forEach(m=>m.material.color.copy(col));});}}}
-function assignWall(w){const c=predicted(w.z);let vals=w.n===2?[Math.max(2,c),c*4]:[Math.max(2,c),c*2,c*4];if(c>=8&&RND()<.5)vals[0]=c/2;vals.sort(()=>RND()-.5);
+function assignWall(w){const c=predicted(w.z);let vals=w.n===2?[Math.max(2,c),Math.min(1048576,c*4)]:[Math.max(2,c),Math.min(1048576,c*2),Math.min(1048576,c*4)];if(c>=8&&RND()<.5)vals[0]=c/2;vals.sort(()=>RND()-.5);
  w.segs.forEach((sg,i)=>{sg.v=vals[i];const cols=3,rows=3,cw=sg.w/cols,ch=.9;const col=new T.Color(colOf(sg.v)).lerp(new T.Color('#ffffff'),.12);
   for(let a=0;a<cols;a++)for(let b=0;b<rows;b++){const m=new T.Mesh(boxG,new T.MeshPhysicalMaterial({color:col,roughness:.15,clearcoat:1,clearcoatRoughness:.2,transparent:true,opacity:.95}));m.scale.set(cw*.96,ch*.96,.9);m.position.set(sg.x-sg.w/2+cw*(a+.5),ch*(b+.5),w.z);m.castShadow=true;world.add(m);sg.cubes.push(m);}
   sg.lab=label(String(sg.v),'#ffffff',Math.min(3.2,sg.w*.98),Math.min(1.6,sg.w*.49));sg.lab.position.set(sg.x,1.4,w.z-.47);sg.lab.rotation.y=Math.PI;world.add(sg.lab);

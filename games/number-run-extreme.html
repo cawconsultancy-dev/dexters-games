@@ -266,7 +266,7 @@ function update(dt){
   else{me.vy-=26*dt;me.y+=me.vy*dt;me.z+=c.vz*dt;if(Math.random()<.6)burst(me.x,me.y+me.r,me.z-.6,COLS[Math.floor(Math.random()*12)],1);
    if(me.vy<0&&me.y<=0&&groundAt(me.x,me.z)!==null){me.y=0;me.vy=0;me.air=false;me.cannon=null;camShake=.5;sfx.thud();ring(me.x,.1,me.z,'#ff5c9a');burst(me.x,.5,me.z,'#ffd23f',20);flash('Bullseye!','#ff5c9a');}}
   placePlayer(dt,c.phase==='fly'?c.vz:0);if(c.phase==='load')me.mesh.visible=c.t<.25;return;}
- if(me.falling>0){me.falling-=dt;me.vy-=30*dt;me.y+=me.vy*dt;me.z+=sp*.4*dt;if(me.falling<=0){me.z=me.lastSafeZ;me.x=me.tx=0;me.y=0;me.vy=0;me.air=false;hurt('fall');me.inv=1.5;}placePlayer(dt,0);return;}
+ if(me.falling>0){me.falling-=dt;me.vy-=30*dt;me.y+=me.vy*dt;me.z+=sp*.4*dt;if(me.falling<=0){me.z=me.lastSafeZ;{const rs=sectionAt(me.z);if(rs&&rs.type==='cannon'&&me.z<rs.gap[0])rs.fired=false;}me.x=me.tx=0;me.y=0;me.vy=0;me.air=false;hurt('fall');me.inv=1.5;}placePlayer(dt,0);return;}
  /* steering */
  if(keyL)me.tx+=9*dt;if(keyR)me.tx-=9*dt;me.tx=clamp(me.tx,-HALF+me.r+.15,HALF-me.r-.15);me.x+=(me.tx-me.x)*Math.min(1,dt*10);
  {const cs=sectionAt(me.z);if(cs&&cs.type==='cannon'&&!me.air){if(me.z<cs.mouth&&!cs.fired){me.tx+=(0-me.tx)*Math.min(1,dt*3);}/* fire once only: after landing he is still in this stretch, so it must not load him again */if(!cs.fired&&me.z>=cs.mouth-1.2&&me.z<cs.gap[0]){cs.fired=true;me.cannon={phase:'load',t:0,s:cs};sfx.rumble();return;}}}
@@ -276,7 +276,7 @@ function update(dt){
  if(me.air){me.vy-=26*dt;me.y+=me.vy*dt;if(gnd!==null&&me.y<=gnd){me.y=gnd;me.air=false;me.vy=0;camShake=.25;sfx.thud();}
   else if(gnd===null&&me.y<-1.5){me.falling=1;sfx.fall();}}
  else if(gnd===null){if(s&&s.type==='jump'&&prevZ<s.gap[0]+.5){launch(s,sp);}else{me.air=true;me.vy=0;}}
- else{me.y=gnd;if(s&&s.type!=='bridge'&&s.type!=='jump')me.lastSafeZ=Math.max(me.lastSafeZ,s.z0+.5);}
+ else{me.y=gnd;if(s&&s.type==='cannon'){if(me.z>=s.gap[1])me.lastSafeZ=Math.max(me.lastSafeZ,s.gap[1]+.5);}else if(s&&s.type!=='bridge'&&s.type!=='jump')me.lastSafeZ=Math.max(me.lastSafeZ,s.z0+.5);}
  if(s&&s.type==='jump'&&me.z>=s.ramp[0]&&me.z<s.ramp[1]&&!me.air)me.y=gnd;
  if(s&&s.type==='jump'&&!me.air&&me.z>=s.gap[0]-.1&&me.z<s.gap[0]+.4)launch(s,sp);
  /* bring numbers into view */

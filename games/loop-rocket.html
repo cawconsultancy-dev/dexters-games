@@ -16,7 +16,8 @@ canvas#sky{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0
 .app{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;gap:7px;padding:calc(8px + env(safe-area-inset-top,0px)) 10px calc(10px + env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch}
 .glass{background:rgba(10,14,46,.5);border:2px solid rgba(255,170,90,.28);border-radius:20px;box-shadow:0 10px 30px #0007;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:7px 10px}
-.logo{font-weight:700;font-size:25px;background:linear-gradient(90deg,#ffd23f,#ff8a3e,#ff5a8a);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;margin-right:auto}
+.dlt{height:1.35em;width:auto;margin-right:8px;border-radius:50%;filter:drop-shadow(0 2px 4px #0006);flex:none}
+.logo{font-weight:700;font-size:25px;background:linear-gradient(90deg,#ffd23f,#ff8a3e,#ff5a8a);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;margin-right:auto;display:flex;align-items:center}
 .btn{border:none;border-radius:16px;min-height:50px;padding:0 14px;font:700 18px Fredoka,sans-serif;color:#fff;background:#2b2f6e;box-shadow:0 4px 0 #15184a;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;touch-action:none}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #15184a}
 .btn:disabled{opacity:.4}
@@ -72,7 +73,7 @@ audio{width:100%;margin:6px 0 4px}
 <canvas id="sky"></canvas>
 <div class="app" id="app">
  <div class="top glass">
-  <div class="logo">🚀 Loop Rocket</div>
+  <div class="logo"><img class="dlt" src="../img/logo-192.png" alt="Dexter's Learning Tube">Loop Rocket</div>
   <div class="tempo"><button class="btn" id="slower" aria-label="Slower">−</button><div class="tv"><span id="bpm">110</span><small>speed</small></div><button class="btn" id="faster" aria-label="Faster">+</button></div>
   <button class="btn play" id="playBtn">▶ Play</button>
   <button class="btn mic" id="micBtn">🎤 Record my voice</button>

@@ -17,7 +17,8 @@ canvas#sky{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0
 .glass{background:rgba(12,16,52,.5);border:2px solid rgba(140,160,255,.28);border-radius:22px;box-shadow:0 10px 30px #0007,inset 0 0 22px rgba(120,90,255,.12);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 /* top bar */
 .top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px}
-.logo{font-weight:700;font-size:26px;letter-spacing:.02em;background:linear-gradient(90deg,#7af0ff,#c58bff,#ff7ad9);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;margin-right:auto}
+.dlt{height:1.35em;width:auto;margin-right:8px;border-radius:50%;filter:drop-shadow(0 2px 4px #0006);flex:none}
+.logo{font-weight:700;font-size:26px;letter-spacing:.02em;background:linear-gradient(90deg,#7af0ff,#c58bff,#ff7ad9);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap;margin-right:auto;display:flex;align-items:center}
 .btn{border:none;border-radius:16px;min-height:52px;padding:0 16px;font:700 19px Fredoka,sans-serif;color:#fff;background:#2b2f6e;box-shadow:0 4px 0 #15184a;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #15184a}
 .btn.play{background:linear-gradient(180deg,#3ee07a,#18a64e);box-shadow:0 4px 0 #0d6b31;min-width:118px}
@@ -101,7 +102,7 @@ audio{width:100%;margin:6px 0 4px}
 <canvas id="sky"></canvas>
 <div class="app" id="app">
  <div class="top glass">
-  <div class="logo">🎧 Space Mix</div>
+  <div class="logo"><img class="dlt" src="../img/logo-192.png" alt="Dexter's Learning Tube">Space Mix</div>
   <div class="tempo"><button class="btn" id="slower" aria-label="Slower">−</button><div class="tv"><span id="bpm">100</span><small>speed</small></div><button class="btn" id="faster" aria-label="Faster">+</button></div>
   <button class="btn play" id="playBtn">▶ Play</button>
   <button class="btn recsong" id="songBtn">⏺ Record song</button>

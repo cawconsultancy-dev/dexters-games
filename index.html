@@ -147,7 +147,7 @@ footer a{color:var(--gold-2)}
 /* Dexter's Learning Tube logo over each game: small, in the corner that keeps clear of the game, and taps go straight through it */
 .wm{position:absolute;width:clamp(40px,6.5vmin,64px);height:auto;opacity:.85;pointer-events:none;z-index:3;border-radius:50%;filter:drop-shadow(0 2px 6px #0007)}
 .wm.br{right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}.wm.bl{left:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px))}
-.wm.tl{left:10px;top:10px}.wm.tr{right:10px;top:10px}.wm.mr{right:10px;top:50%;transform:translateY(-50%)}.wm.ml{left:10px;top:50%;transform:translateY(-50%)}
+.wm.none{display:none}.wm.soft{opacity:.45}.wm.tl{left:10px;top:10px}.wm.tr{right:10px;top:10px}.wm.mr{right:10px;top:50%;transform:translateY(-50%)}.wm.ml{left:10px;top:50%;transform:translateY(-50%)}
 
 @media (max-width:720px){
  .hero{grid-template-columns:1fr;gap:6px;text-align:center;margin-top:10px}
@@ -407,8 +407,11 @@ renderRecent();
 /* player */
 let open=null;
 /* where the logo sits in each game (bottom right unless that corner has buttons or busy play); checked game by game on 22/11/2026 */
-const WM={'chess':'tr','space-chess':'tr','push-crate':'bl','push-crate-3d':'bl','space-mix':'tl','loop-rocket':'tl','exoplanet-directory':'tl','space-studio-3d':'tl','animal-studio':'tl','world-studio':'tl','body-studio':'tl','planet-face':'mr','magic-paint':'bl','marble-run':'mr'};
-function openGame(id,fromHash){$('wm').className='wm '+(WM[id]||'br');try{Welcome.stop();}catch(e){}const g=G[id];if(!g)return;open=id;$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';Music.level(0.45);
+const WM={'chess':'tr','space-chess':'tr','push-crate':'bl','push-crate-3d':'bl','space-mix':'none','loop-rocket':'none','exoplanet-directory':'none','space-studio-3d':'tl','animal-studio':'tl','world-studio':'tl','body-studio':'tl','planet-face':'mr','magic-paint':'tl soft','marble-run':'mr'};
+const WMP={'space-studio':'tl','colour-mixer':'tl','voice-lab':'tl'};
+function placeWM(){if(!open)return;const p=innerHeight>innerWidth;$('wm').className='wm '+((p&&WMP[open])||WM[open]||'br');}
+addEventListener('resize',placeWM);
+function openGame(id,fromHash){try{Welcome.stop();}catch(e){}const g=G[id];if(!g)return;open=id;placeWM();$('pTitle').textContent=g.name;$('frame').src='games/'+id+'.html';$('player').classList.add('on');document.body.style.overflow='hidden';Music.level(0.45);
  const r=[id,...store.get('recent',[]).filter(x=>x!==id)].slice(0,6);store.set('recent',r);
  if(!fromHash)history.pushState({g:id},'','#play='+id);setTimeout(()=>$('back').focus(),50);}
 function closeGame(){if(!open)return;open=null;$('player').classList.remove('on');$('frame').src='about:blank';document.body.style.overflow='';renderRecent();Music.level(1);}

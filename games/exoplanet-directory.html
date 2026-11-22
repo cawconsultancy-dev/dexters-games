@@ -20,6 +20,7 @@ button{cursor:pointer}
 :focus-visible{outline:4px solid var(--gold-2);outline-offset:3px;border-radius:14px}
 .wrap{position:relative;max-width:1100px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0px)) 14px calc(40px + env(safe-area-inset-bottom,0px))}
 header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.dlt{height:clamp(46px,7vw,66px);width:auto;border-radius:50%;filter:drop-shadow(0 2px 6px #0007);flex:none}
 header h1{margin:0;font-size:clamp(30px,6vw,48px);line-height:1;font-weight:700;letter-spacing:-.02em}
 header p{margin:4px 0 0;color:var(--mist);font-size:18px}
 .surprise{margin-left:auto;display:flex;align-items:center;gap:8px;border:none;background:var(--gold);color:#2a1a00;font-size:20px;font-weight:700;border-radius:999px;padding:12px 20px;box-shadow:0 5px 0 #b7801d}
@@ -78,6 +79,7 @@ header p{margin:4px 0 0;color:var(--mist);font-size:18px}
 <body>
 <div class="wrap">
  <header>
+  <img class="dlt" src="../img/logo-192.png" alt="Dexter's Learning Tube">
   <div><h1>Dexter's Space Directory</h1><p id="sub"></p></div>
   <button class="surprise" id="surprise">🎲 <span>Surprise me</span></button>
  </header>

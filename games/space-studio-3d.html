@@ -47,6 +47,9 @@ canvas#c{z-index:1;background:transparent}
 .hud{display:none!important}
 .tools{position:fixed;left:50%;bottom:calc(10px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(1060px,calc(100% - 12px));background:#ffffffee;border-radius:28px;box-shadow:0 14px 40px #0008;padding:10px 12px;display:flex;flex-direction:column;gap:8px;z-index:6;color:#1d1b3a}
 .tools[hidden]{display:none}
+.showui{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:7;border:0;border-radius:999px;padding:9px 14px;font:inherit;font-weight:700;font-size:15px;background:#ffffff55;color:#1d1b3a;box-shadow:0 4px 14px #0005;opacity:.55;cursor:pointer}
+.showui:active{opacity:1}
+.showui[hidden]{display:none}
 .trow{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px}
 .trow::-webkit-scrollbar{display:none}
 .tb{flex:none;height:42px;min-width:42px;padding:0 12px;border-radius:14px;border:2px solid #1d1b3a18;background:#fff;font:600 16px Fredoka,sans-serif;color:#1d1b3a;display:flex;align-items:center;gap:6px;cursor:pointer}
@@ -93,7 +96,7 @@ canvas#c{z-index:1;background:transparent}
 
 <canvas id="gl"></canvas>
 <script src="lib/three.min.js"></script>
-<div class="topbtns" id="topb" hidden><button class="tb" id="undo">↩️ Undo</button><button class="tb" id="clear">🗑️ New</button><button class="tb recb" id="save">⏺️ Record</button><button class="tb" id="exit">✕</button></div>
+<div class="topbtns" id="topb" hidden><button class="tb" id="undo">↩️ Undo</button><button class="tb" id="clear">🗑️ New</button><button class="tb" id="hideui">🙈 Hide</button><button class="tb recb" id="save">⏺️ Record</button><button class="tb" id="exit">✕</button></div>
 <div class="tools" id="tools" hidden>
  <div class="trow" id="moves" hidden></div>
  <div class="trow" id="cats"></div>
@@ -101,6 +104,7 @@ canvas#c{z-index:1;background:transparent}
  <div class="trow" id="opts"></div>
  <div class="trow" id="vclips" hidden></div>
 </div>
+<button class="showui" id="showui" hidden>👀 Show buttons</button>
 <div class="toast" id="toast"></div>
 <div class="recbar" id="recbar" hidden><span class="dot"></span><span id="rect">0:00</span><span class="mtr" title="Voice"><span id="meter"></span></span><button class="tb" id="allr">👄 Everyone</button><button class="tb" id="stopb">⏹️ Stop</button></div>
 <div class="recclips" id="recclips" hidden></div>
@@ -684,7 +688,7 @@ function buildTools(){if(built)return;built=true;renderCats();renderOpts();rende
  $('stamps').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;sel=b.dataset.t;renderStamps();const o=OBJ[sel];say(o[0]+', '+o[2]);};
  $('undo').onclick=()=>{const g=items.pop();if(g){disposeBody(g);if(g===selected)selected=null;if(g===talker)talker=null;}renderMoves();sfx.tap();};
  $('clear').onclick=()=>{if(items.length&&!confirmClear)return armClear();items.forEach(disposeBody);items=[];selected=null;talker=null;renderMoves();confirmClear=false;$('clear').textContent='🗑️ New';sfx.whoosh();toast('A brand new space!');};
- $('save').onclick=startRec;$('stopb').onclick=stopRec;$('allr').onclick=()=>setAllTalk(!allTalk);$('exit').onclick=()=>{if(rec)stopRec();state='title';tools(false);show('title');};
+ $('save').onclick=startRec;$('hideui').onclick=()=>{sfx.tap();setUiHidden(true);};$('showui').onclick=()=>{sfx.tap();setUiHidden(false);};$('stopb').onclick=stopRec;$('allr').onclick=()=>setAllTalk(!allTalk);$('exit').onclick=()=>{if(rec)stopRec();state='title';tools(false);show('title');};
  $('moves').onclick=e=>{const b=e.target.closest('[data-m]');if(!b||!selected)return;const m=b.dataset.m;
   if(m==='del'){items=items.filter(i=>i!==selected);disposeBody(selected);if(talker===selected)talker=null;selected=null;renderMoves();sfx.whoosh();return;}
   selected.an=m;selected.ph=nowS*-1.3;renderMoves();sfx.tap();say(MOVES.find(q=>q[0]===m)[1].replace(/^\S+\s/,''));};
@@ -767,7 +771,10 @@ const ICONS={};
 function renderStamps(){const keys=Object.keys(OBJ).filter(k=>OBJ[k][1]===cat);if(!keys.includes(sel))sel=keys[0];
  $('stamps').innerHTML=keys.map(k=>'<button class="st'+(k===sel?' on':'')+'" data-t="'+k+'"><canvas width="256" height="256" data-i="'+k+'"></canvas>'+OBJ[k][0]+'</button>').join('');
  document.querySelectorAll('#stamps canvas').forEach(cv2=>{const k=cv2.dataset.i;if(!ICONS[k])ICONS[k]=iconFor(k,256);cv2.getContext('2d').drawImage(ICONS[k],0,0);});}
-function tools(on){$('tools').hidden=!on;$('topb').hidden=!on;}
+let uiHidden=false;
+function tools(on){toolsOn=on;$('tools').hidden=!on||uiHidden;$('topb').hidden=!on||uiHidden;$('showui').hidden=!on||!uiHidden;}
+let toolsOn=false;
+function setUiHidden(h){uiHidden=h;tools(toolsOn);if(h)$('moves').hidden=true;}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1800);}
 G.resize=()=>{resizeGL();};
 G.init=()=>{initGL();buildTools();loadClips();};

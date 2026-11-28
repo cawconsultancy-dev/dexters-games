@@ -187,7 +187,7 @@ const OBJ={
  lion:['Lion','land','the king of the jungle'],elephant:['Elephant','land','it has a long trunk'],giraffe:['Giraffe','land','the tallest animal'],monkey:['Monkey','land','it loves to climb'],tiger:['Tiger','land','a big stripy cat'],
  zebra:['Zebra','land','a stripy horse'],dog:['Dog','land','a friendly pet that barks'],cat:['Cat','land','a pet that says meow'],frog:['Frog','land','it can jump very far'],rabbit:['Rabbit','land','it has long ears'],
  seal:['Seal','sea','it claps its flippers'],penguin:['Penguin','sea','a bird that swims'],walrus:['Walrus','sea','it has long tusks'],narwhal:['Narwhal','sea','a whale with a long tusk'],stingray:['Stingray','sea','a flat fish that glides'],
- lobster:['Lobster','sea','it has big claws'],pufferfish:['Pufferfish','sea','it puffs up like a ball'],squid:['Squid','sea','it squirts ink'],seaotter:['Sea otter','sea','it floats on its back'],angelfish:['Angelfish','sea','a tall stripy fish'],
+ lobster:['Lobster','sea','it has big claws'],pufferfish:['Pufferfish','sea','it puffs up like a ball'],squid:['Squid','sea','it squirts ink'],seaotter:['Sea otter','sea','it floats on its back'],angelfish:['Angelfish','sea','a tall stripy fish'],olm:['Olm','sea','a little pink salamander with no eyes that lives in dark underground caves'],
  bear:['Bear','land','a big furry animal'],panda:['Panda','land','it loves bamboo'],koala:['Koala','land','it sleeps in trees'],kangaroo:['Kangaroo','land','it hops and has a pouch'],hippo:['Hippo','land','it loves the mud'],
  rhino:['Rhino','land','it has a horn on its nose'],cow:['Cow','land','it says moo'],pig:['Pig','land','it says oink'],horse:['Horse','land','it can gallop'],fox:['Fox','land','an orange animal with a bushy tail'],
  eagle:['Eagle','air','a big bird that flies high'],owl:['Owl','air','it comes out at night'],parrot:['Parrot','air','a bird that can talk'],toucan:['Toucan','air','a bird with a big beak'],flamingo:['Flamingo','air','a pink bird on long legs'],
@@ -203,7 +203,7 @@ function face(c,r,t,ink,o){if(r<5)return;o=o||{};const m=MOOD[t]||['smile','grin
  const ey=-0.12*r,ex=0.3*r,er=0.15*r,lw=Math.max(1.2,0.055*r);c.save();c.lineCap='round';c.setLineDash([]);
  if(!o.noBlush){c.fillStyle='rgba(255,110,150,0.35)';[-1,1].forEach(s=>{c.beginPath();c.ellipse(s*0.52*r,0.12*r,0.12*r,0.08*r,0,0,7);c.fill();});}
  const blink=animOn&&((nowS+(hash(t)%97)*0.13)%3.7)<0.13;
- [-1,1].forEach(s=>{const x=s*ex;
+ if(!o.noEyes)[-1,1].forEach(s=>{const x=s*ex;
   if(blink){c.strokeStyle=ink;c.lineWidth=lw;c.beginPath();c.moveTo(x-er*0.8,ey+er*0.2);c.lineTo(x+er*0.8,ey+er*0.2);c.stroke();return;}
   if(m==='happy'){c.strokeStyle=ink;c.lineWidth=lw;c.beginPath();c.arc(x,ey+er*0.45,er*0.75,Math.PI*1.15,Math.PI*1.85);c.stroke();return;}
   c.fillStyle='#fff';c.beginPath();c.ellipse(x,ey,er,er*1.18,0,0,7);c.fill();c.strokeStyle='rgba(0,0,0,0.3)';c.lineWidth=Math.max(0.8,r*0.02);c.stroke();
@@ -320,6 +320,14 @@ function drawAnimal(c,t,r){const u=r,OL='rgba(45,25,45,0.38)';c.lineJoin='round'
  case 'ladybird':for(let s=-1;s<=1;s+=2)for(let k=0;k<3;k++)ln([[s*0.5,-0.1+k*0.25],[s*0.8,-0.05+k*0.3]],'#2a2a2a',0.05);ln([[-0.12,-0.72],[-0.28,-0.95]],'#2a2a2a',0.035);ln([[0.12,-0.72],[0.28,-0.95]],'#2a2a2a',0.035);
   e(0,-0.6,0.3,0.22,'#2a2a2a');wing(()=>{e(0,0.1,0.68,0.62,'#e8352e');},0,-0.4);[[-0.42,-0.15,0.1],[0.42,-0.15,0.1],[-0.45,0.4,0.11],[0.45,0.4,0.11],[0,0.6,0.09]].forEach(([x,y,s])=>e(x,y,s,s,'#2a2a2a',0,true));
   ln([[0,-0.48],[0,-0.3]],'#2a2a2a',0.03);fc(0,0.08,0.58);break;
+case 'olm':{const sk='#f6d9d3',sd='#e9bdb4';
+  blob([[-1.2,0.04],[-0.95,-0.16],[-0.45,-0.12],[-0.35,0.04],[-0.45,0.2],[-0.95,0.24]],sd);
+  [[-0.5,0.14,-0.6,0.33],[-0.3,0.14,-0.2,0.34],[0.14,0.14,0.04,0.34],[0.32,0.12,0.42,0.33]].forEach(([x0,y0,x1,y1])=>{ln([[x0,y0],[x1,y1]],sd,0.06);[-1,0,1].forEach(k=>ln([[x1,y1],[x1+k*0.05,y1+0.06]],sd,0.026));});
+  blob([[-0.8,0.04],[-0.5,-0.15],[0.1,-0.18],[0.45,-0.17],[0.58,0.04],[0.42,0.21],[0,0.22],[-0.5,0.2],[-0.8,0.14]],sk);
+  [[0.36,-0.16,0.26,-0.42],[0.42,-0.06,0.22,-0.22],[0.4,0.1,0.24,0.3]].forEach(([x0,y0,x1,y1])=>{qc(x0,y0,(x0+x1)/2+0.04,(y0+y1)/2,x1,y1,'#ff8396',0.05);for(let k=1;k<=3;k++){const f=k/4;e(x0+(x1-x0)*f,y0+(y1-y0)*f,0.04,0.026,'#ff9aac',0,true);}});
+  e(0.68,-0.01,0.36,0.25,sk);e(0.78,0.1,0.22,0.08,sd,0,true);
+  [-1,1].forEach(q=>e(0.68+q*0.105,-0.07,0.04,0.028,'rgba(150,90,90,0.25)',0,true));
+  fc(0.7,-0.03,0.35,{noEyes:true,my:0.35});break;}
  case 'seal':poly([[-0.8,0.4],[-1.15,0.15],[-1.02,0.45],[-1.15,0.7]],'#7a848f');blob([[-0.9,0.38],[-0.5,0.08],[0.2,-0.1],[0.55,-0.3],[0.8,-0.15],[0.7,0.22],[0.2,0.48],[-0.6,0.52]],'#8d97a3');
   e(0.2,0.48,0.22,0.08,'#7a848f',0.4);e(0.52,-0.36,0.36,0.32,'#9aa4b0');e(0.56,-0.2,0.18,0.12,'#c9d0d8',0,true);e(0.56,-0.28,0.05,0.035,'#2a2a2a',0,true);
   [[-1,-0.22],[-1,-0.16],[1,-0.22],[1,-0.16]].forEach(([s,y])=>ln([[0.56+s*0.12,y],[0.56+s*0.32,y+(y+0.19)*1.5]],'rgba(60,60,70,0.55)',0.018));fc(0.52,-0.4,0.38,{my:0.48});break;
@@ -417,7 +425,7 @@ function makeBg(){bgCanvas=document.createElement('canvas');bgCanvas.width=Math.
 function drawObj(c,t,x,y,r,rot,flip){c.save();c.translate(x,y);c.rotate(rot||0);if(flip)c.scale(-1,1);drawAnimal(c,t,r);c.restore();}
 const BASE={whale:1.3,elephant:1.1,giraffe:1.1,shark:1.0,dolphin:0.95,lion:0.95,tiger:0.9,zebra:0.9,eagle:1.0,flamingo:1.0,octopus:0.85,turtle:0.85,monkey:0.8,dog:0.8,cat:0.75,parrot:0.8,toucan:0.8,owl:0.8,bat:0.8,
  crab:0.7,jellyfish:0.75,seahorse:0.75,starfish:0.65,clownfish:0.6,frog:0.65,rabbit:0.7,duck:0.7,butterfly:0.7,bee:0.55,ladybird:0.5,
- seal:0.85,penguin:0.75,walrus:1.0,narwhal:1.0,stingray:0.85,lobster:0.75,pufferfish:0.6,squid:0.75,seaotter:0.75,angelfish:0.6,bear:0.9,panda:0.85,koala:0.75,kangaroo:0.9,hippo:1.05,rhino:1.0,cow:0.9,pig:0.75,horse:0.95,fox:0.75,
+ seal:0.85,penguin:0.75,walrus:1.0,narwhal:1.0,stingray:0.85,lobster:0.75,pufferfish:0.6,squid:0.75,seaotter:0.75,angelfish:0.6,olm:1.0,bear:0.9,panda:0.85,koala:0.75,kangaroo:0.9,hippo:1.05,rhino:1.0,cow:0.9,pig:0.75,horse:0.95,fox:0.75,
  robin:0.55,peacock:1.05,swan:0.9,pelican:0.9,hummingbird:0.45,seagull:0.8,woodpecker:0.65,kingfisher:0.6,dragonfly:0.6,moth:0.6};
 function radiusFor(t){return Math.max(10,Math.min(W,H)*0.085*(BASE[t]||0.7)*[0.65,1,1.6][size]);}
 /* voice clips shared between Voice Lab and Space Studio 3D (kept on this device only) */

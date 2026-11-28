@@ -789,7 +789,7 @@ G.up=(x,y)=>{if(dragItem){dragItem=null;return;}if(!press||!renderer)return;pres
 G.update=dt=>{ensureTalker();
  if(analyser){wakeMeter();analyser.getByteTimeDomainData(abuf);let sum=0;for(let i=0;i<abuf.length;i++){const v=(abuf[i]-128)/128;sum+=v*v;}const rms=Math.sqrt(sum/abuf.length);noiseF=rms<noiseF?noiseF*0.9+rms*0.1:noiseF*0.999+rms*0.001;peakF=Math.max(rms,peakF*0.997,noiseF*4,0.02);const tg=clamp((rms-noiseF*1.6)/(peakF-noiseF*1.6+1e-4)*1.4,0,1);lvl=lvl*0.5+tg*0.5;}else lvl=0;
  clipLevel();{const mb=$('meter');if(mb)mb.style.width=Math.round(lvl*100)+'%';}
- if(rec){const el=(performance.now()-recT0)/1000;$('rect').textContent=fmtT(el);if(el>=180)stopRec();}};
+ if(rec){const el=(performance.now()-recT0)/1000;$('rect').textContent=fmtT(el);if(el>=300)stopRec();}};
 let lastDraw=0;
 G.draw=()=>{const now=performance.now()/1000,dt=Math.min(0.05,lastDraw?now-lastDraw:0.016);lastDraw=now;nowS=now;animOn=true;ctx.clearRect(0,0,W,H);
  if(!renderer)return;updCam(dt);camera.updateMatrixWorld();const showDemo=state==='title'&&!items.length;demo.forEach(b=>{b.grp.visible=b.fs.visible=showDemo;if(showDemo)placeBody(b,now,dt);b.lab.visible=false;});

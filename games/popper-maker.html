@@ -220,17 +220,19 @@ const floor=new THREE.Mesh(new THREE.PlaneGeometry(70,70,24,24),new THREE.MeshSt
 
 /* plate */
 const PLATE_TOP=.16;
-const plate=new THREE.Mesh(new THREE.LatheGeometry([[0,0],[2.95,0],[3.3,.12],[3.45,.34],[3.38,.42],[3.1,.27],[2.85,PLATE_TOP],[0,PLATE_TOP]].map(p=>new THREE.Vector2(p[0],p[1])),72),new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.35}));
+const plate=new THREE.Mesh(new THREE.LatheGeometry([[0,0],[4.1,0],[4.45,.12],[4.6,.34],[4.53,.42],[4.25,.27],[4.0,PLATE_TOP],[0,PLATE_TOP]].map(p=>new THREE.Vector2(p[0],p[1])),72),new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.35}));
 plate.castShadow=true;plate.receiveShadow=true;scene.add(plate);
 
 /* rounded cube */
 function roundedBox(s,r){const g=new THREE.BoxGeometry(s,s,s,6,6,6),p=g.attributes.position,n=g.attributes.normal,hh=s/2-r,v=new THREE.Vector3(),c=new THREE.Vector3(),d=new THREE.Vector3();
  for(let i=0;i<p.count;i++){v.fromBufferAttribute(p,i);c.set(clamp(v.x,-hh,hh),clamp(v.y,-hh,hh),clamp(v.z,-hh,hh));d.subVectors(v,c);if(d.lengthSq()>1e-9){d.normalize();n.setXYZ(i,d.x,d.y,d.z);d.multiplyScalar(r);}v.copy(c).add(d);p.setXYZ(i,v.x,v.y,v.z);}
  n.needsUpdate=true;return g;}
-const CELL=.6,CUBE=.54,MAXH=6,MAXCUBES=240;
+const CELL=.6,CUBE=.54,MAXH=6,MAXCUBES=600;
 const cubeGeo=roundedBox(CUBE,.09);
 const cubeMat=COLS.map(c=>new THREE.MeshStandardMaterial({color:c[1],roughness:.3}));
 const CELLS=[];for(let i=-5;i<=5;i++)for(let j=-5;j<=5;j++){const x=i*CELL,z=j*CELL;if(len(x,z)<=2.6)CELLS.push({x,z,h:0});}
+/* bigger plate: extra spots go after the first 61 so saved poppers keep their places */
+for(let i=-7;i<=7;i++)for(let j=-7;j<=7;j++){const x=i*CELL,z=j*CELL,d=len(x,z);if(d>2.6&&d<=3.7)CELLS.push({x,z,h:0});}
 
 /* ---------- animation helpers ---------- */
 const anims=[];
@@ -242,7 +244,7 @@ function spray(p,col,n,sp,conf){for(let i=0;i<n;i++){const m=new THREE.Mesh(conf
  const a=rand()*Math.PI*2,u=conf?0:(2+rand()*3)*sp,s=(.6+rand())*sp;parts.push({m,vx:Math.cos(a)*s,vy:conf?-(1+rand()*2):u,vz:Math.sin(a)*s,life:conf?2.2:.55,t:0,spin:conf?rand()*8:0});}}
 
 /* ---------- camera framing (keeps things clear of the buttons) ---------- */
-const cur={c:new THREE.Vector3(0,.7,0),r:4,el:52*D};let vFrom=null,vTo=null,vK=1,vDur=.8;
+const cur={c:new THREE.Vector3(0,.7,0),r:5.4,el:52*D};let vFrom=null,vTo=null,vK=1,vDur=.8;
 function setView(c,r,el,dur){vFrom={c:cur.c.clone(),r:cur.r,el:cur.el};vTo={c:c.clone(),r,el};vK=dur?0:1;vDur=dur||1;if(!dur){cur.c.copy(c);cur.r=r;cur.el=el;}}
 function trayH(){const t=[$('buildTray'),$('playTray')].find(e=>!e.hidden);return t?t.getBoundingClientRect().height:0;}
 function applyCam(){const w=innerWidth,h=innerHeight,top=72,bot=trayH(),yc=(top+(h-bot))/2,d=yc-h/2,fullH=h+2*Math.abs(d),offY=d<0?-2*d:0;
@@ -274,7 +276,7 @@ function cellAt(x,z){let b=null,bd=1e9;CELLS.forEach(c=>{const d=len(c.x-x,c.z-z
 const ray=new THREE.Raycaster(),ndc=new THREE.Vector2();
 function pick(e,objs){const r=canvas.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ndc,cam);return ray.intersectObjects(objs,false)[0];}
 function buildTap(e){const hit=pick(e,[plate,...cubes.map(c=>c.m)]);if(!hit)return;
- let cell;if(hit.object.userData.cube){cell=hit.object.userData.cube.cell;if(cell.h>=MAXH){toast('That tower is tall enough!');return;}}else{if(len(hit.point.x,hit.point.z)>3.5)return;cell=cellAt(hit.point.x,hit.point.z);}
+ let cell;if(hit.object.userData.cube){cell=hit.object.userData.cube.cell;if(cell.h>=MAXH){toast('That tower is tall enough!');return;}}else{if(len(hit.point.x,hit.point.z)>4.7)return;cell=cellAt(hit.point.x,hit.point.z);}
  if(cell)addCube(sel,cell,0);}
 function handful(){S.click();let n=0;for(let i=0;i<10;i++){const free=CELLS.filter(c=>c.h<MAXH);if(!free.length)break;const c=free[Math.floor(rand()*free.length)];if(addCube(sel,c,n*.07,n%2))n++;}}
 function undo(){const c=cubes.pop();if(!c){S.click();return;}c.cell.h--;S.poof();anim(.2,k=>{const s=1-k;c.m.scale.set(s,s,s);},()=>scene.remove(c.m));setCount();}
@@ -334,10 +336,10 @@ function make(){audioInit();if(stage!=='build')return;if(!cubes.length){toast('P
  disposePopper(pop);pop=buildPopper(shapeId,seq,patIx,layout);pop.layout=layout;pop.g.visible=false;scene.add(pop.g);save();
  const V=new THREE.Vector3(0,4.4,0);setView(new THREE.Vector3(0,2.3,0),5.2,38*D,.7);
  swirl.position.copy(V);swirl.visible=true;swirl.scale.setScalar(.2);orbit=[];orbitShrink=1;orbitSpeed=1;
- const list=cubes.slice().sort(()=>rand()-.5),n=list.length,gapT=clamp(2.2/n,.03,.12);cubes=[];CELLS.forEach(c=>c.h=0);
+ const list=cubes.slice().sort(()=>rand()-.5),n=list.length,gapT=clamp(2.2/n,.008,.12),every=Math.max(1,Math.ceil(n/90));cubes=[];CELLS.forEach(c=>c.h=0);
  list.forEach((c,i)=>{const s=c.m.position.clone(),ctl=s.clone().add(new THREE.Vector3((rand()-.5)*5,4+rand()*2.5,(rand()-.5)*3)),sp=new THREE.Vector3(rand()*10,rand()*10,rand()*10);
   anim(.6,k=>{const a=1-k;c.m.position.set(a*a*s.x+2*a*k*ctl.x+k*k*V.x,a*a*s.y+2*a*k*ctl.y+k*k*V.y,a*a*s.z+2*a*k*ctl.z+k*k*V.z);c.m.rotation.set(sp.x*k,sp.y*k,sp.z*k);const sc=1-.45*k;c.m.scale.set(sc,sc,sc);},
-   ()=>{c.orb={a:rand()*Math.PI*2,r:.9+rand()*.9,y:(rand()-.5)*.9,sp:3+rand()*3};orbit.push(c);S.suck();const f=orbit.length/n;swirl.scale.setScalar(.3+f*.9);},0.35+i*gapT,()=>S.pew());});
+   ()=>{c.orb={a:rand()*Math.PI*2,r:.9+rand()*.9,y:(rand()-.5)*.9,sp:3+rand()*3};orbit.push(c);if(i%every===0)S.suck();const f=orbit.length/n;swirl.scale.setScalar(.3+f*.9);},0.35+i*gapT,()=>{if(i%every===0)S.pew();});});
  const T=.35+n*gapT+.6+.35;
  anim(.7,k=>{orbitShrink=1-easeIn(k);orbitSpeed=1+k*4;orbit.forEach(c=>{const s=.55*(1-k*.8);c.m.scale.set(s,s,s);});swirl.scale.setScalar(1.2*(1-k)+.05);},()=>{
   orbit.forEach(c=>scene.remove(c.m));orbit=[];swirl.visible=false;S.boom();
@@ -372,7 +374,7 @@ function backToBuild(){audioInit();if(stage!=='play'||flipping)return;stage='bui
  anim(.3,k=>{old.g.scale.setScalar(Math.max(.001,1-k));},()=>{old.g.visible=false;});
  plate.visible=true;anim(.35,k=>{const s=Math.max(.01,back(k));plate.scale.set(s,s,s);});
  const lay=(old&&old.layout)||[];lay.forEach((l,i)=>addCube(l[0],CELLS[l[1]],.3+i*Math.min(.025,1.2/Math.max(1,lay.length)),i%4!==0));
- showTray('build');setCount();setView(new THREE.Vector3(0,.7,0),4,52*D,.7);}
+ showTray('build');setCount();setView(new THREE.Vector3(0,.7,0),5.4,52*D,.7);}
 
 /* ---------- pointer ---------- */
 const down=new Set();
@@ -402,7 +404,7 @@ $('backBtn').onclick=backToBuild;
 $('sndBtn').onclick=()=>{audioInit();setSound(!soundOn);};$('sndCard').onclick=()=>{audioInit();setSound(!soundOn);};
 $('patName').textContent=PATS[patIx];
 const last=store.get('last',null);if(last&&last.layout&&last.layout.length)$('lastBtn').hidden=false;
-$('startBtn').onclick=()=>{audioInit();S.click();$('title').hidden=true;stage='build';showTray('build');setCount();setView(new THREE.Vector3(0,.7,0),4,52*D,0);applyCam();};
+$('startBtn').onclick=()=>{audioInit();S.click();$('title').hidden=true;stage='build';showTray('build');setCount();setView(new THREE.Vector3(0,.7,0),5.4,52*D,0);applyCam();};
 $('lastBtn').onclick=()=>{audioInit();$('title').hidden=true;const l=store.get('last',null);if(l.shape&&SH[l.shape]){shapeId=l.shape;drawShapeBtns();}patIx=l.pat||0;$('patName').textContent=PATS[patIx];
  const lay=l.layout.filter(x=>CELLS[x[1]]&&COLS[x[0]]);plate.visible=false;pop=buildPopper(shapeId,lay.map(x=>x[0]),patIx,lay);pop.layout=lay;scene.add(pop.g);S.boom();reveal(new THREE.Vector3(0,4.4,0));};
 
